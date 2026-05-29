@@ -1,0 +1,532 @@
+<div class="container mb-4">
+  <!-- Page Header -->
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4" style="margin-top: 15px;">
+    <h1 class="text-primary table-heading-detail mb-0">
+      {{ activeTab === 'Categories' ? 'Categories Management' : 'Sub Categories Management' }}
+    </h1>
+    
+    <div class="d-flex align-items-center gap-3 flex-wrap">
+      <!-- Capsule Tabs for Categories & Sub Categories -->
+      <div class="d-flex gap-2 p-1 bg-light rounded-pill roster-tabs-wrapper" style="width: fit-content; border: 1px solid #e2e8f0;">
+        <button class="btn rounded-pill px-4 py-2 tab-btn text-nowrap transition-all fw-semibold"
+                [ngClass]="{'btn-primary shadow-sm text-white': activeTab === 'Categories', 'btn-light-text text-muted bg-transparent border-0': activeTab !== 'Categories'}"
+                (click)="setActiveTab('Categories')"
+                type="button">
+          <i class="fa-solid fa-list-ul me-2"></i>Categories
+        </button>
+        <button class="btn rounded-pill px-4 py-2 tab-btn text-nowrap transition-all fw-semibold"
+                [ngClass]="{'btn-primary shadow-sm text-white': activeTab === 'Sub Categories', 'btn-light-text text-muted bg-transparent border-0': activeTab !== 'Sub Categories'}"
+                (click)="setActiveTab('Sub Categories')"
+                type="button">
+          <i class="fa-solid fa-indent me-2"></i>Sub Categories
+        </button>
+      </div>
+
+      <!-- Add Button -->
+      <div>
+        <button class="btn btn-custom-primary px-4 py-2"
+                *ngIf="activeTab === 'Categories'"
+                (click)="openAddCategoryModal()">
+          Add Category
+        </button>
+        <button class="btn btn-custom-primary px-4 py-2"
+                *ngIf="activeTab === 'Sub Categories'"
+                (click)="openAddSubCategoryModal()">
+          Add Sub Category
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card border-0 my-4 px-4 py-4">
+    <!-- Show entries and Search bar row -->
+    <div class="d-md-flex justify-content-between align-items-center my-3">
+      <div class="d-flex align-items-center mb-md-0 mb-2">
+        <span class="me-1 show-entery-text">Show</span>
+        <select class="form-control form-select show-entries-select" (change)="onTableSizeChange($event)">
+          <option *ngFor="let size of tableSizes" [value]="size" [selected]="size == tableSize">{{ size }}</option>
+        </select>
+        <span class="ms-1 show-entery-text">entries</span>
+      </div>
+
+      <div class="d-flex align-items-center">
+        <form [formGroup]="searchbarform" class="d-flex align-items-center">
+          <span class="me-1">Search:</span>
+          <div>
+            <input type="text" class="form-control search-user position-relative" autocomplete="off" formControlName="searchbar" />
+          </div>
+          <button class="btn btn-primary search-btn ms-2" (click)="searchfun()">
+            <span><i class="fa-solid fa-magnifying-glass form-control-feedback text-white"></i></span>
+          </button>
+          <button class="btn btn-primary search-btn ms-2" (click)="resetsearchbar()" type="submit" *ngIf="showreset">
+            <span><i class="fa-solid fa-rotate-right form-control-feedback text-white"></i></span>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Table content area -->
+    <div class="table-responsive-sm mt-2">
+      <!-- Categories Table View -->
+      <div *ngIf="activeTab === 'Categories'">
+        <!-- Desktop Table View -->
+        <div class="hidden lg:block">
+          <table class="table table-bordered table-hover table-striped mb-0">
+            <thead class="table-header">
+              <tr>
+                <th style="width: 80px;"><p class="table-heading">Sr No.</p></th>
+                <th><p class="table-heading">Category Name</p></th>
+                <th style="width: 150px;"><p class="table-heading">Status</p></th>
+                <th style="width: 180px;"><p class="table-heading">Action</p></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let cat of filteredCategories | paginate: { itemsPerPage: tableSize != 'all' ? tableSize : totalRecords, currentPage: page, totalItems: totalRecords }; index as i">
+                <td>
+                  {{ tableSize * (page - 1) + i + 1 }}
+                </td>
+                <td>
+                  <p>{{ cat.categoryName }}</p>
+                </td>
+                <td>
+                  <p [ngClass]="{
+                      'active-status': cat.is_active == 1 ? 1 : 0,
+                      'deactive-status': cat.is_active == 1 ? 0 : 1
+                    }">
+                    {{ cat.is_active == 1 ? "active" : "deactive" }}
+                  </p>
+                </td>
+                <td>
+                  <div class="d-flex align-items-center gap-2">
+                    <button class="btn-action edit-btn" (click)="openEditCategoryModal(cat)" title="Edit">
+                      <i class="fa-solid fa-pen-to-square"></i>
+                    </button>
+                    <button class="btn-action view-btn" (click)="openViewCategoryModal(cat)" title="View Details">
+                      <i class="fa-solid fa-eye"></i>
+                    </button>
+                    <button class="btn-action" [ngClass]="cat.is_active ? 'deactivate-btn' : 'activate-btn'"
+                      (click)="toggleCategoryStatus(cat)"
+                      [title]="cat.is_active ? 'Deactivate Status' : 'Activate Status'">
+                      <i class="fa-solid" [ngClass]="cat.is_active ? 'fa-toggle-on' : 'fa-toggle-off'"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr *ngIf="filteredCategories.length === 0">
+                <td colspan="4" class="text-center py-4 text-muted">
+                  No categories found.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Mobile Card View -->
+        <div class="lg:hidden space-y-4">
+          <div *ngFor="let cat of filteredCategories | paginate: { itemsPerPage: tableSize != 'all' ? tableSize : totalRecords, currentPage: page, totalItems: totalRecords }; index as i" 
+               class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+            <div class="flex justify-between items-center mb-2">
+              <div>
+                <strong>Sr No:</strong>
+                {{ tableSize * (page - 1) + i + 1 }}
+              </div>
+              <div>
+                <div class="d-flex align-items-center gap-1">
+                  <button class="btn-action edit-btn" (click)="openEditCategoryModal(cat)" title="Edit">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                  </button>
+                  <button class="btn-action view-btn" (click)="openViewCategoryModal(cat)" title="View Details">
+                    <i class="fa-solid fa-eye"></i>
+                  </button>
+                  <button class="btn-action" [ngClass]="cat.is_active ? 'deactivate-btn' : 'activate-btn'"
+                    (click)="toggleCategoryStatus(cat)"
+                    [title]="cat.is_active ? 'Deactivate Status' : 'Activate Status'">
+                    <i class="fa-solid" [ngClass]="cat.is_active ? 'fa-user-slash' : 'fa-user-check'"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="mb-2"><strong>Category Name:</strong> {{ cat.categoryName }}</div>
+            <div>
+              <strong>Status:</strong>
+              <span [ngClass]="{
+                  'active-status': cat.is_active == 1 ? 1 : 0,
+                  'deactive-status': cat.is_active == 1 ? 0 : 1
+                }">
+                {{ cat.is_active == 1 ? "active" : "deactive" }}
+              </span>
+            </div>
+          </div>
+          <div *ngIf="filteredCategories.length === 0" class="text-center py-4 text-muted">
+            No categories found.
+          </div>
+        </div>
+      </div>
+
+      <!-- Sub Categories Table View -->
+      <div *ngIf="activeTab === 'Sub Categories'">
+        <!-- Desktop Table View -->
+        <div class="hidden lg:block">
+          <table class="table table-bordered table-hover table-striped mb-0">
+            <thead class="table-header">
+              <tr>
+                <th style="width: 80px;"><p class="table-heading">Sr No.</p></th>
+                <th><p class="table-heading">Sub Category Name</p></th>
+                <th><p class="table-heading">Parent Category Name</p></th>
+                <th style="width: 150px;"><p class="table-heading">Status</p></th>
+                <th style="width: 180px;"><p class="table-heading">Action</p></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let sc of filteredSubCategories | paginate: { itemsPerPage: tableSize != 'all' ? tableSize : totalRecords, currentPage: page, totalItems: totalRecords }; index as i">
+                <td>
+                  {{ tableSize * (page - 1) + i + 1 }}
+                </td>
+                <td>
+                  <p>{{ sc.name }}</p>
+                </td>
+                <td>
+                  <p>{{ getCategoryName(sc.categoryId) }}</p>
+                </td>
+                <td>
+                  <p [ngClass]="{
+                      'active-status': sc.is_active == 1 ? 1 : 0,
+                      'deactive-status': sc.is_active == 1 ? 0 : 1
+                    }">
+                    {{ sc.is_active == 1 ? "active" : "deactive" }}
+                  </p>
+                </td>
+                <td>
+                  <div class="d-flex align-items-center gap-2">
+                    <button class="btn-action edit-btn" (click)="openEditSubCategoryModal(sc)" title="Edit">
+                      <i class="fa-solid fa-pen-to-square"></i>
+                    </button>
+                    <button class="btn-action view-btn" (click)="openViewSubCategoryModal(sc)" title="View Details">
+                      <i class="fa-solid fa-eye"></i>
+                    </button>
+                    <button class="btn-action" [ngClass]="sc.is_active ? 'deactivate-btn' : 'activate-btn'"
+                      (click)="toggleSubCategoryStatus(sc)"
+                      [title]="sc.is_active ? 'Deactivate Status' : 'Activate Status'">
+                      <i class="fa-solid" [ngClass]="sc.is_active ? 'fa-toggle-on' : 'fa-toggle-off'"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr *ngIf="filteredSubCategories.length === 0">
+                <td colspan="5" class="text-center py-4 text-muted">
+                  No sub categories found.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Mobile Card View -->
+        <div class="lg:hidden space-y-4">
+          <div *ngFor="let sc of filteredSubCategories | paginate: { itemsPerPage: tableSize != 'all' ? tableSize : totalRecords, currentPage: page, totalItems: totalRecords }; index as i"
+               class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+            <div class="flex justify-between items-center mb-2">
+              <div>
+                <strong>Sr No:</strong>
+                {{ tableSize * (page - 1) + i + 1 }}
+              </div>
+              <div>
+                <div class="d-flex align-items-center gap-1">
+                  <button class="btn-action edit-btn" (click)="openEditSubCategoryModal(sc)" title="Edit">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                  </button>
+                  <button class="btn-action view-btn" (click)="openViewSubCategoryModal(sc)" title="View Details">
+                    <i class="fa-solid fa-eye"></i>
+                  </button>
+                  <button class="btn-action" [ngClass]="sc.is_active ? 'deactivate-btn' : 'activate-btn'"
+                    (click)="toggleSubCategoryStatus(sc)"
+                    [title]="sc.is_active ? 'Deactivate Status' : 'Activate Status'">
+                    <i class="fa-solid" [ngClass]="sc.is_active ? 'fa-user-slash' : 'fa-user-check'"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="mb-2"><strong>Sub Category Name:</strong> {{ sc.name }}</div>
+            <div class="mb-2"><strong>Parent Category Name:</strong> {{ getCategoryName(sc.categoryId) }}</div>
+            <div>
+              <strong>Status:</strong>
+              <span [ngClass]="{
+                  'active-status': sc.is_active == 1 ? 1 : 0,
+                  'deactive-status': sc.is_active == 1 ? 0 : 1
+                }">
+                {{ sc.is_active == 1 ? "active" : "deactive" }}
+              </span>
+            </div>
+          </div>
+          <div *ngIf="filteredSubCategories.length === 0" class="text-center py-4 text-muted">
+            No sub categories found.
+          </div>
+        </div>
+      </div>
+
+      <!-- Standard Pagination controls footer -->
+      <div class="d-md-flex justify-content-between bottom-0 end-0 py-2 align-items-center">
+        <span class="showalltext">
+          Showing {{ tableSize * (page - 1) > 0 ? tableSize * (page - 1) + 1 : 1 }} to
+          {{ tableSize * page <= totalRecords ? tableSize * page : totalRecords }}
+          of {{ totalRecords }} entries
+        </span>
+        <pagination-controls
+          previousLabel="Prev"
+          nextLabel="Next"
+          [responsive]="true"
+          (pageChange)="onTableDataChange($event)"
+          target="_top"
+        ></pagination-controls>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==========================================
+     INVENTORY MODAL DIALOG CONTAINERS
+     ========================================== -->
+
+<!-- 1. Add Category Modal -->
+<div *ngIf="createCategoryOpen" class="your-animation-class modal-container" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+  <div class="modal-contenttop modal-content-50" [@fadeIn]>
+    <form [formGroup]="createCategoryForm">
+      <div class="card">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+          <h5 class="modal-title pt-1 mb-0 tt-color">Add Category</h5>
+          <button class="cross-btn-icon main-btn bg-transparent border-0 pb-0 pt-1" type="button" (click)="closeModal()">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <div class="modal-content-widthtop card-body mb-0">
+          <div class="row">
+            <div class="mb-3">
+              <label class="d-block text-capitalize form-label form-lable-custom">Enter Category Name</label>
+              <input type="text" class="d-block form-control form-input-custom" formControlName="categoryName"
+                     [ngClass]="{'is-invalid': createCategoryForm.controls['categoryName'].errors && (createCategoryForm.controls['categoryName'].touched || createCategoryForm.controls['categoryName'].dirty)}" />
+              <div class="text-danger error-message" *ngIf="createCategoryForm.controls['categoryName'].errors && (createCategoryForm.controls['categoryName'].touched || createCategoryForm.controls['categoryName'].dirty)">
+                <p class="fw-light text-danger" *ngIf="createCategoryForm.controls['categoryName'].errors['required']">Category Name is required</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer text-end">
+          <button class="btn btn-secondary main-btnfs px-4 py-2 me-4 text-gray-200" type="button" (click)="closeModal()">Cancel</button>
+          <button class="btn btn-custom-primary px-4 py-2" type="button" (click)="createCategory()">Create</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 2. Edit Category Modal -->
+<div *ngIf="updateCategoryOpen" class="your-animation-class modal-container" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+  <div class="modal-contenttop modal-content-50" [@fadeIn]>
+    <form [formGroup]="updateCategoryForm">
+      <div class="card">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+          <h5 class="modal-title pt-1 mb-0 tt-color">Update Category</h5>
+          <button class="cross-btn-icon main-btn bg-transparent border-0 pb-0 pt-1" type="button" (click)="closeModal()">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <div class="modal-content-widthtop card-body mb-0">
+          <div class="row">
+            <div class="mb-3">
+              <label class="d-block text-capitalize form-label form-lable-custom">Enter Category Name</label>
+              <input type="text" class="d-block form-control form-input-custom" formControlName="categoryName"
+                     [ngClass]="{'is-invalid': updateCategoryForm.controls['categoryName'].errors && (updateCategoryForm.controls['categoryName'].touched || updateCategoryForm.controls['categoryName'].dirty)}" />
+              <div class="text-danger error-message" *ngIf="updateCategoryForm.controls['categoryName'].errors && (updateCategoryForm.controls['categoryName'].touched || updateCategoryForm.controls['categoryName'].dirty)">
+                <p class="fw-light text-danger" *ngIf="updateCategoryForm.controls['categoryName'].errors['required']">Category Name is required</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer text-end">
+          <button class="btn btn-secondary main-btnfs px-4 py-2 me-4 text-gray-200" type="button" (click)="closeModal()">Cancel</button>
+          <button class="btn btn-custom-primary px-4 py-2" type="button" (click)="updateCategory()">Update</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 3. View Category Modal -->
+<div *ngIf="viewCategoryOpen" class="your-animation-class modal-container premium-detail-modal" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+  <div class="modal-contenttop modal-content-50" [@fadeIn]>
+    <div class="card">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <div>
+          <h5 class="modal-title pt-1 mb-0">Category Details</h5>
+          <p class="modal-subtitle">Full overview of inventory category ID: #{{selectedCategory?.id}}</p>
+        </div>
+        <button class="cross-btn-icon border-0 p-0" type="button" (click)="closeModal()">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="card-body mb-0">
+        <!-- Premium Category Summary Banner -->
+        <div class="dept-summary-banner mb-0">
+          <div class="banner-content">
+            <div class="banner-label">Category Name</div>
+            <div class="banner-value">{{ selectedCategory?.categoryName }}</div>
+            <div class="banner-subtitle">
+              <span class="pulse-indicator" [ngClass]="{'deactive': selectedCategory?.is_active !== 1}"></span>
+              Status: 
+              <span class="status-badge-pill" [ngClass]="selectedCategory?.is_active === 1 ? 'active' : 'deactive'">
+                {{ selectedCategory?.is_active === 1 ? 'Active' : 'Inactive' }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer text-end">
+        <button class="btn btn-premium-close px-4 py-2" type="button" (click)="closeModal()">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 4. Add Sub Category Modal -->
+<div *ngIf="createSubCategoryOpen" class="your-animation-class modal-container" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+  <div class="modal-contenttop modal-content-50" [@fadeIn]>
+    <form [formGroup]="createSubCategoryForm">
+      <div class="card">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+          <h5 class="modal-title pt-1 mb-0 tt-color">Add Sub Category</h5>
+          <button class="cross-btn-icon main-btn bg-transparent border-0 pb-0 pt-1" type="button" (click)="closeModal()">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <div class="modal-content-widthtop card-body mb-0">
+          <div class="row">
+            <div class="mb-3">
+              <label class="d-block text-capitalize form-label form-lable-custom">Enter Sub Category Name</label>
+              <input type="text" class="d-block form-control form-input-custom" formControlName="name"
+                     [ngClass]="{'is-invalid': createSubCategoryForm.controls['name'].errors && (createSubCategoryForm.controls['name'].touched || createSubCategoryForm.controls['name'].dirty)}" />
+              <div class="text-danger error-message" *ngIf="createSubCategoryForm.controls['name'].errors && (createSubCategoryForm.controls['name'].touched || createSubCategoryForm.controls['name'].dirty)">
+                <p class="fw-light text-danger" *ngIf="createSubCategoryForm.controls['name'].errors['required']">Sub Category Name is required</p>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="d-block text-capitalize form-label form-lable-custom">Select Category</label>
+              <select class="d-block form-control form-select form-input-custom" formControlName="categoryId"
+                      [ngClass]="{'is-invalid': createSubCategoryForm.controls['categoryId'].errors && (createSubCategoryForm.controls['categoryId'].touched || createSubCategoryForm.controls['categoryId'].dirty)}">
+                <option value="">Select Category</option>
+                <option *ngFor="let cat of categories" [value]="cat.id">{{ cat.categoryName }}</option>
+              </select>
+              <div class="text-danger error-message" *ngIf="createSubCategoryForm.controls['categoryId'].errors && (createSubCategoryForm.controls['categoryId'].touched || createSubCategoryForm.controls['categoryId'].dirty)">
+                <p class="fw-light text-danger" *ngIf="createSubCategoryForm.controls['categoryId'].errors['required']">Category selection is required</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer text-end">
+          <button class="btn btn-secondary main-btnfs px-4 py-2 me-4 text-gray-200" type="button" (click)="closeModal()">Cancel</button>
+          <button class="btn btn-custom-primary px-4 py-2" type="button" (click)="createSubCategory()">Create</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 5. Edit Sub Category Modal -->
+<div *ngIf="updateSubCategoryOpen" class="your-animation-class modal-container" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+  <div class="modal-contenttop modal-content-50" [@fadeIn]>
+    <form [formGroup]="updateSubCategoryForm">
+      <div class="card">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+          <h5 class="modal-title pt-1 mb-0 tt-color">Update Sub Category</h5>
+          <button class="cross-btn-icon main-btn bg-transparent border-0 pb-0 pt-1" type="button" (click)="closeModal()">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <div class="modal-content-widthtop card-body mb-0">
+          <div class="row">
+            <div class="mb-3">
+              <label class="d-block text-capitalize form-label form-lable-custom">Enter Sub Category Name</label>
+              <input type="text" class="d-block form-control form-input-custom" formControlName="name"
+                     [ngClass]="{'is-invalid': updateSubCategoryForm.controls['name'].errors && (updateSubCategoryForm.controls['name'].touched || updateSubCategoryForm.controls['name'].dirty)}" />
+              <div class="text-danger error-message" *ngIf="updateSubCategoryForm.controls['name'].errors && (updateSubCategoryForm.controls['name'].touched || updateSubCategoryForm.controls['name'].dirty)">
+                <p class="fw-light text-danger" *ngIf="updateSubCategoryForm.controls['name'].errors['required']">Sub Category Name is required</p>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="d-block text-capitalize form-label form-lable-custom">Select Category</label>
+              <select class="d-block form-control form-select form-input-custom" formControlName="categoryId"
+                      [ngClass]="{'is-invalid': updateSubCategoryForm.controls['categoryId'].errors && (updateSubCategoryForm.controls['categoryId'].touched || updateSubCategoryForm.controls['categoryId'].dirty)}">
+                <option *ngFor="let cat of categories" [value]="cat.id">{{ cat.categoryName }}</option>
+              </select>
+              <div class="text-danger error-message" *ngIf="updateSubCategoryForm.controls['categoryId'].errors && (updateSubCategoryForm.controls['categoryId'].touched || updateSubCategoryForm.controls['categoryId'].dirty)">
+                <p class="fw-light text-danger" *ngIf="updateSubCategoryForm.controls['categoryId'].errors['required']">Category selection is required</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer text-end">
+          <button class="btn btn-secondary main-btnfs px-4 py-2 me-4 text-gray-200" type="button" (click)="closeModal()">Cancel</button>
+          <button class="btn btn-custom-primary px-4 py-2" type="button" (click)="updateSubCategory()">Update</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 6. View Sub Category Modal -->
+<div *ngIf="viewSubCategoryOpen" class="your-animation-class modal-container premium-detail-modal" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+  <div class="modal-contenttop modal-content-50" [@fadeIn]>
+    <div class="card">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <div>
+          <h5 class="modal-title pt-1 mb-0">Sub Category Details</h5>
+          <p class="modal-subtitle">Full overview of inventory sub category ID: #{{selectedSubCategory?.id}}</p>
+        </div>
+        <button class="cross-btn-icon border-0 p-0" type="button" (click)="closeModal()">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="card-body mb-0">
+        <!-- Premium Sub Category Summary Banner -->
+        <div class="dept-summary-banner mb-3">
+          <div class="banner-content">
+            <div class="banner-label">Sub Category Name</div>
+            <div class="banner-value">{{ selectedSubCategory?.name }}</div>
+            <div class="banner-subtitle">
+              <span class="pulse-indicator" [ngClass]="{'deactive': selectedSubCategory?.is_active !== 1}"></span>
+              Status: 
+              <span class="status-badge-pill" [ngClass]="selectedSubCategory?.is_active === 1 ? 'active' : 'deactive'">
+                {{ selectedSubCategory?.is_active === 1 ? 'Active' : 'Inactive' }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Specifications Grid Section -->
+        <div class="grid-section-title">Category Association</div>
+        <div class="row g-3">
+          <!-- Card: Parent Category -->
+          <div class="col-12">
+            <div class="glass-info-card">
+              <div class="card-icon-wrapper code" style="background: rgba(139, 92, 246, 0.1); color: #8b5cf6;">
+                <i class="fa-solid fa-list-ul"></i>
+              </div>
+              <div class="card-info-content">
+                <span class="info-label">Parent Category</span>
+                <span class="info-value text-dark fs-7" style="font-weight: 700;">{{ getCategoryName(selectedSubCategory?.categoryId) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer text-end">
+        <button class="btn btn-premium-close px-4 py-2" type="button" (click)="closeModal()">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

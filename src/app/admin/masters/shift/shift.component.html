@@ -1,0 +1,395 @@
+<div class="container mb-4">
+  <div class="d-flex justify-content-between align-items-center flex-wrap">
+    <h1 class="text-primary table-heading-detail">Shift Management</h1>
+    <div>
+      <button class="btn btn-custom-primary px-4 py-2 me-2" (click)="openAddModal()">
+        Add Shift
+      </button>
+    </div>
+  </div>
+
+  <div class="card border-0 my-4 px-4 py-4">
+    <div class="d-md-flex justify-content-between align-items-center my-3">
+      <div class="d-flex align-items-center mb-md-0 mb-2">
+        <span class="me-1 show-entery-text">Show</span>
+        <select class="form-control form-select show-entries-select" (change)="onTableSizeChange($event)">
+          <option *ngFor="let size of tableSizes" [ngValue]="size">
+            {{ size }}
+          </option>
+        </select>
+        <span class="ms-1 show-entery-text">entries</span>
+      </div>
+
+      <div class="d-flex align-items-center">
+        <form [formGroup]="searchbarform" class="d-flex align-items-center">
+          <span class="me-1">Search:</span>
+          <div>
+            <input type="text" class="form-control search-user position-relative" autocomplete="off"
+              formControlName="searchbar" [ngClass]="{
+                'is-invalid':
+                  searchbarform.controls['searchbar'].errors &&
+                  (searchbarform.controls['searchbar'].touched ||
+                    searchbarform.controls['searchbar'].dirty),
+              }" />
+            <div class="text-danger error-message d-block" *ngIf="
+                searchbarform.controls['searchbar'].errors &&
+                (searchbarform.controls['searchbar'].touched ||
+                  searchbarform.controls['searchbar'].dirty)
+              ">
+              <p class="fw-light text-danger search-required"
+                *ngIf="searchbarform.controls['searchbar'].errors['required']">
+                This is required
+              </p>
+            </div>
+          </div>
+
+          <button class="btn btn-primary search-btn ms-2" (click)="searchfun()">
+            <span><i class="fa-solid fa-magnifying-glass form-control-feedback text-white"></i></span>
+          </button>
+          <button class="btn btn-primary search-btn ms-2" (click)="resetsearchbar()" type="button"
+            *ngIf="showreset == true">
+            <span><i class="fa-solid fa-rotate-right form-control-feedback text-white"></i></span>
+          </button>
+        </form>
+      </div>
+    </div>
+    <div class="table-responsive-sm mt-2">
+      <!-- Table View for lg+ -->
+      <div class="hidden lg:block">
+        <table class="table table-bordered table-hover table-striped mb-0">
+          <thead class="table-header">
+            <tr *ngFor="let detail of table_heading">
+              <th>
+                <p class="table-heading">{{ detail.heading0 }}</p>
+              </th>
+              <th>
+                <p class="table-heading">{{ detail.heading1 }}</p>
+              </th>
+              <th>
+                <p class="table-heading">{{ detail.heading2 }}</p>
+              </th>
+              <th>
+                <p class="table-heading">{{ detail.heading3 }}</p>
+              </th>
+              <th>
+                <p class="table-heading">{{ detail.heading4 }}</p>
+              </th>
+              <th>
+                <p class="table-heading">{{ detail.heading5 }}</p>
+              </th>
+              <th>
+                <p class="table-heading">{{ detail.heading6 }}</p>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="
+                let shift of shiftList
+                  | paginate
+                    : {
+                        itemsPerPage: tableSize != 'all' ? tableSize : totalRecords,
+                        currentPage: page,
+                        totalItems: totalRecords,
+                      };
+                index as i
+              ">
+              <td>
+                {{
+                tableSize * (page - 1) + i + 1 > 0
+                ? tableSize * (page - 1) + i + 1
+                : i + 1
+                }}
+              </td>
+              <td>
+                <p>{{ shift.shiftName }}</p>
+              </td>
+              <td>
+                <p>{{ shift.startTime }} - {{ shift.endTime }}</p>
+              </td>
+              <td>
+                <p>{{ shift.minWorkingHours }} hrs</p>
+              </td>
+              <td>
+                <p>{{ shift.graceTime }} mins</p>
+              </td>
+              <td>
+                <p [ngClass]="{
+                    'active-status': shift.is_active == 1 ? 1 : 0,
+                    'deactive-status': shift.is_active == 1 ? 0 : 1,
+                  }">
+                  {{ shift.is_active == 1 ? "active" : "deactive" }}
+                </p>
+              </td>
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <button class="btn-action edit-btn" (click)="OpenEditModal(shift)" title="Edit">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                  </button>
+                  <button class="btn-action view-btn" (click)="openviewModal(shift)" title="View Details">
+                    <i class="fa-solid fa-eye"></i>
+                  </button>
+                  <button class="btn-action" [ngClass]="shift.is_active ? 'deactivate-btn' : 'activate-btn'"
+                    (click)="Status(shift.id, shift.is_active ? 0 : 1)"
+                    [title]="shift.is_active ? 'Deactivate' : 'Activate'">
+                    <i class="fa-solid" [ngClass]="shift.is_active ? 'fa-toggle-on' : 'fa-toggle-off'"></i>
+
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <!-- Card View for below lg -->
+      <div class="lg:hidden space-y-4">
+        <div *ngFor="
+            let shift of shiftList
+              | paginate
+                : {
+                    itemsPerPage: tableSize != 'all' ? tableSize : totalRecords,
+                    currentPage: page,
+                    totalItems: totalRecords,
+                  };
+            index as i
+          " class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+          <div class="flex justify-between items-center mb-2">
+            <div>
+              <strong>Sr No:</strong>
+              {{
+              tableSize * (page - 1) + i + 1 > 0
+              ? tableSize * (page - 1) + i + 1
+              : i + 1
+              }}
+            </div>
+            <div>
+              <div class="d-flex align-items-center gap-1">
+                <button class="btn btn-link p-1 text-primary" (click)="OpenEditModal(shift)" title="Edit">
+                  <i class="fa-solid fa-pen-to-square fs-5"></i>
+                </button>
+                <button class="btn btn-link p-1 text-info" (click)="openviewModal(shift)" title="View Details">
+                  <i class="fa-solid fa-eye fs-5"></i>
+                </button>
+                <button class="btn btn-link p-1" [ngClass]="shift.is_active ? 'text-success' : 'text-muted'"
+                  (click)="Status(shift.id, shift.is_active ? 0 : 1)"
+                  [title]="shift.is_active ? 'Deactivate' : 'Activate'">
+                  <i class="fa-solid" [ngClass]="shift.is_active ? 'fa-toggle-on fs-4' : 'fa-toggle-off fs-4'"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="mb-2"><strong>Shift Name:</strong> {{ shift.shiftName }}</div>
+          <div class="mb-2"><strong>Timing:</strong> {{ shift.startTime }} - {{ shift.endTime }}</div>
+          <div class="mb-2"><strong>Min Hrs / Grace:</strong> {{ shift.minWorkingHours }} hrs / {{ shift.graceTime }}
+            mins</div>
+          <div>
+            <strong>Status:</strong>
+            <span [ngClass]="{
+                'active-status': shift.is_active == 1 ? 1 : 0,
+                'deactive-status': shift.is_active == 1 ? 0 : 1,
+              }">
+              {{ shift.is_active == 1 ? "active" : "deactive" }}
+            </span>
+          </div>
+        </div>
+      </div>
+      <div class="d-md-flex justify-content-between bottom-0 end-0 py-2 align-items-center">
+        <span class="showalltext">Showing
+          {{ tableSize * (page - 1) > 0 ? tableSize * (page - 1) + 1 : 1 }} to
+          {{
+          tableSize * page <= totalRecords ? tableSize * page : totalRecords }} of {{ totalRecords !=undefined ?
+            totalRecords : "" }} entries</span>
+            <pagination-controls previousLabel="Prev" nextLabel="Next" [responsive]="true"
+              (pageChange)="onTableDataChange($event)" target="_top"></pagination-controls>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Create Modal -->
+<div *ngIf="createShiftOpen" class="your-animation-class modal-container" aria-labelledby="modal-title" role="dialog"
+  aria-modal="true">
+  <div class="modal-contenttop modal-content-50" [@fadeIn]>
+    <form [formGroup]="createShiftForm">
+      <div class="card">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+          <h5 class="modal-title pt-1 mb-0 tt-color">Add Shift</h5>
+          <button class="cross-btn-icon main-btn bg-transparent border-0 pb-0 pt-1" type="button"
+            (click)="closeModal()">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <div class="modal-content-widthtop card-body mb-0">
+          <div class="row">
+            <div class="col-md-12 mb-3">
+              <label class="d-block text-capitalize form-label form-lable-custom">Shift Name</label>
+              <input type="text" class="d-block form-control form-input-custom" formControlName="shiftName"
+                [ngClass]="{'is-invalid': createShiftForm.controls['shiftName'].errors && (createShiftForm.controls['shiftName'].touched || createShiftForm.controls['shiftName'].dirty)}" />
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="d-block text-capitalize form-label form-lable-custom">Start Time</label>
+              <input type="time" class="d-block form-control form-input-custom" formControlName="startTime"
+                [ngClass]="{'is-invalid': createShiftForm.controls['startTime'].errors && (createShiftForm.controls['startTime'].touched || createShiftForm.controls['startTime'].dirty)}" />
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="d-block text-capitalize form-label form-lable-custom">End Time</label>
+              <input type="time" class="d-block form-control form-input-custom" formControlName="endTime"
+                [ngClass]="{'is-invalid': createShiftForm.controls['endTime'].errors && (createShiftForm.controls['endTime'].touched || createShiftForm.controls['endTime'].dirty)}" />
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="d-block text-capitalize form-label form-lable-custom">Min Working Hours</label>
+              <input type="number" class="d-block form-control form-input-custom" formControlName="minWorkingHours"
+                [ngClass]="{'is-invalid': createShiftForm.controls['minWorkingHours'].errors && (createShiftForm.controls['minWorkingHours'].touched || createShiftForm.controls['minWorkingHours'].dirty)}" />
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="d-block text-capitalize form-label form-lable-custom">Grace Time (mins)</label>
+              <input type="number" class="d-block form-control form-input-custom" formControlName="graceTime"
+                [ngClass]="{'is-invalid': createShiftForm.controls['graceTime'].errors && (createShiftForm.controls['graceTime'].touched || createShiftForm.controls['graceTime'].dirty)}" />
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer text-end">
+          <button class="btn btn-secondary main-btnfs px-4 py-2 me-4 text-gray-200" type="button"
+            (click)="closeModal()">Cancel</button>
+          <button class="btn btn-custom-primary px-4 py-2" type="button" (click)="createShift()">Create</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Update Modal -->
+<div *ngIf="updateShiftOpen" class="your-animation-class modal-container" aria-labelledby="modal-title" role="dialog"
+  aria-modal="true">
+  <div class="modal-contenttop modal-content-50" [@fadeIn]>
+    <form [formGroup]="updateShiftForm">
+      <div class="card">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+          <h5 class="modal-title pt-1 mb-0 tt-color">Update Shift</h5>
+          <button class="cross-btn-icon main-btn bg-transparent border-0 pb-0 pt-1" type="button"
+            (click)="closeModal()">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <div class="modal-content-widthtop card-body mb-0">
+          <div class="row">
+            <div class="col-md-12 mb-3">
+              <label class="d-block text-capitalize form-label form-lable-custom">Shift Name</label>
+              <input type="text" class="d-block form-control form-input-custom" formControlName="shiftName"
+                [ngClass]="{'is-invalid': updateShiftForm.controls['shiftName'].errors && (updateShiftForm.controls['shiftName'].touched || updateShiftForm.controls['shiftName'].dirty)}" />
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="d-block text-capitalize form-label form-lable-custom">Start Time</label>
+              <input type="time" class="d-block form-control form-input-custom" formControlName="startTime"
+                [ngClass]="{'is-invalid': updateShiftForm.controls['startTime'].errors && (updateShiftForm.controls['startTime'].touched || updateShiftForm.controls['startTime'].dirty)}" />
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="d-block text-capitalize form-label form-lable-custom">End Time</label>
+              <input type="time" class="d-block form-control form-input-custom" formControlName="endTime"
+                [ngClass]="{'is-invalid': updateShiftForm.controls['endTime'].errors && (updateShiftForm.controls['endTime'].touched || updateShiftForm.controls['endTime'].dirty)}" />
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="d-block text-capitalize form-label form-lable-custom">Min Working Hours</label>
+              <input type="number" class="d-block form-control form-input-custom" formControlName="minWorkingHours"
+                [ngClass]="{'is-invalid': updateShiftForm.controls['minWorkingHours'].errors && (updateShiftForm.controls['minWorkingHours'].touched || updateShiftForm.controls['minWorkingHours'].dirty)}" />
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="d-block text-capitalize form-label form-lable-custom">Grace Time (mins)</label>
+              <input type="number" class="d-block form-control form-input-custom" formControlName="graceTime"
+                [ngClass]="{'is-invalid': updateShiftForm.controls['graceTime'].errors && (updateShiftForm.controls['graceTime'].touched || updateShiftForm.controls['graceTime'].dirty)}" />
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer text-end">
+          <button class="btn btn-secondary main-btnfs px-4 py-2 me-4 text-gray-200" type="button"
+            (click)="closeModal()">Cancel</button>
+          <button class="btn btn-custom-primary px-4 py-2" type="button" (click)="updateShift()">Update</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- View Modal -->
+<div *ngIf="viewShiftOpen" class="your-animation-class modal-container premium-detail-modal" aria-labelledby="modal-title" role="dialog"
+  aria-modal="true">
+  <div class="modal-contenttop modal-content-50" [@fadeIn]>
+    <div class="card">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <div>
+          <h5 class="modal-title pt-1 mb-0">Shift Details</h5>
+          <p class="modal-subtitle">Full configuration for Shift ID: #{{selectedShift?.id}}</p>
+        </div>
+        <button class="cross-btn-icon border-0 p-0" type="button" (click)="closeModal()">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="card-body mb-0">
+        <!-- Premium Shift Summary Banner -->
+        <div class="shift-summary-banner">
+          <div class="banner-content">
+            <div class="banner-label">Active Shift Name</div>
+            <div class="banner-value">{{ selectedShift?.shiftName }}</div>
+            <div class="banner-subtitle">
+              <span class="pulse-indicator" [ngClass]="{'deactive': selectedShift?.is_active !== 1}"></span>
+              Status: 
+              <span class="status-badge-pill" [ngClass]="selectedShift?.is_active === 1 ? 'active' : 'deactive'">
+                {{ selectedShift?.is_active === 1 ? 'Active' : 'Inactive' }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Shift Details Grid Section -->
+        <div class="grid-section-title">Timing & Policy Parameters</div>
+        <div class="row g-3">
+          <div class="col-md-4">
+            <div class="glass-info-card">
+              <div class="card-icon-wrapper timing">
+                <i class="fa-solid fa-clock"></i>
+              </div>
+              <div class="card-info-content">
+                <span class="info-label">Shift Timing</span>
+                <span class="info-value text-dark fs-7">{{ selectedShift?.startTime }} - {{ selectedShift?.endTime }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="glass-info-card">
+              <div class="card-icon-wrapper hours">
+                <i class="fa-solid fa-business-time"></i>
+              </div>
+              <div class="card-info-content">
+                <span class="info-label">Min Working Hours</span>
+                <span class="info-value text-dark fs-7">{{ selectedShift?.minWorkingHours }} hrs</span>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="glass-info-card">
+              <div class="card-icon-wrapper grace">
+                <i class="fa-solid fa-hourglass-half"></i>
+              </div>
+              <div class="card-info-content">
+                <span class="info-label">Grace Time</span>
+                <span class="info-value text-dark fs-7">{{ selectedShift?.graceTime }} mins</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer text-end">
+        <button class="btn btn-premium-close px-4 py-2" type="button" (click)="closeModal()">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

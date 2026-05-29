@@ -1,0 +1,521 @@
+// Custom variable configurations mapping theme colors
+$primary-color: #468faf; // Coal mine steel blue branding
+$dark-slate: #0f172a;
+$light-bg: #f8fafc;
+$border-color: #e2e8f0;
+
+.container {
+  max-width: 1320px;
+}
+
+// Table-heading detail
+.table-heading-detail {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: $primary-color;
+  letter-spacing: -0.025em;
+}
+
+// Custom input classes matching overall aesthetic
+.form-input-custom {
+  border: 1px solid $border-color;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  background-color: #ffffff;
+  color: $dark-slate;
+
+  &:focus {
+    border-color: lighten($primary-color, 15%);
+    box-shadow: 0 0 0 0.2rem rgba($primary-color, 0.15);
+    outline: 0;
+  }
+}
+
+.form-lable-custom {
+  font-size: 0.815rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+// Hover micro-animations
+.hover-up {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+  }
+  
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+// Custom table styles
+.custom-table {
+  thead {
+    th {
+      font-size: 0.775rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #475569;
+      background-color: #f1f5f9;
+      padding: 12px 16px;
+      vertical-align: middle;
+      border-bottom: 2px solid $border-color;
+    }
+  }
+
+  tbody {
+    tr {
+      transition: background-color 0.15s ease;
+      
+      &:hover {
+        background-color: rgba($primary-color, 0.02) !important;
+      }
+    }
+    
+    td {
+      padding: 14px 16px;
+      font-size: 0.875rem;
+      color: #334155;
+      vertical-align: middle;
+      border-bottom: 1px solid $border-color;
+    }
+  }
+}
+
+// Custom badge utility overrides
+.badge {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  
+  &.fs-7 {
+    font-size: 0.85rem;
+  }
+  
+  &.fs-8 {
+    font-size: 0.75rem;
+  }
+}
+
+// Buttons
+.btn-custom-primary {
+  background-color: $primary-color;
+  color: white;
+  border: 1px solid $primary-color;
+  font-weight: 500;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background-color: darken($primary-color, 8%);
+    border-color: darken($primary-color, 8%);
+    color: white;
+  }
+}
+
+// Pagination controls customization
+.my-pagination ::ng-deep {
+  .ngx-pagination {
+    margin-bottom: 0;
+    padding-left: 0;
+    
+    li {
+      border-radius: 4px;
+      margin-right: 4px;
+      
+      a {
+        color: $primary-color;
+        text-decoration: none;
+        
+        &:hover {
+          background-color: rgba($primary-color, 0.1);
+        }
+      }
+      
+      &.current {
+        background-color: $primary-color;
+        border-color: $primary-color;
+        color: white;
+      }
+      
+      &.disabled {
+        color: #94a3b8;
+      }
+    }
+  }
+}
+
+// Double border for payslip header
+.border-bottom-double {
+  border-bottom: 3px double $border-color;
+}
+
+// Table alignments
+.table-borderless-aligned {
+  td {
+    border: none !important;
+  }
+}
+
+.aligned-grids-table {
+  border: 1px solid $border-color;
+  
+  th {
+    font-weight: 700;
+    font-size: 0.825rem;
+    color: #475569;
+    letter-spacing: 0.05em;
+  }
+}
+// Custom fixed modal overlay with perfect centering and backdrop blur
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(15, 23, 42, 0.4);
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  align-items: center; /* Center modal perfectly */
+  backdrop-filter: blur(4px);
+  overflow: hidden; /* No scrollbars on overlay */
+}
+
+// Custom Payslip Styling matching Coal Gold Mine premium guidelines
+.payslip-modal-container {
+  border-radius: 12px !important;
+  overflow: hidden;
+  border: 1px solid #cbd5e1;
+  background-color: #ffffff;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+  font-family: 'Montserrat', sans-serif !important;
+  width: 780px !important;
+  max-width: 95%;
+  height: auto !important;
+  max-height: 98vh; /* Limit viewport height */
+  display: flex;
+  flex-direction: column;
+  
+  * {
+    font-family: 'Montserrat', sans-serif !important;
+  }
+  
+  .modal-header-custom {
+    background-color: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    flex: 0 0 auto;
+    padding: 10px 18px !important; /* Very compact */
+    
+    h4 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #0f172a;
+      letter-spacing: -0.01em;
+    }
+  }
+
+  // Strictly NO scrollbar - content is compact enough to fit perfectly
+  .payslip-print-container {
+    overflow: hidden !important; /* Disables all scrollbars */
+    flex: 1 1 auto;
+    padding: 16px 20px !important; /* Highly compact padding */
+  }
+
+  .modal-footer {
+    flex: 0 0 auto;
+    background-color: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+    padding: 10px 18px !important; /* Very compact */
+  }
+}
+
+.header-branding {
+  margin-bottom: 14px !important; /* Ultra-compact margin */
+  
+  .payslip-logo {
+    display: block;
+    height: 48px !important; /* Shrink logo slightly to fit perfectly */
+  }
+  
+  .statement-month {
+    font-size: 0.9rem !important;
+    font-weight: 800 !important;
+    color: #475569 !important;
+  }
+}
+
+.employee-details-grid {
+  background-color: #f8fafc;
+  padding: 10px 16px !important; /* Ultra-compact grid padding */
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 14px !important; /* Ultra-compact margin */
+  
+  .mb-3 {
+    margin-bottom: 8px !important; /* Shrink details spacing */
+  }
+  
+  .detail-label {
+    color: #64748b;
+    font-size: 0.65rem !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.04em;
+  }
+  
+  .detail-value {
+    color: #0f172a !important;
+    font-weight: 700;
+    font-size: 0.85rem !important; /* Clean readable compact font */
+  }
+}
+
+.earnings-deductions-container {
+  margin-bottom: 14px !important;
+}
+
+.table-container-card {
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
+  transition: all 0.2s ease;
+  border-color: #e2e8f0 !important;
+  border-radius: 8px;
+  padding: 10px 12px !important; /* Highly compact padding */
+  
+  &:hover {
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+    border-color: #cbd5e1 !important;
+  }
+  
+  .card-section-title {
+    color: $primary-color !important; /* Rich brand steel blue! */
+    font-size: 0.85rem !important;
+    border-bottom: 2px solid rgba(70, 143, 175, 0.15) !important; /* Soft blue bottom border */
+    padding-bottom: 6px !important;
+    letter-spacing: 0.05em;
+    font-weight: 700;
+  }
+  
+  table {
+    thead tr th {
+      font-size: 0.68rem !important;
+      padding-bottom: 4px !important;
+    }
+    
+    tbody tr td {
+      font-size: 0.78rem !important;
+      padding-top: 5px !important;
+      padding-bottom: 5px !important; /* Tight row heights */
+    }
+    
+    tbody tr.fw-bold td {
+      padding-top: 10px !important; /* Tight totals padding */
+    }
+  }
+}
+
+.net-salary-box {
+  background-color: rgba(70, 143, 175, 0.05) !important; /* Soft blue tint */
+  border: 1px solid rgba(70, 143, 175, 0.15) !important; /* Subtle blue border */
+  border-radius: 8px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 1px 3px rgba(70, 143, 175, 0.02);
+  margin-bottom: 14px !important;
+  padding: 10px 16px !important; /* Highly compact net layout */
+  
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(70, 143, 175, 0.05);
+  }
+  
+  .net-salary-title {
+    color: $primary-color !important; /* Rich brand dark green! */
+    font-size: 0.85rem !important;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+  }
+  
+  span {
+    font-size: 0.7rem !important;
+  }
+  
+  .net-salary-amount {
+    color: $primary-color !important; /* Rich brand dark green! */
+    font-size: 1.6rem !important; /* Compact salary number */
+    font-weight: 800;
+  }
+}
+
+.signature-section {
+  margin-top: 20px !important; /* Ultra-compact spacing */
+  
+  .border-top {
+    border-top: 1.5px solid #94a3b8 !important;
+  }
+  
+  .text-secondary {
+    font-size: 0.6rem !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.05em;
+  }
+}
+
+.disclaimer-text {
+  font-size: 0.7rem !important;
+  color: #64748b !important;
+  margin-top: 20px !important; /* Compact bottom text */
+}
+
+// Print styles using media queries
+@media print {
+  // Hide every main shell component, sidebars, header bar, and backgrounds
+  body * {
+    visibility: hidden !important;
+  }
+
+  html, body {
+    height: 99% !important;
+    background: #ffffff !important;
+    font-size: 11pt !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  // Position and render only the selected payslip container
+  .payslip-print-container, 
+  .payslip-print-container * {
+    visibility: visible !important;
+  }
+
+  .payslip-print-container {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 20px !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+    display: block !important;
+    overflow: visible !important;
+    max-height: none !important;
+  }
+
+  // Maintain grid structures on printed document
+  .employee-details-grid {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    background-color: #f8fafc !important;
+    border: 1px solid #cbd5e1 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    padding: 8px 12px !important;
+    margin-bottom: 12px !important;
+    
+    .col-md-4 {
+      width: 33.3333% !important;
+      flex: 0 0 33.3333% !important;
+      max-width: 33.3333% !important;
+    }
+  }
+
+  .earnings-deductions-container {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    gap: 15px !important;
+    margin-bottom: 12px !important;
+    
+    .col-md-6 {
+      width: 50% !important;
+      flex: 0 0 50% !important;
+      max-width: 50% !important;
+    }
+  }
+
+  .table-container-card {
+    border: 1px solid #cbd5e1 !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+    border-radius: 8px !important;
+    padding: 10px 12px !important;
+    
+    .card-section-title {
+      color: $primary-color !important;
+      border-bottom: 1px solid rgba(70, 143, 175, 0.15) !important;
+      padding-bottom: 5px !important;
+    }
+  }
+
+  .net-salary-box {
+    background-color: rgba(70, 143, 175, 0.05) !important;
+    border: 1px solid rgba(70, 143, 175, 0.15) !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: 10px 12px !important;
+    border-radius: 8px !important;
+    margin-bottom: 12px !important;
+    
+    .net-salary-title, .net-salary-amount, span {
+      color: $primary-color !important;
+    }
+  }
+
+  .signature-section {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    margin-top: 20px !important;
+    
+    .col-4 {
+      width: 30% !important;
+      flex: 0 0 30% !important;
+      max-width: 30% !important;
+    }
+  }
+
+  // double border style on print
+  .border-bottom-double {
+    border-bottom: 3px double #000000 !important;
+  }
+
+  // Hide general interactive modals, backdrop screens, etc.
+  .no-print, 
+  .modal-header-custom, 
+  .modal-footer, 
+  button, 
+  .btn,
+  .modal-overlay:not(.print-only-modal) {
+    display: none !important;
+    height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .modal-overlay.print-only-modal {
+    position: absolute !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    display: block !important;
+  }
+
+  .payslip-modal-container {
+    box-shadow: none !important;
+    border: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+  }
+}
+

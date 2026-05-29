@@ -1,0 +1,622 @@
+<div class="container mb-5">
+  <!-- Page Header -->
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+    <div>
+      <h1 class="text-primary table-heading-detail mb-1">Leave Management</h1>
+      <p class="text-muted mb-0 fs-6">Manage employee leaves, track balances, and handle approvals.</p>
+    </div>
+
+    <!-- Simulator Role Picker -->
+    <div class="d-flex align-items-center gap-2 bg-light border p-2 rounded-3">
+      <span class="text-muted fs-8 fw-bold text-uppercase me-1"><i class="fa-solid fa-flask text-primary me-1"></i>Test
+        Role:</span>
+      <select class="form-select form-select-sm border-0 bg-transparent fw-bold text-dark ps-0"
+        [(ngModel)]="simulatedRole" style="width: 150px; outline: none; box-shadow: none;">
+        <option value="Supervisor">Supervisor</option>
+        <option value="Project Manager">Project Manager</option>
+        <option value="HR">HR Officer</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Navigation Tabs -->
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white border-0 pt-3 px-4 pb-0">
+      <ul class="nav nav-tabs border-bottom-0">
+        <li class="nav-item cursor-pointer">
+          <a class="nav-link custom-tab" [ngClass]="{'active': activeTab === 'apply'}" (click)="activeTab = 'apply'">
+            <i class="fa-solid fa-pen-to-square me-2"></i>Apply Leave
+          </a>
+        </li>
+        <li class="nav-item cursor-pointer">
+          <a class="nav-link custom-tab position-relative" [ngClass]="{'active': activeTab === 'inbox'}"
+            (click)="activeTab = 'inbox'">
+            <i class="fa-solid fa-inbox me-2"></i>Approval Inbox
+            <span *ngIf="getInboxRequests().length > 0"
+              class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger fs-9">
+              {{ getInboxRequests().length }}
+            </span>
+          </a>
+        </li>
+        <li class="nav-item cursor-pointer">
+          <a class="nav-link custom-tab" [ngClass]="{'active': activeTab === 'history'}"
+            (click)="activeTab = 'history'">
+            <i class="fa-solid fa-clock-rotate-left me-2"></i>Leave History
+          </a>
+        </li>
+        <!-- <li class="nav-item cursor-pointer">
+          <a class="nav-link custom-tab" [ngClass]="{'active': activeTab === 'balances'}" (click)="activeTab = 'balances'">
+            <i class="fa-solid fa-scale-balanced me-2"></i>Leave Balances
+          </a>
+        </li> -->
+      </ul>
+    </div>
+  </div>
+
+  <!-- Tab Views -->
+  <div class="row g-4">
+
+    <!-- Tab 1: Apply Leave -->
+    <div class="col-12" *ngIf="activeTab === 'apply'">
+      <div class="row g-4">
+
+        <!-- Left: Form -->
+        <div class="col-lg-7">
+          <div class="card border-0 shadow-sm h-100">
+            <div class="card-body p-4">
+              <h5 class="fw-bold text-dark mb-4">
+                <i class="fa-solid fa-paper-plane text-primary me-2"></i>
+                Submit Leave Application
+              </h5>
+
+              <form [formGroup]="leaveApplyForm" (ngSubmit)="submitLeaveRequest()">
+                <div class="mb-3">
+                  <label class="form-label form-lable-custom">Select Employee <span class="text-danger">*</span></label>
+                  <select class="form-select form-input-custom" formControlName="empId">
+                    <option value="">Choose Employee</option>
+                    <option *ngFor="let emp of employees" [value]="emp.id || emp.user_id">
+                      {{ emp.name || emp.first_name + ' ' + (emp.last_name || '') }} ({{ emp.id || emp.user_id }})
+                    </option>
+                  </select>
+                </div>
+
+                <div class="row g-3 mb-3">
+                  <div class="col-md-6">
+                    <label class="form-label form-lable-custom">Start Date <span class="text-danger">*</span></label>
+                    <input type="date" class="form-control form-input-custom" formControlName="startDate">
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label form-lable-custom">End Date <span class="text-danger">*</span></label>
+                    <input type="date" class="form-control form-input-custom" formControlName="endDate">
+                  </div>
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label form-lable-custom">Leave Type <span class="text-danger">*</span></label>
+                  <select class="form-select form-input-custom" formControlName="leaveType">
+                    <option value="">Select Type</option>
+                    <option *ngFor="let type of leaveTypes" [value]="type">{{ type }}</option>
+                  </select>
+                </div>
+
+                <div class="mb-4">
+                  <label class="form-label form-lable-custom">Reason for Leave <span
+                      class="text-danger">*</span></label>
+                  <textarea class="form-control form-input-custom" formControlName="reason" rows="3"
+                    placeholder="Explain the reason for leave..."></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-custom-primary w-100 py-3 fw-bold hover-up"
+                  [disabled]="leaveApplyForm.invalid">
+                  <i class="fa-solid fa-paper-plane me-2"></i> Submit Leave Request
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Rules & Guideline Cards -->
+        <div class="col-lg-5">
+          <div class="card border-0 shadow-sm h-100 bg-light-subtle">
+            <div class="card-body p-4">
+              <h5 class="fw-bold text-dark mb-3">
+                <i class="fa-solid fa-circle-info text-primary me-2"></i>
+                Leave Rules & Guidelines
+              </h5>
+
+              <div class="d-flex flex-column gap-3 mt-4">
+                <!-- <div class="p-3 bg-white rounded border border-light-subtle d-flex align-items-start gap-3">
+                  <div class="bg-primary-subtle text-primary p-2 rounded-circle fs-8">
+                    <i class="fa-solid fa-ban"></i>
+                  </div>
+                  <div>
+                    <h6 class="fw-bold mb-1 text-dark fs-7">No Carry Forward</h6>
+                    <p class="text-muted fs-8 mb-0">Leave balances are reset yearly on January 1st. Unused leaves will expire.</p>
+                  </div>
+                </div> -->
+
+                <div class="p-3 bg-white rounded border border-light-subtle d-flex align-items-start gap-3">
+                  <div class="bg-warning-subtle text-warning p-2 rounded-circle fs-8">
+                    <i class="fa-solid fa-scale-unbalanced-flip"></i>
+                  </div>
+                  <div>
+                    <h6 class="fw-bold mb-1 text-dark fs-7">Unpaid Leaves</h6>
+                    <p class="text-muted fs-8 mb-0">Unpaid leaves do not have a limit, but they will result in salary
+                      deductions during payroll processing.</p>
+                  </div>
+                </div>
+
+                <div class="p-3 bg-white rounded border border-light-subtle d-flex align-items-start gap-3">
+                  <div class="bg-success-subtle text-success p-2 rounded-circle fs-8">
+                    <i class="fa-solid fa-sync"></i>
+                  </div>
+                  <div>
+                    <h6 class="fw-bold mb-1 text-dark fs-7">Attendance Auto-Sync</h6>
+                    <p class="text-muted fs-8 mb-0">Once the request receives final HR approval, daily attendance logs
+                      for those dates are automatically marked as 'Leave'.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 2: Approval Inbox -->
+    <div class="col-12" *ngIf="activeTab === 'inbox'">
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4 pt-0">
+          <div class="d-flex justify-content-between align-items-center flex-wrap py-3 mb-2">
+            <h5 class="fw-bold text-dark mb-0">
+              <i class="fa-solid fa-inbox text-primary me-2"></i>
+              Incoming Requests (Simulating: {{ simulatedRole }})
+            </h5>
+          </div>
+
+          <div class="table-responsive border rounded-3">
+            <table class="table table-bordered align-middle mb-0 custom-table">
+              <thead class="table-light">
+                <tr>
+                  <th class="ps-3">Request ID</th>
+                  <th>Employee</th>
+                  <th>Leave Type</th>
+                  <th class="text-center">Dates</th>
+                  <th class="text-center">Days</th>
+                  <th>Reason</th>
+                  <th class="text-center">Current Stage</th>
+                  <th class="text-center pe-3">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  *ngFor="let req of getInboxRequests() | paginate: { id: 'inbox-pagination', itemsPerPage: 5, currentPage: pInbox }"
+                  class="hover-bg-light transition">
+                  <td class="ps-3 fw-bold text-dark fs-7">{{ req.id }}</td>
+                  <td>
+                    <div class="d-flex flex-column">
+                      <span class="fw-bold text-dark fs-7">{{ req.empName }}</span>
+                      <span class="text-muted fs-8">{{ req.empId }}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="badge bg-light text-primary border fs-8 px-2 py-1">{{ req.leaveType }}</span>
+                  </td>
+                  <td class="text-center fs-7">
+                    <span class="fw-medium text-dark">{{ req.startDate | date:'dd MMM' }}</span> to
+                    <span class="fw-medium text-dark">{{ req.endDate | date:'dd MMM yyyy' }}</span>
+                  </td>
+                  <td class="text-center fw-bold text-dark fs-7">{{ getLeaveDays(req.startDate, req.endDate) }}</td>
+                  <td class="text-truncate fs-7" style="max-width: 150px;" [title]="req.reason">{{ req.reason }}</td>
+                  <td class="text-center fs-7">
+                    <span class="fw-medium text-dark">
+                      {{ req.status }}
+                    </span>
+                  </td>
+                  <td class="text-center pe-3">
+                    <div class="d-flex justify-content-center gap-2">
+                      <button class="btn-action view-btn"
+                        (click)="openViewModal(req)" data-tooltip="View Details">
+                        <i class="fa-solid fa-eye"></i>
+                      </button>
+                      <button class="btn-action activate-btn"
+                        (click)="approveRequest(req)" data-tooltip="Approve Request">
+                        <i class="fa-solid fa-check"></i>
+                      </button>
+                      <button class="btn-action deactivate-btn"
+                        (click)="rejectRequest(req)" data-tooltip="Reject Request">
+                        <i class="fa-solid fa-xmark"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <tr *ngIf="getInboxRequests().length === 0">
+                  <td colspan="8" class="text-center py-5 text-muted">
+                    <div class="d-flex flex-column align-items-center">
+                      <i class="fa-solid fa-circle-check display-4 text-light mb-3"></i>
+                      <p class="mb-0 fs-5 fw-medium text-dark">No pending approvals.</p>
+                      <p class="fs-7 text-muted">Inbox is completely clear for the {{ simulatedRole }} role.</p>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card-footer bg-white border-0 py-3 px-4" *ngIf="getInboxRequests().length > 0">
+          <pagination-controls id="inbox-pagination" (pageChange)="pInbox = $event"
+            class="my-pagination"></pagination-controls>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 3: Leave History -->
+    <div class="col-12" *ngIf="activeTab === 'history'">
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4 pt-0">
+          <div class="py-3 mb-2">
+            <h5 class="fw-bold text-dark mb-0">
+              <i class="fa-solid fa-clock-rotate-left text-primary me-2"></i>
+              Processed Applications History
+            </h5>
+          </div>
+
+          <div class="table-responsive border rounded-3">
+            <table class="table table-bordered align-middle mb-0 custom-table">
+              <thead class="table-light">
+                <tr>
+                  <th class="ps-3">Request ID</th>
+                  <th>Employee</th>
+                  <th>Leave Type</th>
+                  <th class="text-center">Dates</th>
+                  <th class="text-center">Days</th>
+                  <th class="text-center">Status</th>
+                  <th>Applied On</th>
+                  <th>Workflow Comments</th>
+                  <th class="text-center pe-3">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  *ngFor="let req of getHistoryRequests() | paginate: { id: 'history-pagination', itemsPerPage: 10, currentPage: pHistory }"
+                  class="hover-bg-light transition">
+                  <td class="ps-3 fw-bold text-dark fs-7">{{ req.id }}</td>
+                  <td>
+                    <div class="d-flex flex-column">
+                      <span class="fw-bold text-dark fs-7">{{ req.empName }}</span>
+                      <span class="text-muted fs-8">{{ req.empId }}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="badge bg-light text-primary border fs-8 px-2 py-1">{{ req.leaveType }}</span>
+                  </td>
+                  <td class="text-center fs-7">
+                    <span class="fw-medium text-dark">{{ req.startDate | date:'dd MMM' }}</span> to
+                    <span class="fw-medium text-dark">{{ req.endDate | date:'dd MMM yyyy' }}</span>
+                  </td>
+                  <td class="text-center fw-bold text-dark fs-7">{{ getLeaveDays(req.startDate, req.endDate) }}</td>
+                  <td class="text-center">
+                    <span class="badge px-3 py-2 fs-8 fw-bold rounded-pill" [ngClass]="getStatusClass(req.status)">
+                      {{ req.status }}
+                    </span>
+                  </td>
+                  <td class="fs-7">{{ req.appliedDate | date:'dd MMM yyyy' }}</td>
+                  <td class="text-muted fs-7 italic" style="max-width: 150px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" [title]="req.comments || ''">{{ req.comments || 'No comments' }}</td>
+                  <td class="text-center pe-3">
+                    <button class="btn-action view-btn" (click)="openViewModal(req)" data-tooltip="View Details">
+                      <i class="fa-solid fa-eye"></i>
+                    </button>
+                  </td>
+                </tr>
+                <tr *ngIf="getHistoryRequests().length === 0">
+                  <td colspan="9" class="text-center py-5 text-muted">
+                    <div class="d-flex flex-column align-items-center">
+                      <i class="fa-solid fa-hourglass display-4 text-light mb-3"></i>
+                      <p class="mb-0 fs-5 fw-medium text-dark">No leave history records.</p>
+                      <p class="fs-7 text-muted">Approved or rejected records will appear here.</p>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card-footer bg-white border-0 py-3 px-4" *ngIf="getHistoryRequests().length > 0">
+          <pagination-controls id="history-pagination" (pageChange)="pHistory = $event"
+            class="my-pagination"></pagination-controls>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 4: Leave Balances -->
+    <!-- <div class="col-12" *ngIf="activeTab === 'balances'">
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4 pt-0">
+          <div class="d-flex justify-content-between align-items-center flex-wrap py-3 mb-2">
+            <h5 class="fw-bold text-dark mb-0">
+              <i class="fa-solid fa-scale-balanced text-primary me-2"></i>
+              Employee Leave Balances
+            </h5>
+
+            <button class="btn btn-outline-primary py-2 d-flex align-items-center justify-content-center gap-2 hover-up"
+              (click)="triggerYearlyReset()">
+              <i class="fa-solid fa-rotate-right"></i> Trigger Yearly Reset
+            </button>
+          </div>
+
+          <div class="table-responsive border rounded-3">
+            <table class="table table-bordered align-middle mb-0 custom-table">
+              <thead class="table-light">
+                <tr>
+                  <th class="ps-3">Employee</th>
+                  <th class="text-center">Casual Leave</th>
+                  <th class="text-center">Sick Leave</th>
+                  <th class="text-center">Paid Leave</th>
+                  <th class="text-center">Unpaid Leave (Consumed)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  *ngFor="let balance of leaveBalances | paginate: { id: 'balances-pagination', itemsPerPage: 10, currentPage: pBalances }"
+                  class="hover-bg-light transition">
+                  <td class="ps-3">
+                    <div class="d-flex flex-column">
+                      <span class="fw-bold text-dark fs-7">{{ balance.empName }}</span>
+                      <span class="text-muted fs-8">{{ balance.empId }}</span>
+                    </div>
+                  </td>
+                  <td class="text-center">
+                    <div class="d-flex flex-column">
+                      <span class="fw-bold text-dark fs-7">{{ balance.casual.total - balance.casual.consumed }} / {{
+                        balance.casual.total }}</span>
+                      <span class="text-muted fs-9">Days Remaining</span>
+                    </div>
+                  </td>
+                  <td class="text-center">
+                    <div class="d-flex flex-column">
+                      <span class="fw-bold text-dark fs-7">{{ balance.sick.total - balance.sick.consumed }} / {{
+                        balance.sick.total }}</span>
+                      <span class="text-muted fs-9">Days Remaining</span>
+                    </div>
+                  </td>
+                  <td class="text-center">
+                    <div class="d-flex flex-column">
+                      <span class="fw-bold text-dark fs-7">{{ balance.paid.total - balance.paid.consumed }} / {{
+                        balance.paid.total }}</span>
+                      <span class="text-muted fs-9">Days Remaining</span>
+                    </div>
+                  </td>
+                  <td class="text-center">
+                    <div class="d-flex flex-column">
+                      <span class="fw-bold text-danger fs-7">{{ balance.unpaid.consumed }}</span>
+                      <span class="text-muted fs-9">Days Consumed</span>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card-footer bg-white border-0 py-3 px-4">
+          <pagination-controls id="balances-pagination" (pageChange)="pBalances = $event"
+            class="my-pagination"></pagination-controls>
+        </div>
+      </div>
+    </div> -->
+
+  </div>
+</div>
+
+<!-- Premium View Details Modal -->
+<div *ngIf="viewLeaveOpen" class="your-animation-class modal-container premium-detail-modal" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+  <div class="modal-contenttop modal-content-50" [@fadeIn]>
+    <div class="card">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <div>
+          <h5 class="modal-title pt-1 mb-0">Leave Request Details</h5>
+          <p class="modal-subtitle">Full breakdown and history of Request ID: #{{ selectedLeave?.id }}</p>
+        </div>
+        <button class="cross-btn-icon border-0 p-0" type="button" (click)="closeViewModal()">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="card-body mb-0">
+        <!-- Premium Status and Duration Banner -->
+        <div class="leave-summary-banner" [ngClass]="{
+          'status-approved': selectedLeave?.status === 'Approved',
+          'status-rejected': selectedLeave?.status === 'Rejected',
+          'status-pending': selectedLeave?.status === 'Pending Supervisor',
+          'status-pending-pm': selectedLeave?.status === 'Pending PM',
+          'status-pending-hr': selectedLeave?.status === 'Pending HR'
+        }">
+          <div class="banner-left">
+            <div class="banner-label">Application Status</div>
+            <div class="banner-value">{{ selectedLeave?.status }}</div>
+          </div>
+          <div class="banner-right">
+            <span class="days-number">{{ getLeaveDays(selectedLeave?.startDate, selectedLeave?.endDate) }}</span>
+            <span class="days-label">{{ getLeaveDays(selectedLeave?.startDate, selectedLeave?.endDate) === 1 ? 'Day' : 'Days' }}</span>
+          </div>
+        </div>
+
+        <!-- Employee Info Section -->
+        <div class="grid-section-title">Employee Information</div>
+        <div class="row g-3 mb-4">
+          <div class="col-12">
+            <div class="glass-info-card">
+              <div class="avatar-circle">
+                {{ selectedLeave?.empName?.charAt(0) || 'E' }}
+              </div>
+              <div class="card-info-content">
+                <span class="info-label">Applicant Name</span>
+                <span class="info-value">{{ selectedLeave?.empName }}</span>
+                <span class="info-subtitle">Employee ID: {{ selectedLeave?.empId }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Leave Details (Dates & Type) -->
+        <div class="grid-section-title">Leave Details</div>
+        <div class="row g-3 mb-4">
+          <div class="col-md-6">
+            <div class="glass-info-card">
+              <div class="card-icon-wrapper calendar">
+                <i class="fa-solid fa-calendar-days"></i>
+              </div>
+              <div class="card-info-content">
+                <span class="info-label">Leave Duration</span>
+                <span class="date-timeline">
+                  {{ selectedLeave?.startDate | date:'dd MMM yyyy' }} 
+                  <i class="fa-solid fa-arrow-right mx-1"></i> 
+                  {{ selectedLeave?.endDate | date:'dd MMM yyyy' }}
+                </span>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="glass-info-card">
+              <div class="card-icon-wrapper type">
+                <i class="fa-solid fa-hospital-user"></i>
+              </div>
+              <div class="card-info-content">
+                <span class="info-label">Leave Classification</span>
+                <span class="info-value text-primary">{{ selectedLeave?.leaveType }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Reason Section -->
+        <div class="reason-detail-box">
+          <div class="icon-box">
+            <i class="fa-solid fa-quote-left"></i>
+          </div>
+          <div class="reason-content">
+            <div class="reason-title">Reason for Leave</div>
+            <p class="reason-text">"{{ selectedLeave?.reason }}"</p>
+          </div>
+        </div>
+
+        <!-- Workflow approval timeline -->
+        <div class="grid-section-title">Approval Stages & History</div>
+        <div class="workflow-stages-container">
+          <div class="workflow-steps-vertical">
+            <!-- Stage 1: Submitted -->
+            <div class="step-item completed">
+              <div class="step-circle">
+                <i class="fa-solid fa-check"></i>
+              </div>
+              <div class="step-details">
+                <span class="step-title">Application Submitted</span>
+                <span class="step-subtitle">Applied on {{ selectedLeave?.appliedDate | date:'dd MMM yyyy' }}</span>
+              </div>
+            </div>
+
+            <!-- Stage 2: Supervisor approval -->
+            <div class="step-item" [ngClass]="{
+              'completed': selectedLeave?.status !== 'Pending Supervisor',
+              'active': selectedLeave?.status === 'Pending Supervisor',
+              'rejected': selectedLeave?.status === 'Rejected' && selectedLeave?.comments && selectedLeave?.comments?.indexOf('Supervisor') !== -1
+            }">
+              <div class="step-circle">
+                <i class="fa-solid" [ngClass]="{
+                  'fa-check': selectedLeave?.status !== 'Pending Supervisor' && !(selectedLeave?.status === 'Rejected' && selectedLeave?.comments && selectedLeave?.comments?.indexOf('Supervisor') !== -1),
+                  'fa-xmark': selectedLeave?.status === 'Rejected' && selectedLeave?.comments && selectedLeave?.comments?.indexOf('Supervisor') !== -1
+                }"></i>
+              </div>
+              <div class="step-details">
+                <span class="step-title">Supervisor Stage</span>
+                <span class="step-subtitle">
+                  {{ selectedLeave?.status === 'Pending Supervisor' ? 'Awaiting supervisor approval' : 
+                     (selectedLeave?.status === 'Rejected' && selectedLeave?.comments && selectedLeave?.comments?.indexOf('Supervisor') !== -1 ? 'Rejected by Supervisor' : 'Approved') }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Stage 3: PM approval -->
+            <div class="step-item" [ngClass]="{
+              'completed': selectedLeave?.status === 'Pending HR' || selectedLeave?.status === 'Approved',
+              'active': selectedLeave?.status === 'Pending PM',
+              'rejected': selectedLeave?.status === 'Rejected' && selectedLeave?.comments && selectedLeave?.comments?.indexOf('PM') !== -1
+            }">
+              <div class="step-circle">
+                <i class="fa-solid" [ngClass]="{
+                  'fa-check': (selectedLeave?.status === 'Pending HR' || selectedLeave?.status === 'Approved'),
+                  'fa-xmark': selectedLeave?.status === 'Rejected' && selectedLeave?.comments && selectedLeave?.comments?.indexOf('PM') !== -1
+                }"></i>
+              </div>
+              <div class="step-details">
+                <span class="step-title">Project Manager Stage</span>
+                <span class="step-subtitle">
+                  {{ selectedLeave?.status === 'Pending Supervisor' ? 'Awaiting previous stage' : 
+                     (selectedLeave?.status === 'Pending PM' ? 'Awaiting PM approval' : 
+                     (selectedLeave?.status === 'Rejected' && selectedLeave?.comments && selectedLeave?.comments?.indexOf('PM') !== -1 ? 'Rejected by PM' : 'Approved')) }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Stage 4: HR Final approval -->
+            <div class="step-item" [ngClass]="{
+              'completed': selectedLeave?.status === 'Approved',
+              'active': selectedLeave?.status === 'Pending HR',
+              'rejected': selectedLeave?.status === 'Rejected' && selectedLeave?.comments && selectedLeave?.comments?.indexOf('HR') !== -1
+            }">
+              <div class="step-circle">
+                <i class="fa-solid" [ngClass]="{
+                  'fa-check': selectedLeave?.status === 'Approved',
+                  'fa-xmark': selectedLeave?.status === 'Rejected' && selectedLeave?.comments && selectedLeave?.comments?.indexOf('HR') !== -1
+                }"></i>
+              </div>
+              <div class="step-details">
+                <span class="step-title">HR Finalization</span>
+                <span class="step-subtitle">
+                  {{ (selectedLeave?.status === 'Pending Supervisor' || selectedLeave?.status === 'Pending PM') ? 'Awaiting previous stages' : 
+                     (selectedLeave?.status === 'Pending HR' ? 'Awaiting HR final approval' : 
+                     (selectedLeave?.status === 'Rejected' && selectedLeave?.comments && selectedLeave?.comments?.indexOf('HR') !== -1 ? 'Rejected by HR' : 
+                     (selectedLeave?.status === 'Approved' ? 'Fully Approved & Synced' : 'Awaiting HR')) ) }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Decision Comments Box -->
+          <div class="comments-quote-box" *ngIf="selectedLeave?.comments">
+            <div class="comments-label">Decision Remarks</div>
+            <p class="comments-text">"{{ selectedLeave?.comments }}"</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer text-end d-flex justify-content-between align-items-center">
+        <!-- Quick Action Info (Left side of footer) -->
+        <div class="text-start">
+          <span class="text-muted fs-8 d-block">Test Simulator Mode</span>
+          <span class="badge bg-light text-dark border fs-9">Role: {{ simulatedRole }}</span>
+        </div>
+
+        <!-- Control Buttons -->
+        <div class="d-flex gap-2">
+          <!-- Standard close -->
+          <button class="btn btn-premium-close px-4 py-2" type="button" (click)="closeViewModal()">
+            Close
+          </button>
+          
+          <!-- Direct Inbox approvals if pending for simulated role -->
+          <ng-container *ngIf="selectedLeave">
+            <div *ngIf="(selectedLeave.status === 'Pending Supervisor' && simulatedRole === 'Supervisor') || 
+                        (selectedLeave.status === 'Pending PM' && simulatedRole === 'Project Manager') || 
+                        (selectedLeave.status === 'Pending HR' && simulatedRole === 'HR')">
+              <button class="btn btn-premium-reject px-4 py-2 me-2" type="button" (click)="selectedLeave && rejectRequest(selectedLeave); closeViewModal()">
+                <i class="fa-solid fa-xmark me-2"></i>Reject
+              </button>
+              <button class="btn btn-premium-approve px-4 py-2" type="button" (click)="selectedLeave && approveRequest(selectedLeave); closeViewModal()">
+                <i class="fa-solid fa-check me-2"></i>Approve
+              </button>
+            </div>
+          </ng-container>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,285 @@
+<div class="content">
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <h2 class="table-heading-detail tt-color" style="margin: 0; font-weight: 600;">Vehicle Master</h2>
+  </div>
+
+  <div class="mb-4" style="border-bottom: 1px solid #e0e6ed;">
+    <ul class="nav nav-tabs border-0" style="gap: 20px;">
+      <li class="nav-item" style="cursor: pointer;">
+        <a class="nav-link custom-tab-link" [class.active-tab]="activeTab === 'manufacturer'"
+          (click)="setTab('manufacturer')">Vehicle Manufacturer</a>
+      </li>
+      <li class="nav-item" style="cursor: pointer;">
+        <a class="nav-link custom-tab-link" [class.active-tab]="activeTab === 'model'" (click)="setTab('model')">Vehicle
+          Model</a>
+      </li>
+    </ul>
+  </div>
+
+  <div class="table-card bg-white rounded p-4">
+    <div class="d-flex justify-content-end mb-4">
+      <button *ngIf="activeTab === 'manufacturer'" class="btn btn-custom-primary"
+        style="background-color: #468faf; color: white;" (click)="openAddManufacturerModal()">Add Manufacturer</button>
+      <button *ngIf="activeTab === 'model'" class="btn btn-custom-primary"
+        style="background-color: #468faf; color: white;" (click)="openAddModelModal()">Add Model</button>
+    </div>
+
+    <div class="d-flex justify-content-between mb-4 align-items-center">
+      <div class="d-flex align-items-center">
+        <span style="font-size: 14px; color: #525f7f;">Show</span>
+        <input type="number" class="form-control mx-2 text-center"
+          style="width: 70px; height: 38px; border-color: #e2e8f0; border-radius: 4px;" [(ngModel)]="showEntries">
+        <span style="font-size: 14px; color: #525f7f;">entries</span>
+      </div>
+      <div class="position-relative">
+        <input type="text" class="form-control pe-5" placeholder="Search" [(ngModel)]="searchText"
+          style="height: 38px; width: 250px; border-color: #e2e8f0; border-radius: 4px; font-size: 14px;">
+        <i *ngIf="!searchText" class="fa-solid fa-search position-absolute"
+          style="right: 15px; top: 12px; color: #8898aa; font-size: 14px;"></i>
+        <i *ngIf="searchText" class="fa-solid fa-times position-absolute"
+          style="right: 15px; top: 12px; color: #8898aa; font-size: 14px; cursor: pointer;"
+          (click)="searchText = ''"></i>
+      </div>
+    </div>
+
+    <!-- Manufacturer Table -->
+    <div class="table-responsive" *ngIf="activeTab === 'manufacturer'">
+      <table mat-table [dataSource]="dataSourceManufacturer | paginate: { id: 'manufacturer-pagination', itemsPerPage: showEntries, currentPage: pManufacturer }" class="table table-hover w-100" style="margin-bottom: 0;">
+        <ng-container matColumnDef="id">
+          <th mat-header-cell *matHeaderCellDef class="table-new-heading font-weight-bold"
+            style="color: #8898aa; font-size: 11px; text-transform: uppercase; border-bottom: 1px solid #e9ecef;"> SR NO
+          </th>
+          <td mat-cell *matCellDef="let element"
+            style="border-bottom: 1px solid #e9ecef; color: #525f7f; font-size: 13px;"> {{element.id}} </td>
+        </ng-container>
+
+        <ng-container matColumnDef="manufacturerName">
+          <th mat-header-cell *matHeaderCellDef class="table-new-heading font-weight-bold"
+            style="color: #8898aa; font-size: 11px; text-transform: uppercase; border-bottom: 1px solid #e9ecef;">
+            MANUFACTURER NAME
+          </th>
+          <td mat-cell *matCellDef="let element"
+            style="border-bottom: 1px solid #e9ecef; color: #525f7f; font-size: 13px;">
+            {{element.manufacturerName}} </td>
+        </ng-container>
+
+        <ng-container matColumnDef="sortName">
+          <th mat-header-cell *matHeaderCellDef class="table-new-heading font-weight-bold"
+            style="color: #8898aa; font-size: 11px; text-transform: uppercase; border-bottom: 1px solid #e9ecef;"> SORT
+            NAME
+          </th>
+          <td mat-cell *matCellDef="let element"
+            style="border-bottom: 1px solid #e9ecef; color: #525f7f; font-size: 13px;"> {{element.sortName}} </td>
+        </ng-container>
+
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef class="table-new-heading font-weight-bold"
+            style="color: #8898aa; font-size: 11px; text-transform: uppercase; border-bottom: 1px solid #e9ecef;">
+            STATUS </th>
+          <td mat-cell *matCellDef="let element" style="border-bottom: 1px solid #e9ecef;">
+            <mat-slide-toggle [checked]="element.status" color="primary"></mat-slide-toggle>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="action">
+          <th mat-header-cell *matHeaderCellDef class="table-new-heading font-weight-bold"
+            style="color: #8898aa; font-size: 11px; text-transform: uppercase; border-bottom: 1px solid #e9ecef;">
+            ACTION </th>
+          <td mat-cell *matCellDef="let element" style="border-bottom: 1px solid #e9ecef;">
+            <div class="d-flex align-items-center gap-2">
+              <button class="btn-action edit-btn" data-tooltip="Edit">
+                <i class="fa-solid fa-pen-to-square"></i>
+              </button>
+            </div>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedManufacturerColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedManufacturerColumns;"></tr>
+      </table>
+      <div class="d-flex justify-content-between align-items-center mt-4">
+        <div style="font-size: 14px; color: #525f7f;">
+          Showing {{ (pManufacturer - 1) * showEntries + 1 }} to {{ (pManufacturer * showEntries > dataSourceManufacturer.length) ? dataSourceManufacturer.length : (pManufacturer * showEntries) }} of {{ dataSourceManufacturer.length }} entries
+        </div>
+        <pagination-controls id="manufacturer-pagination" (pageChange)="pManufacturer = $event" class="my-pagination"></pagination-controls>
+      </div>
+    </div>
+
+    <!-- Model Table -->
+    <div class="table-responsive" *ngIf="activeTab === 'model'">
+      <table mat-table [dataSource]="dataSourceModel | paginate: { id: 'model-pagination', itemsPerPage: showEntries, currentPage: pModel }" class="table table-hover w-100" style="margin-bottom: 0;">
+        <ng-container matColumnDef="id">
+          <th mat-header-cell *matHeaderCellDef class="table-new-heading font-weight-bold"
+            style="color: #8898aa; font-size: 11px; text-transform: uppercase; border-bottom: 1px solid #e9ecef;"> SR NO
+          </th>
+          <td mat-cell *matCellDef="let element"
+            style="border-bottom: 1px solid #e9ecef; color: #525f7f; font-size: 13px;"> {{element.id}} </td>
+        </ng-container>
+
+        <ng-container matColumnDef="modelName">
+          <th mat-header-cell *matHeaderCellDef class="table-new-heading font-weight-bold"
+            style="color: #8898aa; font-size: 11px; text-transform: uppercase; border-bottom: 1px solid #e9ecef;"> MODAL
+            NAME
+          </th>
+          <td mat-cell *matCellDef="let element"
+            style="border-bottom: 1px solid #e9ecef; color: #525f7f; font-size: 13px;">
+            {{element.modelName}} </td>
+        </ng-container>
+
+        <ng-container matColumnDef="manufacturerName">
+          <th mat-header-cell *matHeaderCellDef class="table-new-heading font-weight-bold"
+            style="color: #8898aa; font-size: 11px; text-transform: uppercase; border-bottom: 1px solid #e9ecef;">
+            MANUFACTURER NAME
+          </th>
+          <td mat-cell *matCellDef="let element"
+            style="border-bottom: 1px solid #e9ecef; color: #525f7f; font-size: 13px;"> {{element.manufacturerName}}
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="fuelType">
+          <th mat-header-cell *matHeaderCellDef class="table-new-heading font-weight-bold"
+            style="color: #8898aa; font-size: 11px; text-transform: uppercase; border-bottom: 1px solid #e9ecef;"> FUEL
+            TYPE
+          </th>
+          <td mat-cell *matCellDef="let element"
+            style="border-bottom: 1px solid #e9ecef; color: #525f7f; font-size: 13px;"> {{element.fuelType}} </td>
+        </ng-container>
+
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef class="table-new-heading font-weight-bold"
+            style="color: #8898aa; font-size: 11px; text-transform: uppercase; border-bottom: 1px solid #e9ecef;">
+            STATUS </th>
+          <td mat-cell *matCellDef="let element" style="border-bottom: 1px solid #e9ecef;">
+            <mat-slide-toggle [checked]="element.status" color="primary"></mat-slide-toggle>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="action">
+          <th mat-header-cell *matHeaderCellDef class="table-new-heading font-weight-bold"
+            style="color: #8898aa; font-size: 11px; text-transform: uppercase; border-bottom: 1px solid #e9ecef;">
+            ACTION </th>
+          <td mat-cell *matCellDef="let element" style="border-bottom: 1px solid #e9ecef;">
+            <div class="d-flex align-items-center gap-2">
+              <button class="btn-action edit-btn" data-tooltip="Edit">
+                <i class="fa-solid fa-pen-to-square"></i>
+              </button>
+            </div>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedModelColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedModelColumns;"></tr>
+      </table>
+      <div class="d-flex justify-content-between align-items-center mt-4">
+        <div style="font-size: 14px; color: #525f7f;">
+          Showing {{ (pModel - 1) * showEntries + 1 }} to {{ (pModel * showEntries > dataSourceModel.length) ? dataSourceModel.length : (pModel * showEntries) }} of {{ dataSourceModel.length }} entries
+        </div>
+        <pagination-controls id="model-pagination" (pageChange)="pModel = $event" class="my-pagination"></pagination-controls>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Manufacturer Modal -->
+<div *ngIf="createManufacturerOpen" class="your-animation-class modal-container" aria-labelledby="modal-title"
+  role="dialog" aria-modal="true">
+  <div class="modal-contenttop" style="max-width: 600px; margin: 30px auto;">
+    <form>
+      <div class="card border-0" style="border-radius: 8px;">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center border-0 p-4 pb-0">
+          <h5 class="modal-title pt-1 mb-0 tt-color" style="font-weight: 500;">Add Vehicle Manufacturer</h5>
+          <button class="cross-btn-icon main-btn bg-transparent border-0 pb-0 pt-1" type="button"
+            (click)="closeModal()">
+            <i class="fa-solid fa-xmark" style="color: #525f7f; font-size: 20px;"></i>
+          </button>
+        </div>
+        <div class="modal-content-widthtop card-body p-4">
+          <div class="row">
+            <div class="col-md-12 mb-3">
+              <label class="d-block form-label form-lable-custom mb-1"
+                style="font-weight: 400; font-size: 14px;">Name</label>
+              <input type="text" class="d-block form-control form-input-custom" placeholder="Manufacturer Name"
+                style="border-radius: 4px; border: 1px solid #e0e6ed;">
+            </div>
+
+            <div class="col-md-12 mb-3">
+              <label class="d-block form-label form-lable-custom mb-1" style="font-weight: 400; font-size: 14px;">Sort
+                Name</label>
+              <input type="text" class="d-block form-control form-input-custom" placeholder="Manufacturer Sort Name"
+                style="border-radius: 4px; border: 1px solid #e0e6ed;">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer border-0 p-4 pt-0 d-flex justify-content-end">
+          <button class="btn btn-secondary main-btnfs px-4 py-2 me-3"
+            style="background-color: #8898aa; border: none; color: white;" type="button"
+            (click)="closeModal()">Close</button>
+          <button class="btn btn-custom-primary px-4 py-2" type="button"
+            style="background-color: #468faf; color: white;">Save</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Add Model Modal -->
+<div *ngIf="createModelOpen" class="your-animation-class modal-container" aria-labelledby="modal-title" role="dialog"
+  aria-modal="true">
+  <div class="modal-contenttop" style="max-width: 700px; margin: 30px auto;">
+    <form>
+      <div class="card border-0" style="border-radius: 8px;">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center border-0 p-4 pb-0">
+          <h5 class="modal-title pt-1 mb-0 tt-color" style="font-weight: 500;">Add Vehicle Model</h5>
+          <button class="cross-btn-icon main-btn bg-transparent border-0 pb-0 pt-1" type="button"
+            (click)="closeModal()">
+            <i class="fa-solid fa-xmark" style="color: #525f7f; font-size: 20px;"></i>
+          </button>
+        </div>
+        <div class="modal-content-widthtop card-body p-4">
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="d-block form-label form-lable-custom mb-1" style="font-weight: 400; font-size: 14px;">Model
+                Name</label>
+              <input type="text" class="d-block form-control form-input-custom" placeholder="Model Name"
+                style="border-radius: 4px; border: 1px solid #e0e6ed;">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="d-block form-label form-lable-custom mb-1"
+                style="font-weight: 400; font-size: 14px;">Manufacturer</label>
+              <ng-select [items]="manufacturers" placeholder="Select Manufacturer" class="custom-ng-select"></ng-select>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="d-block form-label form-lable-custom mb-1"
+                style="font-weight: 400; font-size: 14px;">Batteries</label>
+              <input type="number" class="d-block form-control form-input-custom" placeholder="No Of Batteries"
+                style="border-radius: 4px; border: 1px solid #e0e6ed;">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="d-block form-label form-lable-custom mb-1"
+                style="font-weight: 400; font-size: 14px;">Tyres</label>
+              <input type="number" class="d-block form-control form-input-custom" placeholder="No Of Tyres"
+                style="border-radius: 4px; border: 1px solid #e0e6ed;">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="d-block form-label form-lable-custom mb-1" style="font-weight: 400; font-size: 14px;">Tyre
+                Type</label>
+              <ng-select [items]="tyreTypes" placeholder="Select Tyre Type" class="custom-ng-select"></ng-select>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="d-block form-label form-lable-custom mb-1" style="font-weight: 400; font-size: 14px;">Fuel
+                Type</label>
+              <ng-select [items]="fuelTypes" placeholder="Select Fuel Type" class="custom-ng-select"></ng-select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer border-0 p-4 pt-0 d-flex justify-content-end">
+          <button class="btn btn-secondary main-btnfs px-4 py-2 me-3"
+            style="background-color: #8898aa; border: none; color: white;" type="button"
+            (click)="closeModal()">Close</button>
+          <button class="btn btn-custom-primary px-4 py-2" type="button"
+            style="background-color: #468faf; color: white;">Save</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>

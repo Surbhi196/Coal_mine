@@ -1,0 +1,405 @@
+<div class="container mb-4">
+  <div class="d-flex justify-content-between align-items-center flex-wrap">
+    <h1 class="text-primary table-heading-detail">Safety Equipment Management</h1>
+    <div>
+      <button class="btn btn-custom-primary px-4 py-2 me-2" (click)="openAddModal()">
+        Add Category
+      </button>
+    </div>
+  </div>
+
+  <div class="card border-0 my-3 px-4 py-4">
+    <div class="d-md-flex justify-content-between align-items-center my-3">
+      <div class="d-flex align-items-center mb-md-0 mb-2">
+        <span class="me-1 show-entery-text">Show</span>
+        <select class="form-control form-select show-entries-select" (change)="onTableSizeChange($event)">
+          <option *ngFor="let size of tableSizes" [ngValue]="size">{{ size }}</option>
+        </select>
+        <span class="ms-1 show-entery-text">entries</span>
+      </div>
+
+      <div class="d-flex align-items-center">
+        <form [formGroup]="searchbarform" class="d-flex align-items-center">
+          <span class="me-1">Search:</span>
+          <div>
+            <input
+              type="text"
+              class="form-control search-user position-relative"
+              autocomplete="off"
+              formControlName="searchbar"
+              [ngClass]="{
+                'is-invalid':
+                  searchbarform.controls['searchbar'].errors &&
+                  (searchbarform.controls['searchbar'].touched || searchbarform.controls['searchbar'].dirty),
+              }"
+            />
+            <div
+              class="text-danger error-message d-block"
+              *ngIf="
+                searchbarform.controls['searchbar'].errors &&
+                (searchbarform.controls['searchbar'].touched || searchbarform.controls['searchbar'].dirty)
+              "
+            >
+              <p class="fw-light text-danger search-required"
+                *ngIf="searchbarform.controls['searchbar'].errors['required']">
+                This is required
+              </p>
+            </div>
+          </div>
+          <button class="btn btn-primary search-btn ms-2" (click)="searchfun()">
+            <span><i class="fa-solid fa-magnifying-glass form-control-feedback text-white"></i></span>
+          </button>
+          <button
+            class="btn btn-primary search-btn ms-2"
+            (click)="resetsearchbar()"
+            type="button"
+            *ngIf="showreset == true"
+          >
+            <span><i class="fa-solid fa-rotate-right form-control-feedback text-white"></i></span>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="table-responsive-sm mt-2">
+      <!-- Desktop Table -->
+      <div class="hidden lg:block">
+        <table class="table table-bordered table-hover table-striped mb-0">
+          <thead class="table-header">
+            <tr *ngFor="let detail of table_heading">
+              <th><p class="table-heading">{{ detail.heading0 }}</p></th>
+              <th><p class="table-heading">{{ detail.heading1 }}</p></th>
+              <th><p class="table-heading">{{ detail.heading2 }}</p></th>
+              <th><p class="table-heading">{{ detail.heading4 }}</p></th>
+              <th><p class="table-heading">{{ detail.heading5 }}</p></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              *ngFor="
+                let category of categoryList
+                  | paginate: {
+                      itemsPerPage: tableSize != 'all' ? tableSize : totalRecords,
+                      currentPage: page,
+                      totalItems: totalRecords
+                    };
+                index as i
+              "
+            >
+              <td>{{ tableSize * (page - 1) + i + 1 > 0 ? tableSize * (page - 1) + i + 1 : i + 1 }}</td>
+
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <div class="cat-icon-circle">
+                    <i class="fa-solid fa-tag"></i>
+                  </div>
+                  <span class="fw-semibold" style="font-size:0.88rem;">{{ category.categoryName }}</span>
+                </div>
+              </td>
+
+              <td>
+                <p class="text-muted mb-0" style="font-size:0.83rem; max-width:280px;">
+                  {{ category.description || '—' }}
+                </p>
+              </td>
+
+
+              <td>
+                <p
+                  [ngClass]="{
+                    'active-status': category.is_active == 1,
+                    'deactive-status': category.is_active != 1,
+                  }"
+                >
+                  {{ category.is_active == 1 ? 'Active' : 'Inactive' }}
+                </p>
+              </td>
+
+              <td>
+                <button mat-icon-button [matMenuTriggerFor]="menu">
+                  <mat-icon>more_vert</mat-icon>
+                </button>
+                <mat-menu #menu="matMenu">
+                  <button mat-menu-item (click)="OpenEditModal(category)">
+                    <mat-icon>edit</mat-icon> Edit
+                  </button>
+                  <button mat-menu-item (click)="openViewModal(category)">
+                    <mat-icon>visibility</mat-icon> View Details
+                  </button>
+                  <button
+                    mat-menu-item
+                    *ngIf="category.is_active; else inactiveBtn"
+                    (click)="Status(category.id, 0)"
+                  >
+                    <mat-icon>toggle_off</mat-icon> Deactivate
+                  </button>
+                  <ng-template #inactiveBtn>
+                    <button mat-menu-item (click)="Status(category.id, 1)">
+                      <mat-icon>toggle_on</mat-icon> Activate
+                    </button>
+                  </ng-template>
+                </mat-menu>
+              </td>
+            </tr>
+            <tr *ngIf="categoryList.length === 0">
+              <td colspan="6" class="text-center py-4 text-muted">No categories found.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Mobile Card View -->
+      <div class="lg:hidden space-y-4">
+        <div
+          *ngFor="
+            let category of categoryList
+              | paginate: {
+                  itemsPerPage: tableSize != 'all' ? tableSize : totalRecords,
+                  currentPage: page,
+                  totalItems: totalRecords
+                };
+            index as i
+          "
+          class="bg-gray-50 border border-gray-200 rounded-lg p-4"
+        >
+          <div class="flex justify-between items-center mb-2">
+            <div><strong>Sr No:</strong> {{ tableSize * (page - 1) + i + 1 }}</div>
+            <div>
+              <button mat-icon-button [matMenuTriggerFor]="cardMenu">
+                <mat-icon>more_vert</mat-icon>
+              </button>
+              <mat-menu #cardMenu="matMenu">
+                <button mat-menu-item (click)="OpenEditModal(category)">Edit</button>
+                <button mat-menu-item (click)="openViewModal(category)">View Details</button>
+                <button
+                  mat-menu-item
+                  *ngIf="category.is_active; else inactiveCardBtn"
+                  (click)="Status(category.id, 0)"
+                >
+                  Deactivate
+                </button>
+                <ng-template #inactiveCardBtn>
+                  <button mat-menu-item (click)="Status(category.id, 1)">Activate</button>
+                </ng-template>
+              </mat-menu>
+            </div>
+          </div>
+          <div class="mb-2"><strong>Category Name:</strong> {{ category.categoryName }}</div>
+          <div class="mb-2"><strong>Description:</strong> {{ category.description || '—' }}</div>
+
+          <div>
+            <strong>Status:</strong>
+            <span
+              [ngClass]="{
+                'active-status': category.is_active == 1,
+                'deactive-status': category.is_active != 1,
+              }"
+            >
+              {{ category.is_active == 1 ? 'Active' : 'Inactive' }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-md-flex justify-content-between bottom-0 end-0 py-2 align-items-center">
+        <span class="showalltext">
+          Showing {{ tableSize * (page - 1) > 0 ? tableSize * (page - 1) + 1 : 1 }} to
+          {{ tableSize * page <= totalRecords ? tableSize * page : totalRecords }}
+          of {{ totalRecords != undefined ? totalRecords : '' }} entries
+        </span>
+        <pagination-controls
+          previousLabel="Prev"
+          nextLabel="Next"
+          [responsive]="true"
+          (pageChange)="onTableDataChange($event)"
+          target="_top"
+        ></pagination-controls>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Create Modal ══ -->
+<div
+  *ngIf="createCategoryOpen"
+  class="your-animation-class modal-container"
+  role="dialog"
+  aria-modal="true"
+>
+  <div class="modal-contenttop modal-content-50" [@fadeIn]>
+    <form [formGroup]="createCategoryForm">
+      <div class="card">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+          <h5 class="modal-title pt-1 mb-0 tt-color">Add Equipment Category</h5>
+          <button class="cross-btn-icon main-btn bg-transparent border-0 pb-0 pt-1" type="button" (click)="closeModal()">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <div class="modal-content-widthtop card-body mb-0">
+          <div class="row">
+            <div class="col-12 mb-3">
+              <label class="d-block text-capitalize form-label form-lable-custom">
+                Category Name <span class="text-danger">*</span>
+              </label>
+              <input
+                type="text"
+                class="d-block form-control form-input-custom"
+                formControlName="categoryName"
+                placeholder="e.g. Safety Equipment"
+                [ngClass]="{
+                  'is-invalid':
+                    createCategoryForm.controls['categoryName'].errors &&
+                    (createCategoryForm.controls['categoryName'].touched || createCategoryForm.controls['categoryName'].dirty),
+                }"
+              />
+              <div
+                class="text-danger error-message"
+                *ngIf="
+                  createCategoryForm.controls['categoryName'].errors &&
+                  (createCategoryForm.controls['categoryName'].touched || createCategoryForm.controls['categoryName'].dirty)
+                "
+              >
+                <p class="fw-light text-danger" *ngIf="createCategoryForm.controls['categoryName'].errors['required']">
+                  Category Name is required
+                </p>
+              </div>
+            </div>
+
+            <div class="col-12 mb-3">
+              <label class="d-block text-capitalize form-label form-lable-custom">
+                Description <span class="text-muted">(Optional)</span>
+              </label>
+              <textarea
+                class="d-block form-control form-input-custom"
+                formControlName="description"
+                rows="3"
+                placeholder="Brief description of this category..."
+              ></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer text-end">
+          <button class="btn btn-secondary main-btnfs px-4 py-2 me-4 text-gray-200" type="button" (click)="closeModal()">
+            Cancel
+          </button>
+          <button class="btn btn-custom-primary px-4 py-2" type="button" (click)="createCategory()">
+            Create
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ══ Update Modal ══ -->
+<div
+  *ngIf="updateCategoryOpen"
+  class="your-animation-class modal-container"
+  role="dialog"
+  aria-modal="true"
+>
+  <div class="modal-contenttop modal-content-50" [@fadeIn]>
+    <form [formGroup]="updateCategoryForm">
+      <div class="card">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+          <h5 class="modal-title pt-1 mb-0 tt-color">Update Equipment Category</h5>
+          <button class="cross-btn-icon main-btn bg-transparent border-0 pb-0 pt-1" type="button" (click)="closeModal()">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <div class="modal-content-widthtop card-body mb-0">
+          <div class="row">
+            <div class="col-12 mb-3">
+              <label class="d-block text-capitalize form-label form-lable-custom">
+                Category Name <span class="text-danger">*</span>
+              </label>
+              <input
+                type="text"
+                class="d-block form-control form-input-custom"
+                formControlName="categoryName"
+                [ngClass]="{
+                  'is-invalid':
+                    updateCategoryForm.controls['categoryName'].errors &&
+                    (updateCategoryForm.controls['categoryName'].touched || updateCategoryForm.controls['categoryName'].dirty),
+                }"
+              />
+              <div
+                class="text-danger error-message"
+                *ngIf="
+                  updateCategoryForm.controls['categoryName'].errors &&
+                  (updateCategoryForm.controls['categoryName'].touched || updateCategoryForm.controls['categoryName'].dirty)
+                "
+              >
+                <p class="fw-light text-danger" *ngIf="updateCategoryForm.controls['categoryName'].errors['required']">
+                  Category Name is required
+                </p>
+              </div>
+            </div>
+
+            <div class="col-12 mb-3">
+              <label class="d-block text-capitalize form-label form-lable-custom">
+                Description <span class="text-muted">(Optional)</span>
+              </label>
+              <textarea
+                class="d-block form-control form-input-custom"
+                formControlName="description"
+                rows="3"
+              ></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer text-end">
+          <button class="btn btn-secondary main-btnfs px-4 py-2 me-4 text-gray-200" type="button" (click)="closeModal()">
+            Cancel
+          </button>
+          <button class="btn btn-custom-primary px-4 py-2" type="button" (click)="updateCategory()">
+            Update
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ══ View Modal ══ -->
+<div
+  *ngIf="viewCategoryOpen"
+  class="your-animation-class modal-container"
+  role="dialog"
+  aria-modal="true"
+>
+  <div class="modal-contenttop modal-content-50" [@fadeIn]>
+    <form [formGroup]="viewCategoryForm">
+      <div class="card">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+          <h5 class="modal-title pt-1 mb-0 tt-color">View Category Details</h5>
+          <button class="cross-btn-icon main-btn bg-transparent border-0 pb-0 pt-1" type="button" (click)="closeModal()">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <div class="modal-content-widthtop card-body mb-0">
+          <div class="row">
+            <div class="col-md-8 mb-3">
+              <label class="d-block text-capitalize form-label form-lable-custom">Category Name</label>
+              <input
+                type="text"
+                formControlName="categoryName"
+                readonly="true"
+                class="d-block form-control form-input-custom bg-light"
+              />
+            </div>
+            <div class="col-12 mb-3">
+              <label class="d-block text-capitalize form-label form-lable-custom">Description</label>
+              <textarea
+                formControlName="description"
+                readonly="true"
+                rows="3"
+                class="d-block form-control form-input-custom bg-light"
+              ></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>

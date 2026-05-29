@@ -1,0 +1,635 @@
+<div class="container mb-5 no-print">
+  <!-- Page Header -->
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+    <div>
+      <h1 class="text-primary table-heading-detail mb-1">Payroll & Deduction Management</h1>
+      <p class="text-muted mb-0 fs-6">Manage employee salaries, shift allowances, incentives, and attendance-based
+        deductions.</p>
+    </div>
+    <!-- <div class="d-flex gap-2">
+      <button *ngIf="payrollState === 'Draft'" class="btn btn-custom-primary px-3 py-2 hover-up d-flex align-items-center gap-2" (click)="openAddModal()">
+        <i class="fa-solid fa-plus"></i> Add Manual Record
+      </button>
+    </div> -->
+  </div>
+
+  <!-- Filters & Workflow Bar Card -->
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-4">
+      <div class="row g-3 align-items-end">
+        <!-- Month Filter -->
+        <div class="col-md-2">
+          <label class="form-label form-lable-custom mb-1 text-muted fs-8 fw-bold text-uppercase">Payroll Month</label>
+          <div class="input-group">
+            <span class="input-group-text bg-white text-muted border-end-0 py-2">
+              <i class="fa-solid fa-calendar-minus"></i>
+            </span>
+            <input type="month" class="form-control form-input-custom border-start-0 ps-0 py-2"
+              [(ngModel)]="currentMonth" (change)="onMonthChange()">
+          </div>
+        </div>
+
+        <!-- Site Filter -->
+        <div class="col-md-2">
+          <label class="form-label form-lable-custom mb-1 text-muted fs-8 fw-bold text-uppercase">Site</label>
+          <select class="form-select form-input-custom py-2" [(ngModel)]="selectedSite" (change)="applyFilters()">
+            <option value="">All Sites</option>
+            <option *ngFor="let s of mockSites" [value]="s">{{ s }}</option>
+          </select>
+        </div>
+
+        <!-- Department Filter -->
+        <div class="col-md-2">
+          <label class="form-label form-lable-custom mb-1 text-muted fs-8 fw-bold text-uppercase">Department</label>
+          <select class="form-select form-input-custom py-2" [(ngModel)]="selectedDept" (change)="applyFilters()">
+            <option value="">All Departments</option>
+            <option *ngFor="let d of departments" [value]="d">{{ d }}</option>
+          </select>
+        </div>
+
+        <!-- Search Filter -->
+        <div class="col-md-4">
+          <label class="form-label form-lable-custom mb-1 text-muted fs-8 fw-bold text-uppercase">Search
+            Employee</label>
+          <div class="input-group">
+            <span class="input-group-text bg-white text-muted border-end-0 py-2">
+              <i class="fa-solid fa-magnifying-glass"></i>
+            </span>
+            <input type="text" class="form-control form-input-custom border-start-0 ps-0 py-2"
+              [(ngModel)]="filterSearch" (input)="applyFilters()" placeholder="Search Name or ID...">
+          </div>
+        </div>
+
+        <!-- Reset Button -->
+        <div class="col-md-2">
+          <button
+            class="btn btn-outline-secondary w-100 py-2 d-flex align-items-center justify-content-center gap-2 hover-up"
+            (click)="resetFilters()" style="height: 42px;">
+            <i class="fa-solid fa-rotate-right"></i> Reset
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Workflow State Bar -->
+  <!-- <div class="card border-0 shadow-sm mb-4 theme-workflow-card">
+    <div class="card-body p-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
+      <div class="d-flex align-items-center gap-3">
+        <span class="fs-6 fw-bold text-secondary">Status for {{ formatMonthName(currentMonth) }}:</span>
+        <span class="badge rounded-pill px-3 py-2 fs-7 d-flex align-items-center gap-2" [ngClass]="{
+            'bg-warning-subtle text-warning border border-warning-subtle': payrollState === 'Draft',
+            'bg-primary-subtle text-primary border border-primary-subtle': payrollState === 'Pending Verification',
+            'bg-success-subtle text-success border border-success-subtle': payrollState === 'Finalized'
+          }">
+          <i class="fa-solid" [ngClass]="{
+              'fa-pen-to-square': payrollState === 'Draft',
+              'fa-clock': payrollState === 'Pending Verification',
+              'fa-lock': payrollState === 'Finalized'
+            }"></i>
+          {{ payrollState === 'Draft' ? 'Draft (In Process)' : payrollState === 'Pending Verification' ? 'Pending PM /
+          HR Review' : 'Finalized & Locked' }}
+        </span>
+      </div>
+
+      Action Buttons for transitions 
+      <div class="d-flex gap-2">
+        <button *ngIf="payrollState === 'Draft'"
+          class="btn btn-primary px-4 py-2 hover-up d-flex align-items-center gap-2" (click)="submitForVerification()">
+          <i class="fa-solid fa-paper-plane"></i> Submit for Verification
+        </button>
+
+        <ng-container *ngIf="payrollState === 'Pending Verification'">
+          <button class="btn btn-outline-danger px-3 py-2 hover-up d-flex align-items-center gap-2"
+            (click)="rejectToDraft()">
+            <i class="fa-solid fa-reply"></i> Send Back to Draft
+          </button>
+          <button class="btn btn-success px-4 py-2 hover-up d-flex align-items-center gap-2"
+            (click)="finalizePayroll()">
+            <i class="fa-solid fa-circle-check"></i> Approve & Finalize
+          </button>
+        </ng-container>
+
+        <span *ngIf="payrollState === 'Finalized'" class="text-success fw-bold d-flex align-items-center gap-2">
+          <i class="fa-solid fa-circle-check fs-5"></i> Net Salaries locked & Payslips available
+        </span>
+      </div>
+    </div>
+  </div> -->
+
+  <!-- Salary Review Grid Card -->
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-4">
+      <div class="table-responsive border rounded-3 mb-3">
+        <table class="table table-bordered align-middle mb-0 custom-table">
+          <thead class="table-light">
+            <tr>
+              <th class="ps-3">
+                <p class="table-heading mb-0">Employee Details</p>
+              </th>
+              <th class="text-center" style="width: 120px;">
+                <p class="table-heading mb-0">Present</p>
+              </th>
+              <th class="text-center" style="width: 120px;">
+                <p class="table-heading mb-0">Absent</p>
+              </th>
+              <th class="text-center" style="width: 120px;">
+                <p class="table-heading mb-0">Leave</p>
+              </th>
+              <th class="text-center" style="width: 160px;">
+                <p class="table-heading mb-0">Net Salary</p>
+              </th>
+              <th class="text-center" style="width: 180px;">
+                <p class="table-heading mb-0">Action</p>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let rec of filteredPayrollRecords | paginate: { itemsPerPage: 10, currentPage: p }">
+              <td class="ps-3">
+                <div class="fw-bold text-dark fs-7">{{ rec.empName }}</div>
+                <div class="text-muted fs-8">ID: {{ rec.empId }} | {{ rec.designation }}</div>
+                <div class="badge bg-secondary-subtle text-secondary fs-8 mt-1">{{ rec.department }} | {{ rec.site }}
+                </div>
+              </td>
+              <td class="text-center">
+                <span
+                  class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1.5 fs-8 fw-semibold">
+                  {{ rec.presentCount }} Days
+                </span>
+              </td>
+              <td class="text-center">
+                <span
+                  class="badge bg-danger-subtle text-danger border border-danger-subtle px-2.5 py-1.5 fs-8 fw-semibold">
+                  {{ rec.absentCount + rec.unpaidLeaveCount }} Days
+                </span>
+              </td>
+              <td class="text-center">
+                <span class="badge bg-info-subtle text-info border border-info-subtle px-2.5 py-1.5 fs-8 fw-semibold">
+                  {{ rec.leaveCount }} Days
+                </span>
+              </td>
+              <td class="text-center">
+                <div class="fs-6 fw-bold text-primary">₹{{ rec.netSalary.toLocaleString() }}</div>
+              </td>
+              <td class="text-center">
+                <div class="d-flex align-items-center justify-content-center gap-1">
+                  <!-- Action for Draft Mode: Edit adjustments -->
+                  <button *ngIf="payrollState === 'Draft'"
+                    class="btn-action edit-btn" (click)="openEditModal(rec)"
+                    data-tooltip="Edit Adjustments">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                  </button>
+                  <button *ngIf="payrollState === 'Draft' && isManualRecord(rec.empId)"
+                    class="btn-action deactivate-btn"
+                    (click)="deleteManualRecord(rec.empId)" data-tooltip="Delete manual record">
+                    <i class="fa-solid fa-trash"></i>
+                  </button>
+
+                  <!-- Slip Icon for Payslip Preview (Available in all states) -->
+                  <button class="btn-action view-btn" (click)="viewPayslip(rec)"
+                    data-tooltip="View Salary Slip">
+                    <i class="fa-solid fa-receipt"></i>
+                  </button>
+
+                  <!-- Display locked icon for Pending Verification -->
+                  <span *ngIf="payrollState === 'Pending Verification'" class="text-muted fs-8 ms-1"
+                    title="Locked for Verification">
+                    <i class="fa-solid fa-lock"></i>
+                  </span>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="filteredPayrollRecords.length === 0">
+              <td colspan="6" class="text-center py-5 text-muted">
+                <i class="fa-solid fa-circle-exclamation fs-3 mb-2 d-block"></i>
+                No employee records found matching the filters.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div class="d-flex justify-content-end mt-3" *ngIf="filteredPayrollRecords.length > 0">
+        <pagination-controls (pageChange)="p = $event" class="my-pagination"></pagination-controls>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Adjustments Modal -->
+<div *ngIf="showEditModal" class="modal-overlay no-print"
+  style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.4); z-index: 9999; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(4px);">
+  <div class="modal-dialog-large bg-white rounded-3 shadow-lg d-flex flex-column h-auto-modal"
+    style="width: 500px; max-width: 95%;">
+
+    <div class="modal-header-custom px-4 py-3 d-flex justify-content-between align-items-center border-bottom">
+      <h4 class="mb-0 text-primary fw-bold">Salary Adjustments</h4>
+      <button class="btn bg-transparent border-0 p-0" (click)="closeEditModal()" style="line-height: 1;">
+        <span class="text-muted"
+          style="font-size: 28px; font-weight: 300; display: inline-block; line-height: 1;">&times;</span>
+      </button>
+    </div>
+
+    <div class="modal-body p-4">
+      <form [formGroup]="editForm" (ngSubmit)="submitAdjustments()">
+        <!-- Employee Info -->
+        <div class="mb-3">
+          <label class="form-label form-lable-custom mb-1 text-muted fs-8 fw-bold text-uppercase">Employee ID &
+            Name</label>
+          <div class="p-2.5 bg-light rounded border text-secondary fw-bold">
+            {{ editForm.get('empId')?.value }} - {{ editForm.get('empName')?.value }}
+          </div>
+        </div>
+
+        <!-- Incentives -->
+        <div class="mb-3">
+          <label class="form-label form-lable-custom">Incentive Allowances (Rs.)</label>
+          <div class="input-group">
+            <span class="input-group-text bg-white text-muted border-end-0">
+              <i class="fa-solid fa-circle-plus text-success"></i>
+            </span>
+            <input type="number" class="form-control form-input-custom border-start-0 ps-0"
+              formControlName="incentives">
+          </div>
+          <div class="text-danger fs-8 mt-1"
+            *ngIf="editForm.get('incentives')?.invalid && editForm.get('incentives')?.touched">
+            Please enter a valid positive number.
+          </div>
+        </div>
+
+        <!-- PF Deduction -->
+        <div class="mb-3">
+          <label class="form-label form-lable-custom">Provident Fund (PF) Deduction (Rs.)</label>
+          <div class="input-group">
+            <span class="input-group-text bg-white text-muted border-end-0">
+              <i class="fa-solid fa-shield-halved text-primary"></i>
+            </span>
+            <input type="number" class="form-control form-input-custom border-start-0 ps-0"
+              formControlName="pfDeduction">
+          </div>
+          <div class="text-danger fs-8 mt-1"
+            *ngIf="editForm.get('pfDeduction')?.invalid && editForm.get('pfDeduction')?.touched">
+            Please enter a valid positive number.
+          </div>
+        </div>
+
+        <!-- Mess Deduction -->
+        <div class="mb-4">
+          <label class="form-label form-lable-custom">Mess Deduction (Rs.)</label>
+          <div class="input-group">
+            <span class="input-group-text bg-white text-muted border-end-0">
+              <i class="fa-solid fa-utensils text-danger"></i>
+            </span>
+            <input type="number" class="form-control form-input-custom border-start-0 ps-0"
+              formControlName="messDeduction">
+          </div>
+          <div class="text-danger fs-8 mt-1"
+            *ngIf="editForm.get('messDeduction')?.invalid && editForm.get('messDeduction')?.touched">
+            Please enter a valid positive number.
+          </div>
+        </div>
+
+        <!-- Footer Buttons -->
+        <div class="d-flex justify-content-end gap-2 pt-2 border-top">
+          <button type="button" class="btn btn-secondary px-4 py-2" (click)="closeEditModal()">Cancel</button>
+          <button type="submit" class="btn btn-custom-primary px-4 py-2" [disabled]="editForm.invalid">
+            Apply Adjustments
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Printable Payslip Modal / Printable Section -->
+<div *ngIf="showPayslipModal && selectedPayslipRecord" class="modal-overlay print-only-modal">
+
+  <div class="modal-dialog-large bg-white rounded-3 shadow-lg d-flex flex-column h-auto-modal payslip-modal-container"
+    style="width: 800px; max-width: 95%;">
+
+    <!-- Modal Header (Hidden on print) -->
+    <div class="modal-header-custom px-4 py-3 d-flex justify-content-between align-items-center border-bottom no-print">
+      <h4 class="mb-0 text-dark fw-bold" style="font-family: 'Montserrat', sans-serif;">Official Employee Payslip</h4>
+      <button class="btn bg-transparent border-0 p-0 hover-up" (click)="closePayslipModal()"
+        style="cursor: pointer; transition: transform 0.2s; line-height: 1;">
+        <span
+          style="color: var(--primary-color) !important; font-size: 28px; font-weight: 300; display: inline-block; line-height: 1;">&times;</span>
+      </button>
+    </div>
+
+    <!-- Payslip View Area (This is targeted by @media print) -->
+    <div class="modal-body p-5 payslip-print-container">
+      <!-- Payslip Header -->
+      <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom-double header-branding">
+        <!-- Brand Logo Only -->
+        <img src="assets/logo.png" alt="Coal Mine Logo" class="payslip-logo"
+          style="height: 60px; max-height: 70px; object-fit: contain;">
+        <!-- Statement Month -->
+        <div class="text-end">
+          <span class="statement-month fw-bold text-secondary"
+            style="font-size: 1.1rem; font-family: 'Montserrat', sans-serif;">{{ formatMonthName(currentMonth) }}</span>
+        </div>
+      </div>
+
+      <!-- Employee Info Block -->
+      <div class="row g-4 mb-4 employee-details-grid">
+        <!-- Col 1 -->
+        <div class="col-md-4 col-sm-6">
+          <div class="mb-3">
+            <span class="detail-label text-muted uppercase fw-bold"
+              style="font-size: 0.725rem; letter-spacing: 0.05em; display: block; margin-bottom: 2px;">EMPLOYEE
+              ID</span>
+            <span class="detail-value fw-bold text-dark fs-6">{{ selectedPayslipRecord.empId }}</span>
+          </div>
+          <div>
+            <span class="detail-label text-muted uppercase fw-bold"
+              style="font-size: 0.725rem; letter-spacing: 0.05em; display: block; margin-bottom: 2px;">DESIGNATION</span>
+            <span class="detail-value fw-bold text-dark fs-6">{{ selectedPayslipRecord.designation }}</span>
+          </div>
+        </div>
+        <!-- Col 2 -->
+        <div class="col-md-4 col-sm-6">
+          <div class="mb-3">
+            <span class="detail-label text-muted uppercase fw-bold"
+              style="font-size: 0.725rem; letter-spacing: 0.05em; display: block; margin-bottom: 2px;">EMPLOYEE
+              NAME</span>
+            <span class="detail-value fw-bold text-dark fs-6">{{ selectedPayslipRecord.empName }}</span>
+          </div>
+          <div>
+            <span class="detail-label text-muted uppercase fw-bold"
+              style="font-size: 0.725rem; letter-spacing: 0.05em; display: block; margin-bottom: 2px;">MINE SITE
+              LOCATION</span>
+            <span class="detail-value fw-bold text-dark fs-6">{{ selectedPayslipRecord.site }}</span>
+          </div>
+        </div>
+        <!-- Col 3 -->
+        <div class="col-md-4 col-sm-12">
+          <div class="mb-3">
+            <span class="detail-label text-muted uppercase fw-bold"
+              style="font-size: 0.725rem; letter-spacing: 0.05em; display: block; margin-bottom: 2px;">BANK ACCOUNT
+              NO</span>
+            <span class="detail-value fw-bold text-dark fs-6">SBI 30291039201</span>
+          </div>
+          <div>
+            <span class="detail-label text-muted uppercase fw-bold"
+              style="font-size: 0.725rem; letter-spacing: 0.05em; display: block; margin-bottom: 2px;">IFSC CODE</span>
+            <span class="detail-value fw-bold text-dark fs-6">SBIN0003029</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Earnings & Deductions Tables -->
+      <div class="row g-4 mb-4 earnings-deductions-container">
+        <!-- Earnings Box -->
+        <div class="col-md-6">
+          <div class="card p-3 border h-100 table-container-card" style="border-radius: 8px;">
+            <h5 class="fw-bold uppercase mb-3 text-start card-section-title">EARNINGS</h5>
+            <table class="table table-borderless table-sm mb-0 align-middle">
+              <thead>
+                <tr class="border-bottom" style="font-size: 0.75rem; color: #64748b; font-weight: 700;">
+                  <th class="ps-0 pb-2 text-start">DESCRIPTION</th>
+                  <th class="pe-0 pb-2 text-end">AMOUNT (₹)</th>
+                </tr>
+              </thead>
+              <tbody style="font-size: 0.85rem; color: #334155;">
+                <tr class="border-bottom border-light">
+                  <td class="ps-0 py-2.5 text-start">Basic Salary</td>
+                  <td class="pe-0 py-2.5 text-end fw-semibold">₹{{ selectedPayslipRecord.basicSalary.toLocaleString() }}
+                  </td>
+                </tr>
+                <tr class="fw-bold fs-7 text-dark">
+                  <td class="ps-0 pt-3 text-start" style="padding-top: 50px !important;">Gross Earnings</td>
+                  <td class="pe-0 pt-3 text-end" style="padding-top: 50px !important;">₹{{
+                    selectedPayslipRecord.basicSalary.toLocaleString() }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Deductions Box -->
+        <div class="col-md-6">
+          <div class="card p-3 border h-100 table-container-card" style="border-radius: 8px;">
+            <h5 class="fw-bold uppercase mb-3 text-start card-section-title">DEDUCTIONS</h5>
+            <table class="table table-borderless table-sm mb-0 align-middle">
+              <thead>
+                <tr class="border-bottom" style="font-size: 0.75rem; color: #64748b; font-weight: 700;">
+                  <th class="ps-0 pb-2 text-start">DESCRIPTION</th>
+                  <th class="pe-0 pb-2 text-end">AMOUNT (₹)</th>
+                </tr>
+              </thead>
+              <tbody style="font-size: 0.85rem; color: #334155;">
+                <tr class="border-bottom border-light">
+                  <td class="ps-0 py-2.5 text-start">EPF Provident Fund (12%)</td>
+                  <td class="pe-0 py-2.5 text-end fw-semibold">₹{{ selectedPayslipRecord.pfDeduction.toLocaleString() }}
+                  </td>
+                </tr>
+                <tr class="border-bottom border-light">
+                  <td class="ps-0 py-2.5 text-start">Camp Mess Food Charge</td>
+                  <td class="pe-0 py-2.5 text-end fw-semibold">₹{{ selectedPayslipRecord.messDeduction.toLocaleString()
+                    }}</td>
+                </tr>
+                <tr class="border-bottom border-light">
+                  <td class="ps-0 py-2.5 text-start">Unpaid Leave / Absents</td>
+                  <td class="pe-0 py-2.5 text-end fw-semibold">₹{{ selectedPayslipRecord.leaveDeduction.toLocaleString()
+                    }}</td>
+                </tr>
+                <tr class="fw-bold fs-7 text-dark">
+                  <td class="ps-0 pt-3 text-start">Gross Deductions</td>
+                  <td class="pe-0 pt-3 text-end">₹{{ selectedPayslipRecord.totalDeductions.toLocaleString() }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Net Salary Block -->
+      <div class="p-3 border rounded-3 d-flex justify-content-between align-items-center mb-4 net-salary-box">
+        <div>
+          <h5 class="mb-0 fw-bold uppercase net-salary-title">NET SALARY PAYOUT</h5>
+          <span class="text-secondary fs-8 fw-semibold">Transferred electronically to bank account</span>
+        </div>
+        <div class="text-end">
+          <h2 class="mb-0 fw-extrabold net-salary-amount">₹{{ (selectedPayslipRecord.basicSalary -
+            selectedPayslipRecord.totalDeductions).toLocaleString() }}</h2>
+        </div>
+      </div>
+
+      <!-- Signature Blocks
+      <div class="row pt-5 mt-4 signature-section align-items-end">
+        <div class="col-4 text-center">
+          <div class="mx-auto border-top border-secondary pt-2 uppercase fw-bold text-secondary" style="font-size: 0.65rem; width: 85%; letter-spacing: 0.08em;">
+            EMPLOYEE SIGNATURE
+          </div>
+        </div>
+        <div class="col-4 text-center">
+          <div class="mx-auto border-top border-secondary pt-2 uppercase fw-bold text-secondary" style="font-size: 0.65rem; width: 85%; letter-spacing: 0.08em;">
+            HR EXECUTIVE STAMP
+          </div>
+        </div>
+        <div class="col-4 text-center">
+          <div class="mx-auto border-top border-secondary pt-2 uppercase fw-bold text-secondary" style="font-size: 0.65rem; width: 85%; letter-spacing: 0.08em;">
+            FINANCE AUDITOR
+          </div>
+        </div>
+      </div>
+      -->
+
+      <!-- Print Disclaimer -->
+      <div class="text-center mt-5 pt-3 border-top text-muted fs-8 disclaimer-text">
+        This is a computer-generated salary statement and does not require a physical signature.
+      </div>
+    </div>
+
+    <!-- Modal Footer (Hidden on print) -->
+    <div class="modal-footer px-4 py-3 border-top justify-content-between no-print bg-light">
+      <button type="button" class="btn btn-outline-dark px-4 py-2 rounded-pill fw-bold hover-up"
+        (click)="closePayslipModal()">
+        Close Preview
+      </button>
+      <button type="button"
+        class="btn btn-custom-primary px-4 py-2 rounded-pill fw-bold hover-up d-flex align-items-center gap-2"
+        (click)="printPayslip()">
+        <i class="fa-solid fa-print"></i> Print Statement
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Manual Record Modal -->
+<div *ngIf="showAddModal" class="modal-overlay no-print"
+  style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.4); z-index: 9999; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(4px);">
+  <div class="modal-dialog-large bg-white rounded-3 shadow-lg d-flex flex-column h-auto-modal"
+    style="width: 700px; max-width: 95%;">
+
+    <div class="modal-header-custom px-4 py-3 d-flex justify-content-between align-items-center border-bottom">
+      <h4 class="mb-0 text-primary fw-bold">Add Manual Payroll Record</h4>
+      <button class="btn bg-transparent border-0 p-0" (click)="closeAddModal()" style="line-height: 1;">
+        <span class="text-muted"
+          style="font-size: 28px; font-weight: 300; display: inline-block; line-height: 1;">&times;</span>
+      </button>
+    </div>
+
+    <div class="modal-body p-4" style="max-height: 75vh; overflow-y: auto;">
+      <form [formGroup]="addForm" (ngSubmit)="submitManualRecord()">
+
+        <!-- Toggle Employee Type -->
+        <div class="form-check form-switch mb-3 p-0 d-flex align-items-center gap-2">
+          <input class="form-check-input ms-0" type="checkbox" id="customEmpSwitch" formControlName="isCustomEmployee"
+            (change)="onCustomEmployeeToggle()">
+          <label class="form-check-label fw-bold text-secondary mb-0" for="customEmpSwitch">Create Custom/Contract
+            Employee (Not in Master List)</label>
+        </div>
+
+        <!-- Dropdown Selection for Master Employee -->
+        <div class="mb-3" *ngIf="!addForm.get('isCustomEmployee')?.value">
+          <label class="form-label form-lable-custom">Select Employee <span class="text-danger">*</span></label>
+          <select class="form-select form-input-custom" formControlName="selectedEmpId"
+            (change)="onEmployeeSelectChange()">
+            <option value="">-- Choose Employee --</option>
+            <option *ngFor="let emp of employees" [value]="emp.id">{{ emp.name }} ({{ emp.id }})</option>
+          </select>
+        </div>
+
+        <!-- Employee ID & Name -->
+        <div class="row g-3 mb-3">
+          <div class="col-md-6">
+            <label class="form-label form-lable-custom">Employee ID <span class="text-danger">*</span></label>
+            <input type="text" class="form-control form-input-custom" formControlName="empId" placeholder="e.g. EMP010">
+            <div class="text-danger fs-8 mt-1" *ngIf="addForm.get('empId')?.invalid && addForm.get('empId')?.touched">
+              Employee ID is required.
+            </div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label form-lable-custom">Employee Name <span class="text-danger">*</span></label>
+            <input type="text" class="form-control form-input-custom" formControlName="empName" placeholder="Full name">
+            <div class="text-danger fs-8 mt-1"
+              *ngIf="addForm.get('empName')?.invalid && addForm.get('empName')?.touched">
+              Employee Name is required.
+            </div>
+          </div>
+        </div>
+
+        <!-- Designation, Department, Site -->
+        <div class="row g-3 mb-3">
+          <div class="col-md-4">
+            <label class="form-label form-lable-custom">Designation <span class="text-danger">*</span></label>
+            <input type="text" class="form-control form-input-custom" formControlName="designation">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label form-lable-custom">Department <span class="text-danger">*</span></label>
+            <select class="form-select form-input-custom" formControlName="department">
+              <option *ngFor="let d of departments" [value]="d">{{ d }}</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label form-lable-custom">Site/Location <span class="text-danger">*</span></label>
+            <select class="form-select form-input-custom" formControlName="site">
+              <option *ngFor="let s of mockSites" [value]="s">{{ s }}</option>
+            </select>
+          </div>
+        </div>
+
+        <h6 class="border-bottom pb-2 mb-3 mt-4 text-primary fw-bold fs-7">Salary & Allowances</h6>
+
+        <!-- Basic Salary, Shift Allowance, Incentives -->
+        <div class="row g-3 mb-3">
+          <div class="col-md-4">
+            <label class="form-label form-lable-custom">Basic Salary (Rs.) <span class="text-danger">*</span></label>
+            <input type="number" class="form-control form-input-custom" formControlName="basicSalary"
+              (input)="onBasicSalaryChange()">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label form-lable-custom">Shift Allowance (Rs.) <span class="text-danger">*</span></label>
+            <input type="number" class="form-control form-input-custom" formControlName="shiftAllowance">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label form-lable-custom">Incentives (Rs.) <span class="text-danger">*</span></label>
+            <input type="number" class="form-control form-input-custom" formControlName="incentives">
+          </div>
+        </div>
+
+        <h6 class="border-bottom pb-2 mb-3 mt-4 text-primary fw-bold fs-7">Standard Deductions & Attendance Counts</h6>
+
+        <!-- PF, Mess Deductions -->
+        <div class="row g-3 mb-3">
+          <div class="col-md-6">
+            <label class="form-label form-lable-custom">PF Deduction (Rs.) <span class="text-danger">*</span></label>
+            <input type="number" class="form-control form-input-custom" formControlName="pfDeduction">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label form-lable-custom">Mess Deduction (Rs.) <span class="text-danger">*</span></label>
+            <input type="number" class="form-control form-input-custom" formControlName="messDeduction">
+          </div>
+        </div>
+
+        <!-- Attendance counts -->
+        <div class="row g-3 mb-4">
+          <div class="col-md-4">
+            <label class="form-label form-lable-custom">Present Days <span class="text-danger">*</span></label>
+            <input type="number" class="form-control form-input-custom" formControlName="presentCount">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label form-lable-custom">Half Days <span class="text-danger">*</span></label>
+            <input type="number" class="form-control form-input-custom" formControlName="halfDayCount">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label form-lable-custom">Absent Days <span class="text-danger">*</span></label>
+            <input type="number" class="form-control form-input-custom" formControlName="absentCount">
+          </div>
+        </div>
+
+        <!-- Footer Buttons -->
+        <div class="d-flex justify-content-end gap-2 pt-2 border-top">
+          <button type="button" class="btn btn-secondary px-4 py-2" (click)="closeAddModal()">Cancel</button>
+          <button type="submit" class="btn btn-custom-primary px-4 py-2" [disabled]="addForm.invalid">
+            Save Record
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

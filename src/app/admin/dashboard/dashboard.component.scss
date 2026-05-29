@@ -1,0 +1,187 @@
+// Premium Operational Dashboard Styles
+
+.dashboard-wrapper {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  background: linear-gradient(135deg, #f6f8fd 0%, #edf3fc 40%, #f5fcf9 80%, #faf8f5 100%);
+  position: relative;
+  border-radius: 24px;
+}
+
+// Background Ambient Glow Orbs
+.ambient-glow-orb-1 {
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.22) 0%, rgba(56, 189, 248, 0) 70%);
+  filter: blur(80px);
+}
+
+.ambient-glow-orb-2 {
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.18) 0%, rgba(16, 185, 129, 0) 70%);
+  filter: blur(80px);
+}
+
+// Glassmorphism System
+.glass-effect {
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(20px) saturate(190%);
+  -webkit-backdrop-filter: blur(20px) saturate(190%);
+  border: 1px solid rgba(255, 255, 255, 0.7) !important;
+  box-shadow: 0 12px 34px -10px rgba(70, 143, 175, 0.06),
+              0 4px 12px -5px rgba(0, 0, 0, 0.02) !important;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.bento-card {
+  min-height: 0; // Enables proper grid shrinking
+  
+  &:hover {
+    transform: translateY(-3px) scale(1.005);
+    border-color: rgba(70, 143, 175, 0.4) !important;
+    box-shadow: 0 20px 40px -15px rgba(70, 143, 175, 0.12), 
+                0 0 0 1px rgba(70, 143, 175, 0.2) !important;
+  }
+}
+
+.glass-panel {
+  background: rgba(248, 250, 252, 0.55);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.5) !important;
+}
+
+// Clickable interactive panels for direct navigation
+.clickable-panel {
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  z-index: 10;
+  
+  &:hover {
+    background: rgba(255, 255, 255, 0.92) !important;
+    border-color: rgba(14, 165, 233, 0.3) !important;
+    transform: translateY(-2px) scale(1.015);
+    box-shadow: 0 12px 24px -8px rgba(14, 165, 233, 0.12),
+                0 0 0 1px rgba(14, 165, 233, 0.15) !important;
+  }
+  
+  &:active {
+    transform: translateY(0) scale(0.985);
+  }
+}
+
+// Custom Alert Left Borders
+.alert-danger-left {
+  border-left: 4.5px solid #f43f5e !important;
+}
+.alert-warning-left {
+  border-left: 4.5px solid #f59e0b !important;
+}
+.alert-success-left {
+  border-left: 4.5px solid #10b981 !important;
+}
+.alert-info-left {
+  border-left: 4.5px solid #0ea5e9 !important;
+}
+
+// Sparkline Trend interactive bars
+.bento-card {
+  .w-full.h-12.flex.items-end {
+    div {
+      transition: all 0.2s ease-in-out;
+      cursor: pointer;
+      &:hover {
+        opacity: 0.95;
+        transform: scaleY(1.08);
+      }
+    }
+  }
+}
+
+// Custom Scrollbars for alerts
+.alerts-feed {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none;  /* IE/Edge */
+  
+  &::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+  }
+}
+
+// Progress Shine Keyframes
+@keyframes progress-shine {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-progress-shine {
+  animation: progress-shine 3.5s infinite linear;
+}
+
+// Swing Bell Alert Animation
+@keyframes swing {
+  0%, 100% { transform: rotate(0); }
+  15% { transform: rotate(12deg); }
+  30% { transform: rotate(-10deg); }
+  45% { transform: rotate(8deg); }
+  60% { transform: rotate(-6deg); }
+  75% { transform: rotate(4deg); }
+  90% { transform: rotate(-2deg); }
+}
+
+.animate-swing {
+  animation: swing 2.5s ease-in-out infinite;
+  transform-origin: top center;
+}
+
+// Desktop height restrictions and grid bounds (Strict No-Scroll layout)
+@media (min-width: 769px) {
+  .dashboard-wrapper {
+    height: calc(100vh - 128px); // Fits perfectly within admin template
+    overflow: hidden;
+  }
+
+  .bento-grid {
+    grid-template-rows: minmax(0, 1.15fr) minmax(0, 0.85fr);
+    height: calc(100% - 95px); // Ensures remaining height matches bounds
+  }
+
+  .bento-card {
+    height: 100%;
+    box-sizing: border-box;
+  }
+  
+  .alerts-feed {
+    max-height: none !important; // Let flexbox determine height naturally
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-wrapper {
+    height: auto;
+    overflow-y: visible;
+  }
+  
+  .bento-grid {
+    grid-template-rows: auto;
+    height: auto;
+  }
+  
+  .bento-card {
+    height: auto;
+    min-height: 160px;
+  }
+  
+  .control-header {
+    padding: 1.25rem 1rem;
+    
+    h1 {
+      font-size: 1.4rem;
+    }
+  }
+}
+
+
+

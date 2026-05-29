@@ -1,0 +1,257 @@
+:host * {
+  transition: all 500ms ease-in-out;
+}
+
+
+.no-box-shadow.mat-nav-list {
+  box-shadow: none !important;
+}
+
+.mat-expansion-panel {
+  border-radius: 0 !important;
+}
+
+
+
+.custom-header:focus {
+  //  background-color: #f0f0f0;   Set the background color */
+  // border-bottom: 1px solid #ccc; /* Add a border */
+  padding: 8px 16px;
+  /* Adjust padding as needed */
+}
+
+.custom-icon {
+  color: #007bff;
+  margin-right: 8px;
+}
+
+.custom-label {
+  font-size: 14px;
+  /* Set the font size */
+  color: #333;
+  /* Set the color of the label */
+}
+
+.profileborder {
+  height: 135px;
+  width: 135px;
+  border: 6px solid var(--primary-color);
+  border-radius: 50%;
+  position: relative;
+}
+
+
+.no-box-shadow.mat-nav-list {
+  box-shadow: none !important;
+}
+
+.mat-expansion-panel {
+  border-radius: 0 !important;
+}
+
+
+
+.custom-header {
+  /* background-color: #f0f0f0; Set the background color */
+  // border-bottom: 1px solid #ccc; /* Add a border */
+  padding: 8px 16px;
+  /* Adjust padding as needed */
+}
+
+.custom-icon {
+  color: #007bff;
+  margin-right: 8px;
+}
+
+.custom-label {
+  font-size: 16px;
+  /* Set the font size */
+  color: #333;
+  /* Set the color of the label */
+}
+
+.shortname-big-b {
+  height: 135px;
+  width: 135px;
+  border: 6px solid var(--primary-color);
+  border-radius: 50%;
+  position: relative;
+}
+
+.shortname-big {
+  font-size: 70px;
+  font-weight: 400;
+  margin-top: 18px;
+  margin-right: 5px;
+}
+
+.shortname-small {
+  font-size: 21px;
+  font-weight: 400;
+  margin-top: 2px;
+  margin-right: 2px;
+}
+
+
+.shortname-small-b {
+  height: 38px;
+  width: 38px;
+  border: 3px solid var(--primary-color);
+  border-radius: 50%;
+  position: relative;
+  margin-right: 15px;
+}
+
+
+
+// add width 
+
+// .custom-scrollbar {
+//   overflow-y: auto;
+//   height: 80vh;
+// }
+
+// /
+// .custom-scrollbar::-webkit-scrollbar {
+//   width: 4px !important;
+// }
+
+
+// .custom-scrollbar {
+//   scrollbar-width: thin !important;
+// }
+
+
+// .custom-scrollbar::-webkit-scrollbar-track {
+//   background-color: red !important;
+// }
+
+
+// .custom-scrollbar::-webkit-scrollbar-thumb {
+//   background-color: orange !important;
+// }
+
+
+// .custom-scrollbar::-webkit-scrollbar-track {
+//   display: none !important;
+// }
+
+// .custom-scrollbar::-webkit-scrollbar-thumb {
+//   display: none !important;
+// }
+
+
+:host ::ng-deep .mat-expansion-panel-header.mat-expanded {
+  height: 50px !important;
+}
+
+:host ::ng-deep .mat-expansion-panel-header.mat-expanded .submenu-list {
+  color: var(--primary-color) !important;
+}
+
+:host ::ng-deep .mat-expansion-panel-header.mat-expanded .submenu-list mat-icon {
+  color: var(--primary-color) !important;
+}
+
+:host ::ng-deep .mat-expansion-panel-header.mat-expanded .submenu-list span {
+  color: var(--primary-color) !important;
+}
+
+:host ::ng-deep .mat-expansion-indicator::after {
+  border-color: #000;
+  border-style: inset !important;
+}
+
+:host ::ng-deep .mat-expansion-panel-header.mat-expanded .mat-expansion-indicator::after {
+  border-color: var(--primary-color);
+  border-style: inset !important;
+}
+
+
+.mat-expansion-panel-body {
+  padding: 0 0 0px 20px !important;
+}
+
+.header-text {
+  height: 3rem;
+}
+
+.header-text>h2 {
+  margin: 0 !important;
+  font-size: 1rem !important;
+  line-height: 1.5rem !important;
+}
+
+
+.header-text>p {
+  margin: 0 !important;
+  font-size: 0.8rem !important;
+}
+
+.sidenav-header {
+  padding-top: 24px;
+  text-align: center;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+mat-sidenav,
+mat-sidenav-content {
+  transition: all 500ms ease-in-out;
+}
+
+/* Menu Items Hover & Transitions */
+.menu-item, 
+.submenu-item, 
+::ng-deep .mat-expansion-panel-header {
+  transition: all 0.3s ease !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
+}
+
+.menu-item:hover, 
+.submenu-item:hover, 
+::ng-deep .mat-expansion-panel-header:hover {
+  background-color: #f4f6f8 !important;
+}
+
+/* Top-Level Active State */
+.selected-menu-items {
+  border-left: 4px solid var(--primary-color) !important;
+  background-color: rgba(var(--primary-color-rgb, 0, 123, 255), 0.1) !important;
+}
+
+.selected-menu-items .mat-icon,
+.selected-menu-items span {
+  color: var(--primary-color) !important;
+  font-weight: 500;
+}
+
+/* Submenu Styling & Indentation */
+.submenu-item {
+  padding-left: 32px !important;
+}
+
+.selected-submenu {
+  border-left: 4px solid var(--primary-color) !important;
+  background-color: rgba(var(--primary-color-rgb, 0, 123, 255), 0.1) !important;
+}
+
+.selected-submenu span,
+.selected-submenu .mat-icon {
+  color: var(--primary-color) !important;
+  font-weight: 500;
+}
+
+.mdc-list-item__primary-text {
+  font-size: 14px !important;
+}

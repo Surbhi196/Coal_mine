@@ -1,0 +1,124 @@
+.cssload-container {
+  position: fixed;
+  width: 100%;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.7);
+  z-index: 9999;
+}
+
+.cssload-container {
+  position: fixed;
+  width: 100%;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(8px);
+  z-index: 9999999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.bikaji-loader-wrapper {
+  position: relative;
+  width: 160px;
+  height: 160px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+
+.bikaji-logo-inner {
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  background: white;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 10px 25px rgba(1, 42, 74, 0.12);
+  z-index: 2;
+
+  .pulse-logo {
+    width: 60px;
+    height: auto;
+    animation: logoPulse 2s ease-in-out infinite;
+  }
+}
+
+.orbit-ring,
+.orbit-ring-delayed {
+  position: absolute;
+  width: 120px;
+  height: 120px;
+  border: 4px solid transparent;
+  border-top-color: #01497c;
+  border-right-color: #01497c;
+  border-radius: 50%;
+  animation: orbitRotate 1.5s linear infinite;
+}
+
+.orbit-ring-delayed {
+  width: 140px;
+  height: 140px;
+  border-top-color: #468faf;
+  border-left-color: #468faf;
+  animation-duration: 2s;
+  animation-direction: reverse;
+  opacity: 0.6;
+}
+
+.loading-text {
+  position: absolute;
+  bottom: -40px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  color: #1e293b;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  animation: textFade 1.5s ease-in-out infinite;
+}
+
+@keyframes logoPulse {
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+@keyframes orbitRotate {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes textFade {
+
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: translateY(0);
+  }
+
+  50% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}

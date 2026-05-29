@@ -1,0 +1,428 @@
+<div class="container mb-5">
+  <!-- Page Header -->
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+    <div>
+      <h1 class="text-primary table-heading-detail mb-1">Shift Rotation & Roster Management</h1>
+      <p class="text-muted mb-0 fs-6">Schedule rotations, and manage manual supervisor
+        overrides.</p>
+    </div>
+  </div>
+
+  <!-- Scheduler Simulation Widget -->
+  <!-- <div class="card border-0 mb-4 shadow-sm bg-gradient-scheduler">
+    <div class="card-body p-4 d-flex flex-md-row align-items-md-center justify-content-between gap-3 flex-column">
+      <div class="d-flex align-items-start gap-3">
+        <div class="icon-wrapper bg-white text-primary rounded-circle p-2 d-flex justify-content-center align-items-center shadow-sm">
+          <i class="fa-solid fa-robot fs-4"></i>
+        </div>
+        <div>
+          <h5 class="fw-bold text-white mb-1">Simulate Background Scheduler</h5>
+          <p class="text-white-50 mb-0 max-w-600 fs-7">
+            Automatically generate next week's roster. Rotates worker shifts using the standard formula: 
+            <strong>Shift A &rarr; C</strong>, 
+            <strong>Shift B &rarr; A</strong>, 
+            <strong>Shift C &rarr; B</strong> (Off days remain unchanged).
+          </p>
+        </div>
+      </div>
+      <button class="btn btn-light text-primary fw-bold px-4 py-2 border-0 shadow-sm hover-up text-nowrap" (click)="simulateSchedulerRun()">
+        <i class="fa-solid fa-play me-2"></i>Simulate Sunday 00:00 Run
+      </button>
+    </div>
+  </div> -->
+
+  <!-- Main Roster Card -->
+  <div class="card border-0 shadow-sm mb-4">
+    <div
+      class="card-header bg-white border-0 pt-4 px-4 pb-0 d-flex flex-wrap justify-content-between align-items-center gap-3">
+      <!-- Week Navigation & Filter Dropdown & Capsule Shift Tabs in one flex group -->
+      <div class="d-flex align-items-center gap-3 flex-wrap">
+        <div class="d-flex align-items-center gap-2">
+          <button class="btn btn-outline-secondary btn-icon rounded-circle" (click)="navigateWeek(-1)"
+            title="Previous Week">
+            <i class="fa-solid fa-chevron-left"></i>
+          </button>
+          <select class="form-select week-filter-dropdown" [(ngModel)]="selectedWeekMondayStr"
+            (change)="onWeekFilterChange(selectedWeekMondayStr)">
+            <option *ngFor="let wk of weeksList" [value]="wk.value">{{ wk.label }}</option>
+          </select>
+          <button class="btn btn-outline-secondary btn-icon rounded-circle" (click)="navigateWeek(1)" title="Next Week">
+            <i class="fa-solid fa-chevron-right"></i>
+          </button>
+        </div>
+
+        <!-- Inline Capsule Shift Tabs -->
+        <div class="d-flex gap-2 p-1 bg-light rounded-pill roster-tabs-wrapper"
+          style="width: fit-content; border: 1px solid #e2e8f0;">
+          <button class="btn rounded-pill px-3 py-1.5 tab-btn text-nowrap transition-all fw-semibold fs-8" [ngClass]="{
+                    'btn-primary shadow-sm text-white': activeTab === 'Shift A',
+                    'btn-light-text text-muted bg-transparent border-0': activeTab !== 'Shift A'
+                  }" (click)="activeTab = 'Shift A'">
+            <i class="fa-solid fa-sun me-1.5 text-warning animate-spin-hover"></i>Shift A
+          </button>
+          <button class="btn rounded-pill px-3 py-1.5 tab-btn text-nowrap transition-all fw-semibold fs-8" [ngClass]="{
+                    'btn-primary shadow-sm text-white': activeTab === 'Shift B',
+                    'btn-light-text text-muted bg-transparent border-0': activeTab !== 'Shift B'
+                  }" (click)="activeTab = 'Shift B'">
+            <i class="fa-solid fa-cloud-sun me-1.5 text-info"></i>Shift B
+          </button>
+          <button class="btn rounded-pill px-3 py-1.5 tab-btn text-nowrap transition-all fw-semibold fs-8" [ngClass]="{
+                    'btn-primary shadow-sm text-white': activeTab === 'Shift C',
+                    'btn-light-text text-muted bg-transparent border-0': activeTab !== 'Shift C'
+                  }" (click)="activeTab = 'Shift C'">
+            <i class="fa-solid fa-moon me-1.5 text-purple"></i>Shift C
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="d-flex gap-2">
+        <button class="btn btn-custom-primary px-3 py-2 animate-bounce-hover" (click)="openOverrideModal('change')">
+          <i class="fa-solid fa-pen-to-square me-2"></i>Manual Override
+        </button>
+        <button class="btn btn-outline-primary px-3 py-2" (click)="openOverrideModal('swap')">
+          <i class="fa-solid fa-arrow-right-arrow-left me-2"></i>Swap Shifts
+        </button>
+      </div>
+    </div>
+
+    <!-- Employee Roster Table View -->
+    <div class="card-body p-4 pt-2">
+      <div class="table-responsive-sm mt-2">
+        <table class="table table-bordered table-hover table-striped mb-0">
+          <thead class="table-header">
+            <tr>
+              <th style="width: 80px;"><p class="table-heading">Sr No.</p></th>
+              <th><p class="table-heading">Employee Name</p></th>
+              <th><p class="table-heading">Site</p></th>
+              <th><p class="table-heading">Department</p></th>
+              <th style="width: 150px;"><p class="table-heading">Active Shift</p></th>
+              <th style="width: 180px;"><p class="table-heading">Action</p></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let emp of getEmployeesForActiveShift(activeTab); index as i">
+              <td>
+                {{ i + 1 }}
+              </td>
+              <td>
+                <p>{{ emp.name }}</p>
+              </td>
+              <td>
+                <p>{{ emp.location }}</p>
+              </td>
+              <td>
+                <p>{{ emp.department }}</p>
+              </td>
+              <td>
+                <p>{{ activeTab }}</p>
+              </td>
+              <td>
+                <p class="d-flex gap-2 mb-0">
+                  <!-- Roster Details Button -->
+                  <button class="btn-action view-btn"
+                    (click)="openDetailsModal(emp)" data-tooltip="View Details" type="button">
+                    <i class="fa-solid fa-eye"></i>
+                  </button>
+                  <!-- Manual Override Button -->
+                  <button class="btn-action edit-btn"
+                    (click)="openOverrideModal('change', emp.id)" data-tooltip="Override Shift" type="button">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                  </button>
+                  <!-- Swap Shift Button -->
+                  <button class="btn-action history-btn"
+                    (click)="openOverrideModal('swap', emp.id)" data-tooltip="Swap Shift" type="button">
+                    <i class="fa-solid fa-arrow-right-arrow-left"></i>
+                  </button>
+                </p>
+              </td>
+            </tr>
+            <tr *ngIf="getEmployeesForActiveShift(activeTab).length === 0">
+              <td colspan="6" class="text-center py-4 text-muted">
+                No employees allocated to {{ activeTab }} in this week.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Audit Logs Section -->
+  <!-- <div class="card border-0 shadow-sm">
+    <div class="card-header bg-white border-0 pt-4 px-4 pb-2">
+      <h5 class="fw-bold text-dark mb-1">Shift Rotation & Override Logs</h5>
+      <p class="text-muted mb-0 fs-7">Audit trail of roster rotations, manual modifications, and standby assignments.
+      </p>
+    </div>
+    <div class="card-body px-4 pb-4 pt-2">
+      <div class="log-timeline">
+        <div *ngFor="let log of rotationLogs" class="log-item p-3 mb-3 border rounded-3 bg-light-hover transition">
+          <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap mb-1">
+            <div class="d-flex align-items-center gap-2">
+              <span class="badge text-white" [ngClass]="{
+                      'bg-info': log.type === 'Auto-Rotation',
+                      'bg-warning text-dark': log.type === 'Shift Override',
+                      'bg-success': log.type === 'Shift Swap',
+                      'bg-purple': log.type === 'Standby Assignment'
+                    }">
+                {{ log.type }}
+              </span>
+              <span class="text-muted fs-8"><i class="fa-solid fa-user-tie me-1"></i>{{ log.supervisor }}</span>
+            </div>
+            <span class="text-muted fs-8">{{ log.timestamp | date: 'dd MMM yyyy, hh:mm a' }}</span>
+          </div>
+          <p class="mb-0 text-dark fs-7">{{ log.description }}</p>
+        </div>
+      </div>
+    </div>
+  </div> -->
+</div>
+
+<!-- Shift Override Modal -->
+<div *ngIf="isOverrideModalOpen" class="modal-overlay" [@fadeIn]>
+  <div class="modal-dialog-large bg-white rounded-3 shadow-lg d-flex flex-column max-w-600 h-auto-modal">
+
+    <!-- Modal Header -->
+    <div class="modal-header-custom px-4 py-3 d-flex justify-content-between align-items-center border-bottom">
+      <h4 class="mb-0 text-primary fw-bold">Manual Shift Override</h4>
+      <button class="btn bg-transparent border-0 p-0" (click)="closeModal()">
+        <i class="fa-solid fa-xmark fs-4 text-muted"></i>
+      </button>
+    </div>
+
+    <!-- Modal Form -->
+    <form [formGroup]="overrideForm" (ngSubmit)="applyOverride()" class="d-flex flex-column overflow-hidden">
+      <div class="px-4 py-4 overflow-auto">
+        <!-- Action Type Radio Toggle -->
+        <div class="mb-4">
+          <label class="form-label form-lable-custom">Override Action *</label>
+          <div class="btn-group w-100" role="group">
+            <input type="radio" class="btn-check" name="type" id="btnChange" value="change" formControlName="type">
+            <label class="btn btn-outline-primary py-2 fs-7" for="btnChange">
+              <i class="fa-solid fa-pen me-1"></i>Change Shift
+            </label>
+
+            <input type="radio" class="btn-check" name="type" id="btnSwap" value="swap" formControlName="type">
+            <label class="btn btn-outline-primary py-2 fs-7" for="btnSwap">
+              <i class="fa-solid fa-arrow-right-arrow-left me-1"></i>Swap Shifts
+            </label>
+
+            <input type="radio" class="btn-check" name="type" id="btnStandby" value="standby" formControlName="type">
+            <label class="btn btn-outline-primary py-2 fs-7" for="btnStandby">
+              <i class="fa-solid fa-user-plus me-1"></i>Assign Standby
+            </label>
+          </div>
+        </div>
+
+        <div class="row g-3">
+          <!-- Date Selection -->
+          <div class="col-md-6">
+            <label class="form-label form-lable-custom">Select Date *</label>
+            <select class="form-select form-input-custom" formControlName="dateStr"
+              [ngClass]="{'is-invalid': overrideForm.get('dateStr')?.invalid && overrideForm.get('dateStr')?.touched}">
+              <option value="">Select Date</option>
+              <option *ngFor="let day of activeWeekDays" [value]="day.dateStr">{{ day.name }} ({{ day.date | date: 'dd
+                MMM' }})</option>
+            </select>
+            <div class="invalid-feedback">Please select a date.</div>
+          </div>
+
+          <!-- Primary Employee Selection -->
+          <div class="col-md-6">
+            <label class="form-label form-lable-custom">
+              {{ overrideForm.get('type')?.value === 'standby' ? 'Original Employee' : 'Employee' }} *
+            </label>
+            <select class="form-select form-input-custom" formControlName="employeeId"
+              [ngClass]="{'is-invalid': overrideForm.get('employeeId')?.invalid && overrideForm.get('employeeId')?.touched}">
+              <option value="">Select Employee</option>
+              <option *ngFor="let emp of employees" [value]="emp.id">{{ emp.name }} ({{ emp.designation }})</option>
+            </select>
+            <div class="invalid-feedback">Employee selection is required.</div>
+          </div>
+
+          <!-- Type Specific Controls -->
+
+          <!-- 1. Change Shift: Target Shift Dropdown -->
+          <div class="col-md-12 animate-fade" *ngIf="overrideForm.get('type')?.value === 'change'">
+            <label class="form-label form-lable-custom">New Assigned Shift *</label>
+            <select class="form-select form-input-custom" formControlName="newShift"
+              [ngClass]="{'is-invalid': overrideForm.get('newShift')?.invalid && overrideForm.get('newShift')?.touched}">
+              <option *ngFor="let shift of shifts" [value]="shift.code">{{ shift.name }} ({{ shift.time }})</option>
+            </select>
+            <div class="invalid-feedback">Target shift is required.</div>
+          </div>
+
+          <!-- 2. Swap Shifts: Swap With Employee Dropdown -->
+          <div class="col-md-12 animate-fade" *ngIf="overrideForm.get('type')?.value === 'swap'">
+            <label class="form-label form-lable-custom">Swap With Employee *</label>
+            <select class="form-select form-input-custom" formControlName="swapEmployeeId"
+              [ngClass]="{'is-invalid': overrideForm.get('swapEmployeeId')?.invalid && overrideForm.get('swapEmployeeId')?.touched}">
+              <option value="">Select Employee to Swap With</option>
+              <option *ngFor="let emp of employees" [value]="emp.id">{{ emp.name }} ({{ emp.designation }})</option>
+            </select>
+            <div class="invalid-feedback">Please select an employee to swap shifts with.</div>
+          </div>
+
+          <!-- 3. Assign Standby: Standby Employee Dropdown -->
+          <div class="col-md-12 animate-fade" *ngIf="overrideForm.get('type')?.value === 'standby'">
+            <label class="form-label form-lable-custom">Select Standby Employee *</label>
+            <select class="form-select form-input-custom" formControlName="standbyEmployeeId"
+              [ngClass]="{'is-invalid': overrideForm.get('standbyEmployeeId')?.invalid && overrideForm.get('standbyEmployeeId')?.touched}">
+              <option value="">Select Standby Worker</option>
+              <option *ngFor="let emp of employees" [value]="emp.id">{{ emp.name }} ({{ emp.designation }})</option>
+            </select>
+            <div class="invalid-feedback">Standby worker selection is required.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer Buttons -->
+      <div class="px-4 py-3 border-top bg-light text-end">
+        <button class="btn btn-secondary px-4 py-2 me-2" type="button" (click)="closeModal()">Cancel</button>
+        <button class="btn btn-custom-primary px-4 py-2" type="submit">
+          Apply Override
+        </button>
+      </div>
+    </form>
+
+  </div>
+</div>
+
+<!-- Modern Enterprise Employee Shift Overview Details Popup Modal -->
+<div *ngIf="isDetailsModalOpen" class="modal-overlay premium-detail-modal" [@fadeIn]>
+  <div class="modal-dialog-xlarge bg-white rounded-3 shadow-lg d-flex flex-column overflow-hidden animate-fade"
+    style="max-width: 900px; width: 95%; height: 90vh; border-radius: 16px;">
+
+    <!-- Premium Modal Header -->
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+      <div>
+        <h5 class="modal-title pt-1 mb-0">Monthly Roster Details</h5>
+        <p class="modal-subtitle">Full shift assignments and rotation history</p>
+      </div>
+      <button class="cross-btn-icon border-0 p-0" type="button" (click)="closeDetailsModal()">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <!-- Scrollable Body Content -->
+    <div class="card-body mb-0 overflow-auto" style="background: #fafbfd; padding: 24px !important;">
+      <!-- Premium Summary Banner - Consistent Steel Blue Brand Gradient -->
+      <div class="shift-summary-banner" style="background: linear-gradient(135deg, #468faf 0%, #2c7da0 100%); border-radius: 12px; padding: 20px 24px; color: #ffffff; box-shadow: 0 4px 20px rgba(70, 143, 175, 0.25); position: relative; overflow: hidden; margin-bottom: 24px;">
+        <div class="banner-content" style="position: relative; z-index: 2;">
+          <div class="banner-label" style="font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; opacity: 0.85; margin-bottom: 4px;">Employee Roster Details</div>
+          <div class="banner-value" style="font-size: 24px; font-weight: 800; line-height: 1.2; font-family: 'Montserrat', sans-serif;">{{ selectedEmployeeForDetails?.name }}</div>
+          <div class="banner-subtitle" style="font-size: 13px; opacity: 0.95; margin-top: 4px; display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-map-location-dot"></i> {{ selectedEmployeeForDetails?.location }}
+            <span class="mx-1">|</span>
+            <i class="fa-solid fa-briefcase"></i> {{ selectedEmployeeForDetails?.department }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Month Navigation & Summary Bar -->
+      <div class="bg-white border rounded-3 p-3 mb-4 d-flex flex-wrap align-items-center justify-content-between gap-3 shadow-xs" style="border: 1px solid #e2e8f0 !important;">
+        <!-- Month Stepper Selector -->
+        <div class="d-flex align-items-center gap-2">
+          <button class="btn btn-sm btn-outline-secondary rounded-circle" style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;" (click)="navigateMonth(-1)" title="Previous Month">
+            <i class="fa-solid fa-chevron-left"></i>
+          </button>
+          <div class="input-group" style="max-width: 175px;">
+            <span class="input-group-text bg-white text-muted border-end-0 py-1.5 px-2.5 fs-8" style="border-top-left-radius: 8px; border-bottom-left-radius: 8px; border-color: #cbd5e1;">
+              <i class="fa-solid fa-calendar-minus"></i>
+            </span>
+            <input type="month" class="form-control form-input-custom border-start-0 ps-0 py-1.5 fs-8 fw-semibold"
+              [(ngModel)]="selectedMonth" style="border-top-left-radius: 0; border-bottom-left-radius: 0; border-color: #cbd5e1; height: 34px;">
+          </div>
+          <button class="btn btn-sm btn-outline-secondary rounded-circle" style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;" (click)="navigateMonth(1)" title="Next Month">
+            <i class="fa-solid fa-chevron-right"></i>
+          </button>
+        </div>
+
+        <!-- Quick Summary Totals -->
+        <div class="d-flex align-items-center gap-2 flex-wrap" *ngIf="selectedEmployeeForDetails">
+          <span class="fs-8 text-muted fw-semibold me-1">Monthly Summary:</span>
+          <span class="badge bg-light-primary text-primary border border-primary-light px-2.5 py-1.5 fs-8 rounded-pill fw-semibold">
+            Shift A: {{ getMonthlyBreakdown(selectedEmployeeForDetails.id).shiftACount }} days
+          </span>
+          <span class="badge bg-light-success text-success border border-success-light px-2.5 py-1.5 fs-8 rounded-pill fw-semibold">
+            Shift B: {{ getMonthlyBreakdown(selectedEmployeeForDetails.id).shiftBCount }} days
+          </span>
+          <span class="badge bg-light-orange text-orange border border-orange-light px-2.5 py-1.5 fs-8 rounded-pill fw-semibold">
+            Shift C: {{ getMonthlyBreakdown(selectedEmployeeForDetails.id).shiftCCount }} days
+          </span>
+          <span class="badge bg-light text-muted border px-2.5 py-1.5 fs-8 rounded-pill fw-semibold">
+            Off: {{ getMonthlyBreakdown(selectedEmployeeForDetails.id).offCount }} days
+          </span>
+        </div>
+      </div>
+
+      <!-- Weekly grouped cards container -->
+      <div class="grid-section-title" style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #64748b; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">Roster Calendar Timeline</div>
+      <div class="d-flex flex-column gap-3">
+        <!-- Loop over each week grouped list -->
+        <div *ngFor="let wk of getWeeksWithDays()" class="card border-0 shadow-sm rounded-3 overflow-hidden" style="border: 1px solid #e2e8f0 !important;">
+          <div class="card-header bg-white border-bottom py-3 px-4 d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%) !important;">
+            <h6 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2" style="font-family: 'Montserrat', sans-serif; font-size: 14px;">
+              <i class="fa-regular fa-calendar text-primary fs-6"></i>
+              {{ wk.name }} <span class="text-muted font-normal fs-8">(Days: {{ wk.label }})</span>
+            </h6>
+            <span class="badge bg-light text-muted font-semibold border px-2.5 py-1 fs-9 rounded-pill">
+              {{ wk.days.length }} Days Listed
+            </span>
+          </div>
+
+          <div class="card-body p-0" style="background: #ffffff;">
+            <!-- Weekly timeline list block -->
+            <div class="list-group list-group-flush">
+              <div *ngFor="let day of wk.days" 
+                class="list-group-item d-flex align-items-center justify-content-between py-3 px-4 transition-all border-0 border-bottom-1"
+                style="border-bottom: 1px solid #f1f5f9; background: #ffffff;">
+                
+                <!-- 1. Left Section: Date & Weekday -->
+                <div class="d-flex align-items-center gap-3" style="min-width: 180px;">
+                  <div class="icon-circle bg-light text-primary rounded-circle p-2 d-flex align-items-center justify-content-center fw-bold shadow-xs" style="width: 36px; height: 36px; font-size: 13px; background: #f1f5f9; color: #2c7da0;">
+                    {{ day.dayNum }}
+                  </div>
+                  <div>
+                    <span class="d-block fw-bold text-dark fs-7" style="font-family: 'Montserrat', sans-serif;">{{ day.dayNum | number:'2.0-0' }} {{ getSelectedMonthLabel().split(' ')[0] }}</span>
+                    <span class="text-muted fs-8 font-medium">{{ day.dayName }}</span>
+                  </div>
+                </div>
+
+                <!-- 2. Middle Section: Assigned Shift Badge & Timings -->
+                <div class="d-flex align-items-center gap-4 flex-grow-1 px-3 justify-content-end">
+                  <!-- Shift Code badge with clean visual colors -->
+                  <div>
+                    <span class="badge rounded-pill font-bold px-3 py-1.5 fs-8 text-white shadow-xs d-inline-block text-center" style="min-width: 85px; font-weight: 700;" [ngClass]="{
+                            'bg-primary': day.shiftCode === 'Shift A',
+                            'bg-success': day.shiftCode === 'Shift B',
+                            'bg-orange': day.shiftCode === 'Shift C',
+                            'bg-secondary': day.shiftCode === 'Off' || day.shiftCode === 'Leave' || day.shiftCode === 'Holiday'
+                          }">
+                      {{ day.shiftCode }}
+                    </span>
+                  </div>
+                  <!-- Exact Timing Duration -->
+                  <div class="d-flex align-items-center gap-2 text-muted fs-8" style="min-width: 140px;">
+                    <i class="fa-regular fa-clock fs-8"></i>
+                    <span class="fw-semibold text-dark">{{ day.timeLabel }}</span>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer Panel -->
+    <div class="modal-footer px-4 py-3 border-top bg-white text-end">
+      <button class="btn btn-premium-close px-4 py-2" (click)="closeDetailsModal()">
+        Close
+      </button>
+    </div>
+
+  </div>
+</div>

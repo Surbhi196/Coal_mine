@@ -1,0 +1,420 @@
+<div *ngIf="openSecondsuccess" class="modal-container-success fixed top-4 right-4 z-50 max-w-sm" [@slideIn]
+  role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div class="bg-green-50 border border-green-200 rounded-lg shadow-lg">
+    <div class="p-4 flex items-center space-x-3">
+      <span class="text-green-600 text-xl"><i class="fa-solid fa-check"></i>
+      </span>
+      <p class="text-green-800 font-semibold text-lg">Login successful!</p>
+    </div>
+  </div>
+</div>
+
+<div
+  class="dashboard-wrapper flex flex-col w-full h-full px-2 md:px-6 pt-2 pb-3 overflow-hidden text-slate-800 relative">
+  <!-- Ambient Glassmorphic Glow Orbs -->
+  <div
+    class="ambient-glow-orb-1 absolute right-[-5%] top-[-10%] w-[350px] h-[350px] rounded-full bg-sky-300/30 blur-[120px] pointer-events-none z-0">
+  </div>
+  <div
+    class="ambient-glow-orb-2 absolute left-[-5%] bottom-[-10%] w-[350px] h-[350px] rounded-full bg-emerald-200/20 blur-[120px] pointer-events-none z-0">
+  </div>
+
+  <!-- Control Header Card -->
+  <div
+    class="control-header flex flex-col md:flex-row justify-between items-center p-4 mb-3 gap-4 rounded-2xl shadow-md border glass-effect z-10">
+    <div class="flex items-center gap-3.5">
+      <div
+        class="header-icon-container flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-tr from-sky-400 to-sky-600 text-white shadow-md shadow-sky-500/10">
+        <i class="fa-solid fa-user-shield text-2xl"></i>
+      </div>
+      <div>
+        <h1
+          class="text-xl md:text-2xl font-black tracking-tight text-slate-900 bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-700">
+          COAL MINE</h1>
+        <p class="text-xs text-slate-500 font-bold uppercase tracking-wider">Operational Overview & Module Telemetry |
+          Hello, <span class="text-sky-600 font-extrabold">{{ name || 'Admin' }}</span></p>
+      </div>
+    </div>
+
+    <!-- Live Clock & Shift Dashboard Panel -->
+    <div class="flex items-center gap-6 glass-panel px-5 py-2 rounded-2xl border border-slate-200/40 shadow-inner">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-sky-50 flex items-center justify-center text-sky-500">
+          <i class="fa-solid fa-clock text-base animate-pulse"></i>
+        </div>
+        <div class="text-left">
+          <span class="block text-sm font-extrabold text-slate-800 tracking-wider tabular-nums leading-none mb-1">{{
+            currentTime | date:'hh:mm:ss a' }}</span>
+          <span class="block text-[9px] text-slate-400 font-extrabold uppercase tracking-widest">{{ currentTime |
+            date:'EEEE, MMM d, y' }}</span>
+        </div>
+      </div>
+      <div class="h-6 w-px bg-slate-200/70"></div>
+      <div class="flex items-center gap-3">
+        <span class="relative flex h-3.5 w-3.5">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+          <span
+            class="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500 shadow-md shadow-emerald-500/20"></span>
+        </span>
+        <div>
+          <span class="block text-xs font-black text-slate-800 tracking-tight">{{ currentShift }}</span>
+          <span class="block text-[9px] text-slate-400 font-extrabold uppercase tracking-widest">Active Shift</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions & Quick Stats -->
+    <div class="flex items-center gap-3.5">
+      <!-- Premium Interactive Payroll Badge next to clock -->
+      <div [routerLink]="['/admin/payroll-management']"
+        class="flex items-center gap-2 bg-amber-50 text-amber-700 px-3.5 py-2 rounded-xl text-xs font-black border border-amber-100/80 shadow-sm shadow-amber-500/5 clickable-panel animate-pulse"
+        title="Open Payroll Management Console">
+        <i class="fa-solid fa-file-invoice-dollar text-[10px]"></i>
+        <span class="tracking-wide uppercase text-[10px]">Payroll: {{ metrics.payroll.status }}</span>
+      </div>
+
+      <div
+        class="flex items-center gap-2 bg-emerald-50 text-emerald-700 px-3.5 py-2 rounded-xl text-xs font-black border border-emerald-100/80 shadow-sm shadow-emerald-500/5">
+        <i class="fa-solid fa-circle-check text-xs text-emerald-600 animate-pulse"></i>
+        <span class="tracking-wide uppercase text-[10px]">System Online</span>
+      </div>
+
+      <button (click)="refreshDashboard()"
+        class="flex items-center justify-center w-10 h-10 rounded-xl border border-slate-200/80 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 transition-all duration-200 shadow-sm hover:scale-105 active:scale-95"
+        title="Sync Operations">
+        <i class="fa-solid fa-arrows-rotate text-sm" [class.animate-spin]="loading"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Bento Grid Dashboard Layout (Perfect 2-Row Height Bound Grid) -->
+  <div
+    class="bento-grid grid grid-cols-1 md:grid-cols-4 gap-4 flex-grow min-h-0 overflow-y-auto md:overflow-hidden pb-4 md:pb-0 z-10">
+
+    <!-- CARD 1: Employee & Shift Control (Row 1 - Span 2 col) -->
+    <div
+      class="bento-card col-span-1 md:col-span-2 flex flex-col p-4 rounded-3xl border glass-effect relative overflow-hidden">
+      <!-- Glow corner -->
+      <div
+        class="absolute -right-16 -top-16 w-48 h-48 rounded-full bg-gradient-to-tr from-sky-300 to-indigo-300 opacity-20 blur-3xl pointer-events-none">
+      </div>
+
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-2.5">
+          <div
+            class="w-8 h-8 rounded-xl bg-gradient-to-br from-sky-50 to-sky-100/50 flex items-center justify-center text-sky-600 shadow-sm border border-sky-100">
+            <i class="fa-solid fa-users-gear text-sm"></i>
+          </div>
+          <span class="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest">Workforce & Shift
+            Control</span>
+        </div>
+        <span
+          class="text-[9px] bg-sky-50 text-sky-700 font-extrabold px-2 py-0.5 rounded-lg border border-sky-100 uppercase tracking-wider">LIVE
+          TELEMETRY</span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-3 flex-grow items-center">
+        <!-- Left Column: Attendance Stats (Clickable) -->
+        <div [routerLink]="['/admin/employee-management']"
+          class="md:col-span-6 flex items-center justify-between gap-4 border-r border-slate-100 pr-2 clickable-panel p-2 rounded-2xl"
+          title="Open Employee & Attendance Management">
+          <div>
+            <div class="flex items-baseline gap-1">
+              <span
+                class="text-3xl font-black text-slate-900 tracking-tight bg-clip-text text-transparent bg-gradient-to-b from-slate-900 to-slate-800">{{
+                metrics.workforce.active }}</span>
+              <span class="text-xs font-bold text-slate-400">/ {{ metrics.workforce.total }}</span>
+            </div>
+            <span class="block text-[9px] text-slate-400 font-extrabold uppercase tracking-widest mt-1">On-Duty
+              Personnel</span>
+            <span class="block text-[8px] text-slate-400 font-medium mt-0.5">Total Employee Strength</span>
+          </div>
+
+          <!-- Circular Attendance Ring -->
+          <div class="relative w-14 h-14 flex-shrink-0">
+            <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+              <path class="text-slate-100" stroke-width="3.5" stroke="currentColor" fill="none"
+                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+              <path class="text-sky-500" [attr.stroke-dasharray]="metrics.workforce.attendanceRate + ', 100'"
+                stroke-width="3.5" stroke-linecap="round" stroke="currentColor" fill="none"
+                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+            </svg>
+            <div class="absolute inset-0 flex flex-col items-center justify-center">
+              <span class="text-[11px] font-black text-slate-800 leading-none">{{ metrics.workforce.attendanceRate
+                }}%</span>
+              <span class="text-[6px] font-extrabold text-slate-400 uppercase tracking-wider mt-0.5">Rate</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column: Active Shift & Rotation Progress (Clickable) -->
+        <div [routerLink]="['/admin/shift-management']"
+          class="md:col-span-6 flex flex-col justify-center pl-2 clickable-panel p-2 rounded-2xl"
+          title="Open Shift Rotation Management">
+          <div
+            class="flex justify-between items-center text-[9px] font-extrabold text-slate-500 uppercase tracking-widest mb-1.5">
+            <span class="text-indigo-600 truncate max-w-[120px]">{{ metrics.shifts.currentName }}</span>
+            <span class="bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded text-[8px]">{{
+              metrics.shifts.allocatedEmployees }} Staff</span>
+          </div>
+
+          <!-- Progress bar -->
+          <div
+            class="w-full bg-slate-100/70 rounded-full h-2.5 mb-2 overflow-hidden border border-slate-200/50 relative shadow-inner">
+            <div
+              class="bg-gradient-to-r from-sky-400 via-sky-500 to-indigo-600 h-full rounded-full transition-all duration-1000 ease-out relative"
+              [style.width.%]="metrics.shifts.progress">
+              <div class="absolute inset-0 bg-white/20 animate-progress-shine"></div>
+            </div>
+          </div>
+
+          <div
+            class="flex justify-between items-center text-[8px] text-slate-400 font-extrabold uppercase tracking-wider">
+            <span>Next Rotation:</span>
+            <span class="text-slate-500 text-right truncate max-w-[150px]">{{ metrics.shifts.nextShift }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CARD 2: Leave Management Panel (Row 1 - Span 1 col) (Clickable) -->
+    <div [routerLink]="['/admin/leave-management']"
+      class="bento-card flex flex-col p-4 rounded-3xl border glass-effect relative overflow-hidden clickable-panel"
+      title="Open Leave Management & Actions">
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-2.5">
+          <div
+            class="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-50 to-emerald-100/50 flex items-center justify-center text-emerald-600 shadow-sm border border-emerald-100">
+            <i class="fa-solid fa-calendar-times text-sm"></i>
+          </div>
+          <span class="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest">Leave Mgt.</span>
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-2.5 flex-grow justify-center mb-2">
+        <div
+          class="flex items-center justify-between bg-gradient-to-r from-rose-50/60 to-white/30 p-2.5 rounded-xl border border-rose-100/40 shadow-sm">
+          <div>
+            <span class="block text-[8px] text-rose-600 font-black uppercase tracking-wider mb-0.5">Pending
+              Leaves</span>
+            <span class="text-2xl font-black text-rose-950 tracking-tight">{{ metrics.leaves.pending }}
+              Applications</span>
+          </div>
+          <div class="w-8 h-8 rounded-lg bg-rose-50 text-rose-500 flex items-center justify-center text-lg">
+            <i class="fa-solid fa-bell"></i>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 text-[8px] font-extrabold text-slate-500 uppercase">
+          <div class="flex flex-col bg-slate-50/50 p-2 rounded-xl border border-slate-200/20">
+            <span class="text-slate-400 mb-0.5">APPROVED (M)</span>
+            <span class="text-sm font-black text-emerald-600">{{ metrics.leaves.approvedThisMonth }}</span>
+          </div>
+          <div class="flex flex-col bg-slate-50/50 p-2 rounded-xl border border-slate-200/20">
+            <span class="text-slate-400 mb-0.5">REJECTED (M)</span>
+            <span class="text-sm font-black text-slate-600">{{ metrics.leaves.rejectedThisMonth }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CARD 3: Training Management Console (Row 1 - Span 1 col) (Clickable) -->
+    <div [routerLink]="['/admin/training-management']"
+      class="bento-card flex flex-col p-4 rounded-3xl border glass-effect relative overflow-hidden clickable-panel"
+      title="Open Training Management & Master">
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-2.5">
+          <div
+            class="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-50 to-indigo-100/50 flex items-center justify-center text-indigo-600 shadow-sm border border-indigo-100">
+            <i class="fa-solid fa-graduation-cap text-sm"></i>
+          </div>
+          <span class="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest">Training Mgt.</span>
+        </div>
+        <span
+          class="text-[9px] bg-indigo-50 text-indigo-700 font-extrabold px-2 py-0.5 rounded-lg border border-indigo-100 uppercase">ACTIVE</span>
+      </div>
+
+      <div class="flex flex-col gap-2.5 flex-grow justify-center mb-2">
+        <div class="flex items-center justify-between gap-2">
+          <div>
+            <span class="text-3xl font-black text-slate-900 tracking-tight">{{ metrics.training.activePrograms }}</span>
+            <span class="text-[10px] font-bold text-indigo-600 ml-0.5">Programs Active</span>
+            <span class="block text-[8px] text-slate-400 font-extrabold uppercase tracking-widest mt-1">{{
+              metrics.training.enrolledEmployees }} WORKERS ENROLLED</span>
+          </div>
+
+          <div class="relative w-11 h-11 flex-shrink-0">
+            <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+              <path class="text-slate-100" stroke-width="3.5" stroke="currentColor" fill="none"
+                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+              <path class="text-indigo-500" [attr.stroke-dasharray]="metrics.training.completionRate + ', 100'"
+                stroke-width="3.5" stroke-linecap="round" stroke="currentColor" fill="none"
+                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+            </svg>
+            <div class="absolute inset-0 flex items-center justify-center">
+              <span class="text-[9px] font-black text-slate-800">{{ metrics.training.completionRate }}%</span>
+            </div>
+          </div>
+        </div>
+
+        <div
+          class="border-t border-slate-100 pt-2 flex items-center gap-1.5 text-[8px] text-slate-400 font-extrabold uppercase tracking-wide">
+          <i class="fa-solid fa-hourglass-half text-indigo-500"></i>
+          <span class="truncate max-w-[180px]">{{ metrics.training.upcomingSession }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- CARD 4: Fleet, Fuel & Vehicle Management (Row 2 - Span 2 col) -->
+    <div
+      class="bento-card col-span-1 md:col-span-2 flex flex-col p-4 rounded-3xl border glass-effect relative overflow-hidden">
+      <!-- Glow corner -->
+      <div
+        class="absolute -right-16 -top-16 w-48 h-48 rounded-full bg-gradient-to-tr from-emerald-300 to-sky-300 opacity-20 blur-3xl pointer-events-none">
+      </div>
+
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-2.5">
+          <div
+            class="w-8 h-8 rounded-xl bg-gradient-to-br from-rose-50 to-rose-100/50 flex items-center justify-center text-rose-600 shadow-sm border border-rose-100">
+            <i class="fa-solid fa-truck-moving text-sm"></i>
+          </div>
+          <span class="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest">Fleet & Fuel
+            Telemetry</span>
+        </div>
+        <div
+          class="flex items-center gap-1 bg-emerald-50 text-emerald-700 font-extrabold px-2.5 py-0.5 rounded-lg border border-emerald-100/80 text-[10px] shadow-sm">
+          <i class="fa-solid fa-gas-pump text-[9px] animate-pulse"></i>
+          <span class="uppercase tracking-wider text-[8px]">{{ metrics.fuel.activeStations }} STATIONS ONLINE</span>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-center flex-grow">
+        <!-- Vehicle Fleet (Span 5) (Clickable) -->
+        <div [routerLink]="['/admin/vehicle-management']"
+          class="md:col-span-5 flex flex-col justify-center p-3 rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100/50 border border-slate-200/40 shadow-inner h-full clickable-panel"
+          title="Open Vehicle & Fleet Management">
+          <span class="text-[8px] font-extrabold text-slate-400 uppercase tracking-wider mb-1.5">VEHICLES IN
+            ACTION</span>
+          <div class="flex items-center gap-2 mb-1.5">
+            <i class="fa-solid fa-truck text-lg text-slate-600 drop-shadow-sm"></i>
+            <span class="text-3xl font-black text-slate-900 tracking-tight leading-none">{{ metrics.fleet.vehiclesActive
+              }}</span>
+            <span class="text-xs font-bold text-slate-400">/ {{ metrics.fleet.vehiclesTotal }} Active</span>
+          </div>
+          <div class="w-full bg-slate-200 rounded-full h-1 overflow-hidden">
+            <div class="bg-indigo-500 h-full rounded-full"
+              [style.width.%]="(metrics.fleet.vehiclesActive / metrics.fleet.vehiclesTotal) * 100"></div>
+          </div>
+        </div>
+
+        <!-- Fuel Station metrics (Span 7) (Clickable) -->
+        <div [routerLink]="['/admin/fuel']"
+          class="md:col-span-7 flex flex-col justify-center pl-2 h-full clickable-panel p-2.5 rounded-2xl"
+          title="Open Fuel Management & Dispatches">
+          <span class="text-[8px] font-extrabold text-slate-400 uppercase tracking-widest mb-1.5">FUEL MANAGEMENT
+            STATUS</span>
+          <div class="grid grid-cols-2 gap-3">
+            <div class="flex flex-col bg-slate-50/50 p-2 rounded-xl border border-slate-200/20">
+              <span class="text-[7px] text-slate-400 font-extrabold uppercase mb-0.5">AVG CONSUMPTION</span>
+              <span class="text-sm font-black text-slate-800">{{ metrics.fuel.avgConsumption }}</span>
+            </div>
+            <div class="flex flex-col bg-slate-50/50 p-2 rounded-xl border border-slate-200/20">
+              <span class="text-[7px] text-slate-400 font-extrabold uppercase mb-0.5">REFUELINGS TODAY</span>
+              <span class="text-sm font-black text-slate-800">{{ metrics.fuel.refuelingsToday }} Dispatch</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CARD 5: Dedicated Inventory Stock Levels (Row 2 - Span 2 col) -->
+    <div [routerLink]="['/admin/inventory-management']"
+      class="bento-card col-span-1 md:col-span-2 flex flex-col p-4 rounded-3xl border glass-effect relative overflow-hidden clickable-panel"
+      title="Open Inventory & Stock Management">
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-2.5">
+          <div
+            class="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-50 to-amber-100/50 flex items-center justify-center text-amber-600 shadow-sm border border-amber-100">
+            <i class="fa-solid fa-box-open text-sm"></i>
+          </div>
+          <span class="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest">Inventory Stock
+            Levels</span>
+        </div>
+        <span
+          class="text-[9px] bg-amber-50 text-amber-700 font-extrabold px-2.5 py-0.5 rounded-lg border border-amber-100 uppercase tracking-wider">
+          {{ metrics.inventory.totalCategories }} ACTIVE CATEGORIES
+        </span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-3 flex-grow items-center">
+        <!-- Stock Summary Left Column (Span 5) -->
+        <div class="md:col-span-5 flex flex-col gap-2 justify-center border-r border-slate-100 pr-2 h-full">
+          <div>
+            <span class="text-[8px] font-extrabold text-slate-400 uppercase tracking-wider block mb-0.5">TOTAL AVAILABLE
+              STOCK</span>
+            <span class="text-3xl font-black text-slate-900 tracking-tight leading-none">{{ metrics.inventory.totalItems
+              }}</span>
+            <span class="block text-[8px] text-slate-400 font-bold uppercase mt-1.5">{{ metrics.inventory.totalProducts
+              }} Unique Products</span>
+          </div>
+        </div>
+
+        <!-- Category Wise Stock Distribution Right Column (Span 7) -->
+        <div class="md:col-span-7 flex flex-col justify-center pl-2 h-full">
+          <span class="text-[8px] font-extrabold text-slate-400 uppercase tracking-widest mb-2 block">STOCK BY
+            CATEGORY</span>
+
+          <div class="grid grid-cols-2 gap-x-4 gap-y-2.5">
+            <!-- Pump House & Trancher -->
+            <div class="flex flex-col">
+              <div class="flex items-center justify-between text-[9px] font-extrabold text-slate-600 mb-0.5">
+                <span class="truncate max-w-[90px]">Pump House + Trancher</span>
+                <span>680.9K</span>
+              </div>
+              <div class="w-full bg-slate-100 rounded-full h-1 overflow-hidden">
+                <div class="bg-amber-500 h-full rounded-full w-[100%]"></div>
+              </div>
+            </div>
+
+            <!-- Electrical & IRP -->
+            <div class="flex flex-col">
+              <div class="flex items-center justify-between text-[9px] font-extrabold text-slate-600 mb-0.5">
+                <span class="truncate max-w-[90px]">IRP & Wires</span>
+                <span>185 Qty</span>
+              </div>
+              <div class="w-full bg-slate-100 rounded-full h-1 overflow-hidden">
+                <div class="bg-sky-500 h-full rounded-full w-[25%]"></div>
+              </div>
+            </div>
+
+            <!-- Misc Operations -->
+            <div class="flex flex-col">
+              <div class="flex items-center justify-between text-[9px] font-extrabold text-slate-600 mb-0.5">
+                <span class="truncate max-w-[90px]">Misc Operations</span>
+                <span>45 Qty</span>
+              </div>
+              <div class="w-full bg-slate-100 rounded-full h-1 overflow-hidden">
+                <div class="bg-indigo-500 h-full rounded-full w-[15%]"></div>
+              </div>
+            </div>
+
+            <!-- Civil Work -->
+            <div class="flex flex-col">
+              <div class="flex items-center justify-between text-[9px] font-extrabold text-slate-600 mb-0.5">
+                <span class="truncate max-w-[90px]">Civil Work & Pipes</span>
+                <span>1 Qty</span>
+              </div>
+              <div class="w-full bg-slate-100 rounded-full h-1 overflow-hidden">
+                <div class="bg-emerald-500 h-full rounded-full w-[5%]"></div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>

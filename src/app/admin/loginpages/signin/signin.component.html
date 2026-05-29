@@ -1,0 +1,79 @@
+<div class="card login-card border-0 shadow-lg h-100 w-100">
+  <div class="card-body p-4 p-md-5 d-flex flex-column justify-content-center">
+
+    <div class="text-center mb-4">
+      <img src="./assets/logo.png" class="logo-image mb-3" alt="Logo" style="max-height: 70px;" />
+      <h3 class="fw-bold text-primary mb-2 text-capitalize">{{ title }}</h3>
+      <p class="text-muted small">Welcome back! Please enter your details.</p>
+      <p class="text-muted small">To test a successful login, use the email admin&#64;demo.com with the password 123456.
+      </p>
+    </div>
+
+    <form [formGroup]="signIn" (ngSubmit)="onSignIn()">
+
+      <!-- Email Field -->
+      <div class="mb-4">
+        <label class="form-label form-lable-custom text-muted fw-semibold" for="email">Email Address</label>
+        <div class="input-group custom-input-group"
+          [ngClass]="{'has-error': signIn.controls['email'].errors && (signIn.controls['email'].touched || signIn.controls['email'].dirty)}">
+          <span class="input-group-text bg-transparent border-end-0 text-muted">
+            <i class="fa-regular fa-envelope"></i>
+          </span>
+          <input type="email" class="form-control border-start-0 ps-0" formControlName="email"
+            placeholder="Enter your email address" />
+        </div>
+        <div class="text-danger error-message mt-1"
+          *ngIf="signIn.controls['email'].errors && (signIn.controls['email'].touched || signIn.controls['email'].dirty)">
+          <small class="fw-medium" *ngIf="signIn.controls['email'].errors['required']">Email is required</small>
+          <small class="fw-medium" *ngIf="signIn.controls['email'].errors['pattern']">Please enter a valid email
+            address</small>
+        </div>
+      </div>
+
+      <!-- Password Field -->
+      <div class="mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <label class="form-label form-lable-custom text-muted fw-semibold m-0" for="password">Password</label>
+          <a class="text-primary small fw-semibold text-decoration-none cursor" (click)="forgotPassword()">Forgot
+            password?</a>
+        </div>
+        <div class="input-group custom-input-group"
+          [ngClass]="{'has-error': signIn.controls['password'].errors && (signIn.controls['password'].touched || signIn.controls['password'].dirty)}">
+          <span class="input-group-text bg-transparent border-end-0 text-muted">
+            <i class="fa-solid fa-lock"></i>
+          </span>
+          <input [type]="showPassword ? 'text' : 'password'" class="form-control border-start-0 border-end-0 ps-0"
+            formControlName="password" placeholder="Enter your password" />
+          <span class="input-group-text bg-transparent border-start-0 cursor text-muted"
+            (click)="togglePasswordVisibility()">
+            <i class="fa-regular" [ngClass]="showPassword ? 'fa-eye-slash' : 'fa-eye'"></i>
+          </span>
+        </div>
+        <div class="text-danger error-message mt-1"
+          *ngIf="signIn.controls['password'].errors && (signIn.controls['password'].touched || signIn.controls['password'].dirty)">
+          <small class="fw-medium" *ngIf="signIn.controls['password'].errors['required']">Password is required</small>
+          <small class="fw-medium" *ngIf="signIn.controls['password'].errors['minlength']">Password must be at least 6
+            characters</small>
+        </div>
+      </div>
+
+      <div class="text-center error-message mb-4" *ngIf="errorMessage">
+        <small class="fw-bold text-danger bg-danger bg-opacity-10 py-1 px-3 rounded">{{ errorMessage }}</small>
+      </div>
+
+      <!-- Submit Button -->
+      <button type="submit" class="btn btn-primary w-100 py-2 mb-3 fw-bold login-btn shadow-sm text-white">
+        Sign In
+      </button>
+
+    </form>
+  </div>
+</div>
+
+<!-- Success Modal -->
+<div *ngIf="openSecondsuccess" class="modal-container" [@slideIn]>
+  <div class="p-4 d-flex justify-content-between align-items-center success-content bg-white shadow-lg">
+    <span class="icon-success me-3 text-success fs-3"><i class="fa-solid fa-circle-check"></i></span>
+    <p class="text-success m-0 fw-bold fs-5">Login successfully</p>
+  </div>
+</div>

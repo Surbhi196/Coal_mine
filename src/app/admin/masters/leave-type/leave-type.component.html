@@ -1,0 +1,424 @@
+<div class="container mb-4">
+  <div class="d-flex justify-content-between align-items-center flex-wrap">
+    <h1 class="text-primary table-heading-detail">Leave Type Management</h1>
+    <div>
+      <button
+        class="btn btn-custom-primary px-4 py-2 me-2"
+        (click)="openAddModal()"
+      >
+        Add Leave Type
+      </button>
+    </div>
+  </div>
+
+  <div class="card border-0 my-4 px-4 py-4">
+    <div class="d-md-flex justify-content-between align-items-center my-3">
+      <div class="d-flex align-items-center mb-md-0 mb-2">
+        <span class="me-1 show-entery-text">Show</span>
+        <select
+          class="form-control form-select show-entries-select"
+          (change)="onTableSizeChange($event)"
+        >
+          <option *ngFor="let size of tableSizes" [ngValue]="size">
+            {{ size }}
+          </option>
+        </select>
+        <span class="ms-1 show-entery-text">entries</span>
+      </div>
+
+      <div class="d-flex align-items-center">
+        <form [formGroup]="searchbarform" class="d-flex align-items-center">
+          <span class="me-1">Search:</span>
+          <div>
+            <input
+              type="text"
+              class="form-control search-user position-relative"
+              autocomplete="off"
+              formControlName="searchbar"
+              [ngClass]="{
+                'is-invalid':
+                  searchbarform.controls['searchbar'].errors &&
+                  (searchbarform.controls['searchbar'].touched ||
+                    searchbarform.controls['searchbar'].dirty),
+              }"
+            />
+            <div
+              class="text-danger error-message d-block"
+              *ngIf="
+                searchbarform.controls['searchbar'].errors &&
+                (searchbarform.controls['searchbar'].touched ||
+                  searchbarform.controls['searchbar'].dirty)
+              "
+            >
+              <p
+                class="fw-light text-danger search-required"
+                *ngIf="searchbarform.controls['searchbar'].errors['required']"
+              >
+                This is required
+              </p>
+            </div>
+          </div>
+
+          <button class="btn btn-primary search-btn ms-2" (click)="searchfun()">
+            <span
+              ><i
+                class="fa-solid fa-magnifying-glass form-control-feedback text-white"
+              ></i
+            ></span>
+          </button>
+          <button
+            class="btn btn-primary search-btn ms-2"
+            (click)="resetsearchbar()"
+            type="button"
+            *ngIf="showreset == true"
+          >
+            <span
+              ><i
+                class="fa-solid fa-rotate-right form-control-feedback text-white"
+              ></i
+            ></span>
+          </button>
+        </form>
+      </div>
+    </div>
+    <div class="table-responsive-sm mt-2">
+      <!-- Table View for lg+ -->
+      <div class="hidden lg:block">
+        <table class="table table-bordered table-hover table-striped mb-0">
+          <thead class="table-header">
+            <tr *ngFor="let detail of table_heading">
+              <th><p class="table-heading">{{ detail.heading0 }}</p></th>
+              <th><p class="table-heading">{{ detail.heading1 }}</p></th>
+              <th><p class="table-heading">{{ detail.heading2 }}</p></th>
+              <th><p class="table-heading">{{ detail.heading3 }}</p></th>
+              <th><p class="table-heading">{{ detail.heading4 }}</p></th>
+              <th><p class="table-heading">{{ detail.heading5 }}</p></th>
+              <th><p class="table-heading">{{ detail.heading6 }}</p></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              *ngFor="
+                let leaveType of leaveTypeList
+                  | paginate
+                    : {
+                        itemsPerPage: tableSize != 'all' ? tableSize : totalRecords,
+                        currentPage: page,
+                        totalItems: totalRecords,
+                      };
+                index as i
+              "
+            >
+              <td>
+                {{
+                  tableSize * (page - 1) + i + 1 > 0
+                    ? tableSize * (page - 1) + i + 1
+                    : i + 1
+                }}
+              </td>
+              <td><p>{{ leaveType.leaveCode }}</p></td>
+              <td><p>{{ leaveType.leaveName }}</p></td>
+              <td>
+                <span class="badge" [ngClass]="leaveType.isPaid ? 'bg-success' : 'bg-warning text-dark'">
+                  {{ leaveType.isPaid ? 'Paid' : 'Unpaid' }}
+                </span>
+              </td>
+              <td><p>{{ leaveType.annualLimit }}</p></td>
+              <td>
+                <p
+                  [ngClass]="{
+                    'active-status': leaveType.is_active == 1 ? 1 : 0,
+                    'deactive-status': leaveType.is_active == 1 ? 0 : 1,
+                  }"
+                >
+                  {{ leaveType.is_active == 1 ? "active" : "deactive" }}
+                </p>
+              </td>
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <button class="btn-action edit-btn" (click)="OpenEditModal(leaveType)" data-tooltip="Edit">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                  </button>
+                  <button class="btn-action view-btn" (click)="openviewModal(leaveType)" data-tooltip="View Details">
+                    <i class="fa-solid fa-eye"></i>
+                  </button>
+                  <button class="btn-action" [ngClass]="leaveType.is_active ? 'deactivate-btn' : 'activate-btn'"
+                    (click)="Status(leaveType.id, leaveType.is_active ? 0 : 1)"
+                    [attr.data-tooltip]="leaveType.is_active ? 'Deactivate Status' : 'Activate Status'">
+                    <i class="fa-solid" [ngClass]="leaveType.is_active ? 'fa-toggle-on' : 'fa-toggle-off'"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <!-- Card View for below lg -->
+      <div class="lg:hidden space-y-4">
+        <div
+          *ngFor="
+            let leaveType of leaveTypeList
+              | paginate
+                : {
+                    itemsPerPage: tableSize != 'all' ? tableSize : totalRecords,
+                    currentPage: page,
+                    totalItems: totalRecords,
+                  };
+            index as i
+          "
+          class="bg-gray-50 border border-gray-200 rounded-lg p-4"
+        >
+          <div class="flex justify-between items-center mb-2">
+            <div>
+              <strong>Sr No:</strong>
+              {{
+                tableSize * (page - 1) + i + 1 > 0
+                  ? tableSize * (page - 1) + i + 1
+                  : i + 1
+              }}
+            </div>
+            <div>
+              <div class="d-flex align-items-center gap-1">
+                <button class="btn-action edit-btn" (click)="OpenEditModal(leaveType)" data-tooltip="Edit">
+                  <i class="fa-solid fa-pen-to-square"></i>
+                </button>
+                <button class="btn-action view-btn" (click)="openviewModal(leaveType)" data-tooltip="View Details">
+                  <i class="fa-solid fa-eye"></i>
+                </button>
+                <button class="btn-action" [ngClass]="leaveType.is_active ? 'deactivate-btn' : 'activate-btn'"
+                  (click)="Status(leaveType.id, leaveType.is_active ? 0 : 1)"
+                  [attr.data-tooltip]="leaveType.is_active ? 'Deactivate Status' : 'Activate Status'">
+                  <i class="fa-solid" [ngClass]="leaveType.is_active ? 'fa-toggle-on' : 'fa-toggle-off'"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="mb-2"><strong>Code:</strong> {{ leaveType.leaveCode }}</div>
+          <div class="mb-2"><strong>Name:</strong> {{ leaveType.leaveName }}</div>
+          <div class="mb-2"><strong>Paid/Unpaid:</strong> {{ leaveType.isPaid ? 'Paid' : 'Unpaid' }}</div>
+          <div class="mb-2"><strong>Annual Limit:</strong> {{ leaveType.annualLimit }}</div>
+          <div>
+            <strong>Status:</strong>
+            <span
+              [ngClass]="{
+                'active-status': leaveType.is_active == 1 ? 1 : 0,
+                'deactive-status': leaveType.is_active == 1 ? 0 : 1,
+              }"
+            >
+              {{ leaveType.is_active == 1 ? "active" : "deactive" }}
+            </span>
+          </div>
+        </div>
+      </div>
+      <div
+        class="d-md-flex justify-content-between bottom-0 end-0 py-2 align-items-center"
+      >
+        <span class="showalltext"
+          >Showing
+          {{ tableSize * (page - 1) > 0 ? tableSize * (page - 1) + 1 : 1 }} to
+          {{
+            tableSize * page <= totalRecords ? tableSize * page : totalRecords
+          }}
+          of {{ totalRecords != undefined ? totalRecords : "" }} entries</span
+        >
+        <pagination-controls
+          previousLabel="Prev"
+          nextLabel="Next"
+          [responsive]="true"
+          (pageChange)="onTableDataChange($event)"
+          target="_top"
+        ></pagination-controls>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Create Modal -->
+<div
+  *ngIf="createLeaveTypeOpen"
+  class="your-animation-class modal-container"
+  aria-labelledby="modal-title"
+  role="dialog"
+  aria-modal="true"
+>
+  <div class="modal-contenttop modal-content-50" [@fadeIn]>
+    <form [formGroup]="createLeaveTypeForm">
+      <div class="card">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+          <h5 class="modal-title pt-1 mb-0 tt-color">Add Leave Type</h5>
+          <button class="cross-btn-icon main-btn bg-transparent border-0 pb-0 pt-1" type="button" (click)="closeModal()">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <div class="modal-content-widthtop card-body mb-0">
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="d-block text-capitalize form-label form-lable-custom">Leave Code</label>
+              <input type="text" class="d-block form-control form-input-custom" formControlName="leaveCode"
+                [ngClass]="{'is-invalid': createLeaveTypeForm.controls['leaveCode'].errors && (createLeaveTypeForm.controls['leaveCode'].touched || createLeaveTypeForm.controls['leaveCode'].dirty)}" />
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="d-block text-capitalize form-label form-lable-custom">Leave Name</label>
+              <input type="text" class="d-block form-control form-input-custom" formControlName="leaveName"
+                [ngClass]="{'is-invalid': createLeaveTypeForm.controls['leaveName'].errors && (createLeaveTypeForm.controls['leaveName'].touched || createLeaveTypeForm.controls['leaveName'].dirty)}" />
+            </div>
+            
+            <div class="col-md-6 mb-3">
+              <label class="d-block text-capitalize form-label form-lable-custom">Paid/Unpaid</label>
+              <select class="d-block form-control form-select form-input-custom" formControlName="isPaid">
+                <option [ngValue]="true">Paid</option>
+                <option [ngValue]="false">Unpaid</option>
+              </select>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="d-block text-capitalize form-label form-lable-custom">Annual Limit</label>
+              <input type="number" class="d-block form-control form-input-custom" formControlName="annualLimit"
+                [ngClass]="{'is-invalid': createLeaveTypeForm.controls['annualLimit'].errors && (createLeaveTypeForm.controls['annualLimit'].touched || createLeaveTypeForm.controls['annualLimit'].dirty)}" />
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer text-end">
+          <button class="btn btn-secondary main-btnfs px-4 py-2 me-4 text-gray-200" type="button" (click)="closeModal()">Cancel</button>
+          <button class="btn btn-custom-primary px-4 py-2" type="button" (click)="createLeaveType()">Create</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Update Modal -->
+<div
+  *ngIf="updateLeaveTypeOpen"
+  class="your-animation-class modal-container"
+  aria-labelledby="modal-title"
+  role="dialog"
+  aria-modal="true"
+>
+  <div class="modal-contenttop modal-content-50" [@fadeIn]>
+    <form [formGroup]="updateLeaveTypeForm">
+      <div class="card">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+          <h5 class="modal-title pt-1 mb-0 tt-color">Update Leave Type</h5>
+          <button class="cross-btn-icon main-btn bg-transparent border-0 pb-0 pt-1" type="button" (click)="closeModal()">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <div class="modal-content-widthtop card-body mb-0">
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="d-block text-capitalize form-label form-lable-custom">Leave Code</label>
+              <input type="text" class="d-block form-control form-input-custom" formControlName="leaveCode"
+                [ngClass]="{'is-invalid': updateLeaveTypeForm.controls['leaveCode'].errors && (updateLeaveTypeForm.controls['leaveCode'].touched || updateLeaveTypeForm.controls['leaveCode'].dirty)}" />
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="d-block text-capitalize form-label form-lable-custom">Leave Name</label>
+              <input type="text" class="d-block form-control form-input-custom" formControlName="leaveName"
+                [ngClass]="{'is-invalid': updateLeaveTypeForm.controls['leaveName'].errors && (updateLeaveTypeForm.controls['leaveName'].touched || updateLeaveTypeForm.controls['leaveName'].dirty)}" />
+            </div>
+            
+            <div class="col-md-6 mb-3">
+              <label class="d-block text-capitalize form-label form-lable-custom">Paid/Unpaid</label>
+              <select class="d-block form-control form-select form-input-custom" formControlName="isPaid">
+                <option [ngValue]="true">Paid</option>
+                <option [ngValue]="false">Unpaid</option>
+              </select>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="d-block text-capitalize form-label form-lable-custom">Annual Limit</label>
+              <input type="number" class="d-block form-control form-input-custom" formControlName="annualLimit"
+                [ngClass]="{'is-invalid': updateLeaveTypeForm.controls['annualLimit'].errors && (updateLeaveTypeForm.controls['annualLimit'].touched || updateLeaveTypeForm.controls['annualLimit'].dirty)}" />
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer text-end">
+          <button class="btn btn-secondary main-btnfs px-4 py-2 me-4 text-gray-200" type="button" (click)="closeModal()">Cancel</button>
+          <button class="btn btn-custom-primary px-4 py-2" type="button" (click)="updateLeaveType()">Update</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- View Modal -->
+<div *ngIf="viewLeaveTypeOpen" class="your-animation-class modal-container premium-detail-modal" aria-labelledby="modal-title" role="dialog"
+  aria-modal="true">
+  <div class="modal-contenttop modal-content-50" [@fadeIn]>
+    <div class="card">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <div>
+          <h5 class="modal-title pt-1 mb-0">Leave Type Details</h5>
+          <p class="modal-subtitle">Full overview for Leave Type ID: #{{selectedLeaveType?.id}}</p>
+        </div>
+        <button class="cross-btn-icon border-0 p-0" type="button" (click)="closeModal()">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="card-body mb-0">
+        <!-- Premium Leave Type Summary Banner -->
+        <div class="leave-summary-banner">
+          <div class="banner-content">
+            <div class="banner-label">Leave Name</div>
+            <div class="banner-value">{{ selectedLeaveType?.leaveName }}</div>
+            <div class="banner-subtitle">
+              <span class="pulse-indicator" [ngClass]="{'deactive': selectedLeaveType?.is_active !== 1}"></span>
+              Status: 
+              <span class="status-badge-pill" [ngClass]="selectedLeaveType?.is_active === 1 ? 'active' : 'deactive'">
+                {{ selectedLeaveType?.is_active === 1 ? 'Active' : 'Inactive' }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Leave Type Details Grid Section -->
+        <div class="grid-section-title">Classification & Limit Rules</div>
+        <div class="row g-3">
+          <div class="col-md-4">
+            <div class="glass-info-card">
+              <div class="card-icon-wrapper code">
+                <i class="fa-solid fa-folder-open"></i>
+              </div>
+              <div class="card-info-content">
+                <span class="info-label">Leave Code</span>
+                <span class="info-value text-dark fs-7">{{ selectedLeaveType?.leaveCode }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="glass-info-card">
+              <div class="card-icon-wrapper type">
+                <i class="fa-solid fa-wallet"></i>
+              </div>
+              <div class="card-info-content">
+                <span class="info-label">Payment Category</span>
+                <span class="premium-badge" [ngClass]="selectedLeaveType?.isPaid ? 'badge-success' : 'badge-warning'">
+                  <i class="fa-solid" [ngClass]="selectedLeaveType?.isPaid ? 'fa-circle-check' : 'fa-circle-exclamation'"></i>
+                  {{ selectedLeaveType?.isPaid ? 'Paid' : 'Unpaid' }}
+                </span>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="glass-info-card">
+              <div class="card-icon-wrapper limit">
+                <i class="fa-solid fa-shield-halved"></i>
+              </div>
+              <div class="card-info-content">
+                <span class="info-label">Annual Allowance</span>
+                <span class="info-value text-dark fs-7">{{ selectedLeaveType?.annualLimit }} days</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer text-end">
+        <button class="btn btn-premium-close px-4 py-2" type="button" (click)="closeModal()">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

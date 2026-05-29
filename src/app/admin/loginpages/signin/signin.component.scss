@@ -1,0 +1,80 @@
+.login-card {
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08) !important;
+  transition: box-shadow 0.3s ease;
+}
+
+.custom-input-group {
+  .input-group-text {
+    border-color: #e2e8f0;
+    transition: all 0.2s ease-in-out;
+  }
+  .form-control {
+    border-color: #e2e8f0;
+    transition: all 0.2s ease-in-out;
+    &:focus {
+      box-shadow: none;
+      border-color: #e2e8f0;
+    }
+  }
+  
+  /* Focus within trick for entire group */
+  &:focus-within {
+    .input-group-text, .form-control {
+      border-color: #0d6efd; 
+    }
+    .input-group-text i {
+      color: #0d6efd !important;
+    }
+  }
+
+  /* Error state styling */
+  &.has-error {
+    .input-group-text, .form-control {
+      border-color: #dc3545 !important;
+    }
+    .input-group-text i {
+      color: #dc3545 !important;
+    }
+  }
+}
+
+.login-btn {
+  border-radius: 8px;
+  font-size: 1.1rem;
+  background-color: #0d6efd;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(13, 110, 253, 0.3) !important;
+  }
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+.cursor {
+  cursor: pointer;
+}
+
+.modal-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.success-content {
+  border-radius: 12px;
+  border-left: 6px solid #198754;
+  min-width: 300px;
+}

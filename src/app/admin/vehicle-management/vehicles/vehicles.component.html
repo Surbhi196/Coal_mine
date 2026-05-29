@@ -1,0 +1,478 @@
+<div class="content">
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <h2 class="table-heading-detail tt-color" style="margin: 0; font-weight: 600;">Vehicle Management</h2>
+  </div>
+
+  <div class="mb-4" style="border-bottom: 1px solid #e0e6ed;">
+    <ul class="nav nav-tabs border-0" style="gap: 20px;">
+      <li class="nav-item" style="cursor: pointer;">
+        <a class="nav-link custom-tab-link" [class.active-tab]="activeTab === 'vehicles'"
+          (click)="setTab('vehicles')">Vehicles</a>
+      </li>
+      <li class="nav-item" style="cursor: pointer;">
+        <a class="nav-link custom-tab-link" [class.active-tab]="activeTab === 'body-types'" (click)="setTab('body-types')">Body Types</a>
+      </li>
+    </ul>
+  </div>
+
+  <div class="table-card bg-white rounded p-4">
+    <div class="d-flex justify-content-end mb-4">
+      <button *ngIf="activeTab === 'vehicles'" class="btn btn-custom-primary"
+        style="background-color: #468faf; color: white;" (click)="openAddVehicleModal()">Add Vehicle</button>
+      <button *ngIf="activeTab === 'body-types'" class="btn btn-custom-primary"
+        style="background-color: #468faf; color: white;" (click)="openAddBodyTypeModal()">Add Body Type</button>
+    </div>
+
+    <div class="d-flex justify-content-between mb-4 align-items-center">
+      <div class="d-flex align-items-center">
+        <span style="font-size: 14px; color: #525f7f;">Show</span>
+        <input type="number" class="form-control mx-2 text-center"
+          style="width: 70px; height: 38px; border-color: #e2e8f0; border-radius: 4px;" [(ngModel)]="showEntries">
+        <span style="font-size: 14px; color: #525f7f;">entries</span>
+      </div>
+      <div class="position-relative">
+        <input type="text" class="form-control pe-5" placeholder="Search" [(ngModel)]="searchText"
+          style="height: 38px; width: 250px; border-color: #e2e8f0; border-radius: 4px; font-size: 14px;">
+        <i *ngIf="!searchText" class="fa-solid fa-search position-absolute"
+          style="right: 15px; top: 12px; color: #8898aa; font-size: 14px;"></i>
+        <i *ngIf="searchText" class="fa-solid fa-times position-absolute"
+          style="right: 15px; top: 12px; color: #8898aa; font-size: 14px; cursor: pointer;"
+          (click)="searchText = ''"></i>
+      </div>
+    </div>
+
+    <!-- Vehicles Table -->
+    <div class="table-responsive" *ngIf="activeTab === 'vehicles'">
+      <table mat-table [dataSource]="dataSourceVehicle | paginate: { id: 'vehicles-pagination', itemsPerPage: showEntries, currentPage: pVehicles }" class="table table-hover w-100" style="margin-bottom: 0;">
+        <ng-container matColumnDef="id">
+          <th mat-header-cell *matHeaderCellDef class="table-new-heading font-weight-bold"
+            style="color: #8898aa; font-size: 11px; text-transform: uppercase; border-bottom: 1px solid #e9ecef;"> SR NO
+          </th>
+          <td mat-cell *matCellDef="let element"
+            style="border-bottom: 1px solid #e9ecef; color: #525f7f; font-size: 13px;"> {{element.id}} </td>
+        </ng-container>
+
+        <ng-container matColumnDef="vehicleNo">
+          <th mat-header-cell *matHeaderCellDef class="table-new-heading font-weight-bold"
+            style="color: #8898aa; font-size: 11px; text-transform: uppercase; border-bottom: 1px solid #e9ecef;">
+            VEHICLE NO
+          </th>
+          <td mat-cell *matCellDef="let element"
+            style="border-bottom: 1px solid #e9ecef; color: #525f7f; font-size: 13px;">
+            {{element.vehicleNo}} </td>
+        </ng-container>
+
+        <ng-container matColumnDef="modelName">
+          <th mat-header-cell *matHeaderCellDef class="table-new-heading font-weight-bold"
+            style="color: #8898aa; font-size: 11px; text-transform: uppercase; border-bottom: 1px solid #e9ecef;"> MODEL NAME
+          </th>
+          <td mat-cell *matCellDef="let element"
+            style="border-bottom: 1px solid #e9ecef; color: #525f7f; font-size: 13px;"> {{element.modelName}} </td>
+        </ng-container>
+
+        <ng-container matColumnDef="registrationDate">
+          <th mat-header-cell *matHeaderCellDef class="table-new-heading font-weight-bold"
+            style="color: #8898aa; font-size: 11px; text-transform: uppercase; border-bottom: 1px solid #e9ecef;">
+            REGISTRATION_DATE
+          </th>
+          <td mat-cell *matCellDef="let element"
+            style="border-bottom: 1px solid #e9ecef; color: #525f7f; font-size: 13px;"> {{element.registrationDate}} </td>
+        </ng-container>
+
+        <ng-container matColumnDef="mileage">
+          <th mat-header-cell *matHeaderCellDef class="table-new-heading font-weight-bold"
+            style="color: #8898aa; font-size: 11px; text-transform: uppercase; border-bottom: 1px solid #e9ecef;">
+            MILEAGE
+          </th>
+          <td mat-cell *matCellDef="let element"
+            style="border-bottom: 1px solid #e9ecef; color: #525f7f; font-size: 13px;"> {{element.mileage}} </td>
+        </ng-container>
+
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef class="table-new-heading font-weight-bold"
+            style="color: #8898aa; font-size: 11px; text-transform: uppercase; border-bottom: 1px solid #e9ecef;">
+            STATUS </th>
+          <td mat-cell *matCellDef="let element" style="border-bottom: 1px solid #e9ecef;">
+            <mat-slide-toggle [checked]="element.status" color="primary"></mat-slide-toggle>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="action">
+          <th mat-header-cell *matHeaderCellDef class="table-new-heading font-weight-bold"
+            style="color: #8898aa; font-size: 11px; text-transform: uppercase; border-bottom: 1px solid #e9ecef;">
+            ACTION </th>
+          <td mat-cell *matCellDef="let element" style="border-bottom: 1px solid #e9ecef;">
+            <div class="d-flex align-items-center gap-2">
+              <button class="btn-action edit-btn" (click)="openEditVehicleModal(element)" data-tooltip="Edit">
+                <i class="fa-solid fa-pen-to-square"></i>
+              </button>
+            </div>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedVehicleColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedVehicleColumns;"></tr>
+      </table>
+      <div class="d-flex justify-content-between align-items-center mt-4">
+        <div style="font-size: 14px; color: #525f7f;">
+          Showing {{ (pVehicles - 1) * showEntries + 1 }} to {{ (pVehicles * showEntries > dataSourceVehicle.length) ? dataSourceVehicle.length : (pVehicles * showEntries) }} of {{ dataSourceVehicle.length }} entries
+        </div>
+        <pagination-controls id="vehicles-pagination" (pageChange)="pVehicles = $event" class="my-pagination"></pagination-controls>
+      </div>
+    </div>
+
+    <!-- Body Types Table -->
+    <div class="table-responsive" *ngIf="activeTab === 'body-types'">
+      <table mat-table [dataSource]="dataSourceBodyType | paginate: { id: 'bodytypes-pagination', itemsPerPage: showEntries, currentPage: pBodyTypes }" class="table table-hover w-100" style="margin-bottom: 0;">
+        <ng-container matColumnDef="id">
+          <th mat-header-cell *matHeaderCellDef class="table-new-heading font-weight-bold"
+            style="color: #8898aa; font-size: 11px; text-transform: uppercase; border-bottom: 1px solid #e9ecef;"> SR NO
+          </th>
+          <td mat-cell *matCellDef="let element"
+            style="border-bottom: 1px solid #e9ecef; color: #525f7f; font-size: 13px;"> {{element.id}} </td>
+        </ng-container>
+
+        <ng-container matColumnDef="bodyType">
+          <th mat-header-cell *matHeaderCellDef class="table-new-heading font-weight-bold"
+            style="color: #8898aa; font-size: 11px; text-transform: uppercase; border-bottom: 1px solid #e9ecef;"> BODY TYPE
+          </th>
+          <td mat-cell *matCellDef="let element"
+            style="border-bottom: 1px solid #e9ecef; color: #525f7f; font-size: 13px;">
+            {{element.bodyType}} </td>
+        </ng-container>
+
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef class="table-new-heading font-weight-bold"
+            style="color: #8898aa; font-size: 11px; text-transform: uppercase; border-bottom: 1px solid #e9ecef;">
+            STATUS </th>
+          <td mat-cell *matCellDef="let element" style="border-bottom: 1px solid #e9ecef;">
+            <mat-slide-toggle [checked]="element.status" color="primary"></mat-slide-toggle>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="action">
+          <th mat-header-cell *matHeaderCellDef class="table-new-heading font-weight-bold"
+            style="color: #8898aa; font-size: 11px; text-transform: uppercase; border-bottom: 1px solid #e9ecef;">
+            ACTION </th>
+          <td mat-cell *matCellDef="let element" style="border-bottom: 1px solid #e9ecef;">
+            <div class="d-flex align-items-center gap-2">
+              <button class="btn-action edit-btn" (click)="openEditBodyTypeModal(element)" data-tooltip="Edit">
+                <i class="fa-solid fa-pen-to-square"></i>
+              </button>
+            </div>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedBodyTypeColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedBodyTypeColumns;"></tr>
+      </table>
+      <div class="d-flex justify-content-between align-items-center mt-4">
+        <div style="font-size: 14px; color: #525f7f;">
+          Showing {{ (pBodyTypes - 1) * showEntries + 1 }} to {{ (pBodyTypes * showEntries > dataSourceBodyType.length) ? dataSourceBodyType.length : (pBodyTypes * showEntries) }} of {{ dataSourceBodyType.length }} entries
+        </div>
+        <pagination-controls id="bodytypes-pagination" (pageChange)="pBodyTypes = $event" class="my-pagination"></pagination-controls>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Vehicle Modal -->
+<div *ngIf="createVehicleOpen" class="your-animation-class modal-container" aria-labelledby="modal-title" role="dialog"
+  aria-modal="true">
+  <div class="modal-contenttop" style="max-width: 900px; margin: 30px auto; max-height: 90vh;">
+    <form>
+      <div class="card border-0" style="border-radius: 8px;">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center border-0 p-4 pb-0">
+          <h5 class="modal-title pt-1 mb-0 tt-color" style="font-weight: 500;"> <i class="fa-solid fa-truck" style="margin-right: 8px;"></i> Add Vehicle</h5>
+          <button class="cross-btn-icon main-btn bg-transparent border-0 pb-0 pt-1" type="button"
+            (click)="closeModal()">
+            <i class="fa-solid fa-xmark" style="color: #525f7f; font-size: 20px;"></i>
+          </button>
+        </div>
+        <div class="modal-content-widthtop card-body p-4" style="max-height: 65vh; overflow-y: auto; overflow-x: hidden;">
+          
+          <div class="d-flex justify-content-center align-items-center mb-4">
+            <span style="font-size: 14px; color: #525f7f; margin-right: 15px;">Is Vehicle or Machine?<span class="text-danger">*</span></span>
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="inlineRadioOptions" id="inlineRadio1" value="Machine">
+              <label class="form-check-label" for="inlineRadio1" style="font-size: 14px; color: #525f7f;">Machine</label>
+            </div>
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="inlineRadioOptions" id="inlineRadio2" value="Vehicle">
+              <label class="form-check-label" for="inlineRadio2" style="font-size: 14px; color: #525f7f;">Vehicle</label>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="d-block form-label form-lable-custom mb-1" style="font-weight: 400; font-size: 14px;"><i class="fa-solid fa-truck"></i> Vehicle Number</label>
+              <input type="text" class="d-block form-control form-input-custom" placeholder="Vehicle Number"
+                style="border-radius: 4px; border: 1px solid #e0e6ed;">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="d-block form-label form-lable-custom mb-1" style="font-weight: 400; font-size: 14px;"><i class="fa-solid fa-truck"></i> Vehicle Body Type</label>
+              <ng-select [items]="bodyTypes" placeholder="Select Vehicle Body Type" class="custom-ng-select" appendTo="body"></ng-select>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="d-block form-label form-lable-custom mb-1" style="font-weight: 400; font-size: 14px;"><i class="fa-solid fa-truck"></i> Manufacturer Name</label>
+              <ng-select [items]="manufacturers" placeholder="Select Manufacturer" class="custom-ng-select" appendTo="body"></ng-select>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="d-block form-label form-lable-custom mb-1" style="font-weight: 400; font-size: 14px;"><i class="fa-solid fa-truck"></i> Model Name</label>
+              <ng-select [items]="models" placeholder="Select Vehicle Model" class="custom-ng-select" appendTo="body"></ng-select>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="d-block form-label form-lable-custom mb-1" style="font-weight: 400; font-size: 14px;"><i class="fa-solid fa-truck"></i> Vehicle Color</label>
+              <ng-select [items]="colors" placeholder="Select Vehicle Color" class="custom-ng-select" appendTo="body"></ng-select>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="d-block form-label form-lable-custom mb-1" style="font-weight: 400; font-size: 14px;"><i class="fa-solid fa-truck"></i> Vehicle Condition</label>
+              <ng-select [items]="conditions" placeholder="Select Vehicle Condition" class="custom-ng-select" appendTo="body"></ng-select>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="d-block form-label form-lable-custom mb-1" style="font-weight: 400; font-size: 14px;"><i class="fa-solid fa-truck"></i> Chassis Number</label>
+              <input type="text" class="d-block form-control form-input-custom" placeholder="Chassis Number"
+                style="border-radius: 4px; border: 1px solid #e0e6ed;">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="d-block form-label form-lable-custom mb-1" style="font-weight: 400; font-size: 14px;"><i class="fa-solid fa-truck"></i> Engine Number</label>
+              <input type="text" class="d-block form-control form-input-custom" placeholder="Engine Number"
+                style="border-radius: 4px; border: 1px solid #e0e6ed;">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="d-block form-label form-lable-custom mb-1" style="font-weight: 400; font-size: 14px;"><i class="fa-solid fa-truck"></i> Wheelbase (In Mm)</label>
+              <input type="number" class="d-block form-control form-input-custom" placeholder="Wheelbase (In Mm)"
+                style="border-radius: 4px; border: 1px solid #e0e6ed;">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="d-block form-label form-lable-custom mb-1" style="font-weight: 400; font-size: 14px;"><i class="fa-solid fa-truck"></i> Fuel Type</label>
+              <input type="text" class="d-block form-control form-input-custom" placeholder="Fuel Type"
+                style="border-radius: 4px; border: 1px solid #e0e6ed;">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="d-block form-label form-lable-custom mb-1" style="font-weight: 400; font-size: 14px;"><i class="fa-solid fa-truck"></i> Service Duration Time (in months)</label>
+              <input type="number" class="d-block form-control form-input-custom" placeholder="Service Duration Time (in months)"
+                style="border-radius: 4px; border: 1px solid #e0e6ed;">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="d-block form-label form-lable-custom mb-1" style="font-weight: 400; font-size: 14px;"><i class="fa-solid fa-truck"></i> Service Duration (Km/Hrs)</label>
+              <input type="number" class="d-block form-control form-input-custom" placeholder="Service Duration Km"
+                style="border-radius: 4px; border: 1px solid #e0e6ed;">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="d-block form-label form-lable-custom mb-1" style="font-weight: 400; font-size: 14px;"><i class="fa-solid fa-truck"></i> Vehicle Registration Date</label>
+              <input type="date" class="d-block form-control form-input-custom" placeholder="Select date"
+                style="border-radius: 4px; border: 1px solid #e0e6ed;">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="d-block form-label form-lable-custom mb-1" style="font-weight: 400; font-size: 14px;"><i class="fa-solid fa-truck"></i> Vehicle Reg. Validity Date</label>
+              <input type="date" class="d-block form-control form-input-custom" placeholder="Select date"
+                style="border-radius: 4px; border: 1px solid #e0e6ed;">
+            </div>
+            <div class="col-md-12 mt-2">
+              <label class="d-block form-label form-lable-custom mb-1" style="font-weight: 400; font-size: 14px;"><i class="fa-regular fa-file"></i> Upload RC Document</label>
+              <div class="drag-drop-area d-flex flex-column align-items-center justify-content-center p-4"
+                style="border: 2px dashed #e0e6ed; border-radius: 8px; text-align: center; cursor: pointer; color: #8898aa;">
+                <i class="fa-solid fa-cloud-arrow-up mb-2" style="font-size: 24px; color: #468faf;"></i>
+                <span style="font-size: 14px;">Drag and drop a file here or click</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer border-0 p-4 pt-0 d-flex justify-content-end">
+          <button class="btn btn-secondary main-btnfs px-4 py-2 me-3"
+            style="background-color: #8898aa; border: none; color: white;" type="button"
+            (click)="closeModal()">Close</button>
+          <button class="btn btn-custom-primary px-4 py-2" type="button"
+            style="background-color: #468faf; color: white;">Save</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Edit Vehicle Modal -->
+<div *ngIf="updateVehicleOpen" class="your-animation-class modal-container" aria-labelledby="modal-title" role="dialog"
+  aria-modal="true">
+  <div class="modal-contenttop" style="max-width: 900px; margin: 30px auto; max-height: 90vh;">
+    <form>
+      <div class="card border-0" style="border-radius: 8px;">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center border-0 p-4 pb-0">
+          <h5 class="modal-title pt-1 mb-0 tt-color" style="font-weight: 500;"> <i class="fa-solid fa-truck" style="margin-right: 8px;"></i> Edit Vehicle</h5>
+          <button class="cross-btn-icon main-btn bg-transparent border-0 pb-0 pt-1" type="button"
+            (click)="closeModal()">
+            <i class="fa-solid fa-xmark" style="color: #525f7f; font-size: 20px;"></i>
+          </button>
+        </div>
+        <div class="modal-content-widthtop card-body p-4" style="max-height: 65vh; overflow-y: auto; overflow-x: hidden;">
+          
+          <div class="d-flex justify-content-center align-items-center mb-4">
+            <span style="font-size: 14px; color: #525f7f; margin-right: 15px;">Is Vehicle or Machine?<span class="text-danger">*</span></span>
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="inlineRadioOptions" id="inlineRadio1" value="Machine">
+              <label class="form-check-label" for="inlineRadio1" style="font-size: 14px; color: #525f7f;">Machine</label>
+            </div>
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="inlineRadioOptions" id="inlineRadio2" value="Vehicle">
+              <label class="form-check-label" for="inlineRadio2" style="font-size: 14px; color: #525f7f;">Vehicle</label>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="d-block form-label form-lable-custom mb-1" style="font-weight: 400; font-size: 14px;"><i class="fa-solid fa-truck"></i> Vehicle Number</label>
+              <input type="text" class="d-block form-control form-input-custom" placeholder="Vehicle Number"
+                style="border-radius: 4px; border: 1px solid #e0e6ed;" [value]="currentVehicle?.vehicleNo">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="d-block form-label form-lable-custom mb-1" style="font-weight: 400; font-size: 14px;"><i class="fa-solid fa-truck"></i> Vehicle Body Type</label>
+              <ng-select [items]="bodyTypes" placeholder="Select Vehicle Body Type" class="custom-ng-select" appendTo="body"></ng-select>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="d-block form-label form-lable-custom mb-1" style="font-weight: 400; font-size: 14px;"><i class="fa-solid fa-truck"></i> Manufacturer Name</label>
+              <ng-select [items]="manufacturers" placeholder="Select Manufacturer" class="custom-ng-select" appendTo="body"></ng-select>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="d-block form-label form-lable-custom mb-1" style="font-weight: 400; font-size: 14px;"><i class="fa-solid fa-truck"></i> Model Name</label>
+              <ng-select [items]="models" placeholder="Select Vehicle Model" class="custom-ng-select" [ngModel]="currentVehicle?.modelName" name="modelName" appendTo="body"></ng-select>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="d-block form-label form-lable-custom mb-1" style="font-weight: 400; font-size: 14px;"><i class="fa-solid fa-truck"></i> Vehicle Color</label>
+              <ng-select [items]="colors" placeholder="Select Vehicle Color" class="custom-ng-select" appendTo="body"></ng-select>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="d-block form-label form-lable-custom mb-1" style="font-weight: 400; font-size: 14px;"><i class="fa-solid fa-truck"></i> Vehicle Condition</label>
+              <ng-select [items]="conditions" placeholder="Select Vehicle Condition" class="custom-ng-select" appendTo="body"></ng-select>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="d-block form-label form-lable-custom mb-1" style="font-weight: 400; font-size: 14px;"><i class="fa-solid fa-truck"></i> Chassis Number</label>
+              <input type="text" class="d-block form-control form-input-custom" placeholder="Chassis Number"
+                style="border-radius: 4px; border: 1px solid #e0e6ed;">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="d-block form-label form-lable-custom mb-1" style="font-weight: 400; font-size: 14px;"><i class="fa-solid fa-truck"></i> Engine Number</label>
+              <input type="text" class="d-block form-control form-input-custom" placeholder="Engine Number"
+                style="border-radius: 4px; border: 1px solid #e0e6ed;">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="d-block form-label form-lable-custom mb-1" style="font-weight: 400; font-size: 14px;"><i class="fa-solid fa-truck"></i> Wheelbase (In Mm)</label>
+              <input type="number" class="d-block form-control form-input-custom" placeholder="Wheelbase (In Mm)"
+                style="border-radius: 4px; border: 1px solid #e0e6ed;">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="d-block form-label form-lable-custom mb-1" style="font-weight: 400; font-size: 14px;"><i class="fa-solid fa-truck"></i> Fuel Type</label>
+              <input type="text" class="d-block form-control form-input-custom" placeholder="Fuel Type"
+                style="border-radius: 4px; border: 1px solid #e0e6ed;">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="d-block form-label form-lable-custom mb-1" style="font-weight: 400; font-size: 14px;"><i class="fa-solid fa-truck"></i> Service Duration Time (in months)</label>
+              <input type="number" class="d-block form-control form-input-custom" placeholder="Service Duration Time (in months)"
+                style="border-radius: 4px; border: 1px solid #e0e6ed;">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="d-block form-label form-lable-custom mb-1" style="font-weight: 400; font-size: 14px;"><i class="fa-solid fa-truck"></i> Service Duration (Km/Hrs)</label>
+              <input type="number" class="d-block form-control form-input-custom" placeholder="Service Duration Km"
+                style="border-radius: 4px; border: 1px solid #e0e6ed;">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="d-block form-label form-lable-custom mb-1" style="font-weight: 400; font-size: 14px;"><i class="fa-solid fa-truck"></i> Vehicle Registration Date</label>
+              <input type="date" class="d-block form-control form-input-custom" placeholder="Select date"
+                style="border-radius: 4px; border: 1px solid #e0e6ed;">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="d-block form-label form-lable-custom mb-1" style="font-weight: 400; font-size: 14px;"><i class="fa-solid fa-truck"></i> Vehicle Reg. Validity Date</label>
+              <input type="date" class="d-block form-control form-input-custom" placeholder="Select date"
+                style="border-radius: 4px; border: 1px solid #e0e6ed;">
+            </div>
+            <div class="col-md-12 mt-2">
+              <label class="d-block form-label form-lable-custom mb-1" style="font-weight: 400; font-size: 14px;"><i class="fa-regular fa-file"></i> Upload RC Document</label>
+              <div class="drag-drop-area d-flex flex-column align-items-center justify-content-center p-4"
+                style="border: 2px dashed #e0e6ed; border-radius: 8px; text-align: center; cursor: pointer; color: #8898aa;">
+                <i class="fa-solid fa-cloud-arrow-up mb-2" style="font-size: 24px; color: #468faf;"></i>
+                <span style="font-size: 14px;">Drag and drop a file here or click</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer border-0 p-4 pt-0 d-flex justify-content-end">
+          <button class="btn btn-secondary main-btnfs px-4 py-2 me-3"
+            style="background-color: #8898aa; border: none; color: white;" type="button"
+            (click)="closeModal()">Close</button>
+          <button class="btn btn-custom-primary px-4 py-2" type="button"
+            style="background-color: #468faf; color: white;">Save Changes</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+<!-- Add Body Type Modal -->
+<div *ngIf="createBodyTypeOpen" class="your-animation-class modal-container" aria-labelledby="modal-title"
+  role="dialog" aria-modal="true">
+  <div class="modal-contenttop" style="max-width: 600px; margin: 30px auto; max-height: 90vh;">
+    <form>
+      <div class="card border-0" style="border-radius: 8px;">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center border-0 p-4 pb-0">
+          <h5 class="modal-title pt-1 mb-0 tt-color" style="font-weight: 500;">Create Body Type</h5>
+          <button class="cross-btn-icon main-btn bg-transparent border-0 pb-0 pt-1" type="button"
+            (click)="closeModal()">
+            <i class="fa-solid fa-xmark" style="color: #525f7f; font-size: 20px;"></i>
+          </button>
+        </div>
+        <div class="modal-content-widthtop card-body p-4" style="max-height: 65vh; overflow-y: auto; overflow-x: hidden;">
+          <div class="row">
+            <div class="col-md-12 mb-3">
+              <label class="d-block form-label form-lable-custom mb-1"
+                style="font-weight: 400; font-size: 14px;">Name</label>
+              <input type="text" class="d-block form-control form-input-custom" placeholder="Body Type Name"
+                style="border-radius: 4px; border: 1px solid #e0e6ed;">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer border-0 p-4 pt-0 d-flex justify-content-end">
+          <button class="btn btn-secondary main-btnfs px-4 py-2 me-3"
+            style="background-color: #8898aa; border: none; color: white;" type="button"
+            (click)="closeModal()">Close</button>
+          <button class="btn btn-custom-primary px-4 py-2" type="button"
+            style="background-color: #468faf; color: white;">Save</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Edit Body Type Modal -->
+<div *ngIf="updateBodyTypeOpen" class="your-animation-class modal-container" aria-labelledby="modal-title"
+  role="dialog" aria-modal="true">
+  <div class="modal-contenttop" style="max-width: 600px; margin: 30px auto; max-height: 90vh;">
+    <form>
+      <div class="card border-0" style="border-radius: 8px;">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center border-0 p-4 pb-0">
+          <h5 class="modal-title pt-1 mb-0 tt-color" style="font-weight: 500;">Edit Body Type</h5>
+          <button class="cross-btn-icon main-btn bg-transparent border-0 pb-0 pt-1" type="button"
+            (click)="closeModal()">
+            <i class="fa-solid fa-xmark" style="color: #525f7f; font-size: 20px;"></i>
+          </button>
+        </div>
+        <div class="modal-content-widthtop card-body p-4" style="max-height: 65vh; overflow-y: auto; overflow-x: hidden;">
+          <div class="row">
+            <div class="col-md-12 mb-3">
+              <label class="d-block form-label form-lable-custom mb-1"
+                style="font-weight: 400; font-size: 14px;">Name</label>
+              <input type="text" class="d-block form-control form-input-custom" placeholder="Body Type Name"
+                style="border-radius: 4px; border: 1px solid #e0e6ed;" [value]="currentBodyType?.bodyType">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer border-0 p-4 pt-0 d-flex justify-content-end">
+          <button class="btn btn-secondary main-btnfs px-4 py-2 me-3"
+            style="background-color: #8898aa; border: none; color: white;" type="button"
+            (click)="closeModal()">Close</button>
+          <button class="btn btn-custom-primary px-4 py-2" type="button"
+            style="background-color: #468faf; color: white;">Save Changes</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>

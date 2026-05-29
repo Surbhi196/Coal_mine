@@ -1,0 +1,460 @@
+<div class="container mb-4">
+  <!-- Page Header -->
+  <div class="d-flex justify-content-between align-items-center flex-wrap" style="margin-top: 15px;">
+    <h1 class="text-primary table-heading-detail">Inventory Management</h1>
+    <div>
+      <button class="btn btn-secondary px-4 py-2 me-2" (click)="openBulkUploadModal()" style="font-size: 16px;">
+        Bulk Upload
+      </button>
+      <button class="btn btn-outline-primary px-4 py-2 me-2" (click)="openAssignModal()" style="font-size: 16px;">
+        Assign to Employee
+      </button>
+      <button class="btn btn-custom-primary px-4 py-2 me-2" (click)="openAddProductModal()">
+        Add Product
+      </button>
+    </div>
+  </div>
+
+  <div class="card border-0 my-4 px-4 py-4">
+    <!-- Show entries and Search bar row -->
+    <div class="d-md-flex justify-content-between align-items-center my-3">
+      <div class="d-flex align-items-center mb-md-0 mb-2">
+        <span class="me-1 show-entery-text">Show</span>
+        <select class="form-control form-select show-entries-select" (change)="onTableSizeChange($event)">
+          <option *ngFor="let size of tableSizes" [value]="size" [selected]="size == tableSize">{{ size }}</option>
+        </select>
+        <span class="ms-1 show-entery-text">entries</span>
+      </div>
+
+      <div class="d-flex align-items-center">
+        <form [formGroup]="searchbarform" class="d-flex align-items-center">
+          <span class="me-1">Search:</span>
+          <div>
+            <input type="text" class="form-control search-user position-relative" autocomplete="off" formControlName="searchbar" />
+          </div>
+          <button class="btn btn-primary search-btn ms-2" (click)="searchfun()">
+            <span><i class="fa-solid fa-magnifying-glass form-control-feedback text-white"></i></span>
+          </button>
+          <button class="btn btn-primary search-btn ms-2" (click)="resetsearchbar()" type="submit" *ngIf="showreset">
+            <span><i class="fa-solid fa-rotate-right form-control-feedback text-white"></i></span>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Table content area -->
+    <div class="table-responsive-sm mt-2">
+      <!-- Table View for lg+ -->
+      <div class="hidden lg:block">
+        <table class="table table-bordered table-hover table-striped mb-0">
+          <thead class="table-header">
+            <tr>
+              <th style="width: 80px;"><p class="table-heading">Sr No.</p></th>
+              <th><p class="table-heading">Name</p></th>
+              <th style="width: 250px;"><p class="table-heading">Total Stocks</p></th>
+              <th style="width: 150px;"><p class="table-heading">Action</p></th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Note: Company and Locations columns are strictly omitted as requested -->
+            <tr *ngFor="let item of filteredInventoryItems | paginate: { itemsPerPage: tableSize != 'all' ? tableSize : totalRecords, currentPage: page, totalItems: totalRecords }; index as i">
+              <td>
+                {{ tableSize * (page - 1) + i + 1 }}
+              </td>
+              <td>
+                <p>{{ item.productName }}</p>
+              </td>
+              <td>
+                <p>{{ item.totalStock }}</p>
+              </td>
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <button class="btn-action view-btn" (click)="openViewProductModal(item)" data-tooltip="View Details">
+                    <i class="fa-solid fa-eye"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="filteredInventoryItems.length === 0">
+              <td colspan="4" class="text-center py-4 text-muted">
+                No inventory records found.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Card View for below lg -->
+      <div class="lg:hidden space-y-4">
+        <div *ngFor="let item of filteredInventoryItems | paginate: { itemsPerPage: tableSize != 'all' ? tableSize : totalRecords, currentPage: page, totalItems: totalRecords }; index as i" class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+          <div class="flex justify-between items-center mb-2">
+            <div>
+              <strong>Sr No:</strong>
+              {{ tableSize * (page - 1) + i + 1 }}
+            </div>
+            <div>
+              <div class="d-flex align-items-center gap-2">
+                <button class="btn-action view-btn" (click)="openViewProductModal(item)" data-tooltip="View Details">
+                  <i class="fa-solid fa-eye"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="mb-2"><strong>Name:</strong> {{ item.productName }}</div>
+          <div>
+            <strong>Total Stocks:</strong>
+            <span>{{ item.totalStock }}</span>
+          </div>
+        </div>
+        <div *ngIf="filteredInventoryItems.length === 0" class="text-center py-4 text-muted bg-gray-50 border border-gray-200 rounded-lg">
+          No inventory records found.
+        </div>
+      </div>
+
+      <!-- Standard Pagination controls footer -->
+      <div class="d-md-flex justify-content-between bottom-0 end-0 py-2 align-items-center">
+        <span class="showalltext">
+          Showing {{ tableSize * (page - 1) > 0 ? tableSize * (page - 1) + 1 : 1 }} to
+          {{ tableSize * page <= totalRecords ? tableSize * page : totalRecords }}
+          of {{ totalRecords }} entries
+        </span>
+        <pagination-controls
+          previousLabel="Prev"
+          nextLabel="Next"
+          [responsive]="true"
+          (pageChange)="onTableDataChange($event)"
+          target="_top"
+        ></pagination-controls>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==========================================
+     INVENTORY MANAGEMENT MODAL DIALOG CONTAINERS
+     ========================================== -->
+
+<!-- 1. Add Product to Inventory Modal -->
+<div *ngIf="createInventoryOpen" class="your-animation-class modal-container" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+  <div class="modal-contenttop modal-content-50" [@fadeIn]>
+    <form [formGroup]="createInventoryForm">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+          <h5 class="modal-title pt-1 mb-0 tt-color">Add New Product to Inventory</h5>
+          <button class="cross-btn-icon main-btn bg-transparent border-0 pb-0 pt-1" type="button" (click)="closeModal()">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <div class="modal-content-widthtop card-body mb-0">
+          <div class="row">
+            <!-- Select Product -->
+            <div class="col-md-6 mb-3">
+              <label class="d-block text-capitalize form-label form-lable-custom">Select Product <span class="text-danger">*</span></label>
+              <select class="d-block form-control form-select form-input-custom w-100" formControlName="productName" (change)="onProductChange($event)"
+                      [ngClass]="{'is-invalid': createInventoryForm.controls['productName'].errors && (createInventoryForm.controls['productName'].touched || createInventoryForm.controls['productName'].dirty)}">
+                <option value="">Select a product</option>
+                <option *ngFor="let prod of productList" [value]="prod">{{ prod }}</option>
+              </select>
+              <div class="text-danger error-message" *ngIf="createInventoryForm.controls['productName'].errors && (createInventoryForm.controls['productName'].touched || createInventoryForm.controls['productName'].dirty)">
+                <p class="fw-light text-danger" *ngIf="createInventoryForm.controls['productName'].errors['required']">Product selection is required</p>
+              </div>
+            </div>
+
+            <!-- Product Quantity (Warehouse and Vendor are omitted) -->
+            <div class="col-md-6 mb-3">
+              <label class="d-block text-capitalize form-label form-lable-custom">Product Quantity <span class="text-danger">*</span></label>
+              <input type="number" class="d-block form-control form-input-custom w-100" formControlName="quantity" placeholder="Enter Quantity"
+                     [ngClass]="{'is-invalid': createInventoryForm.controls['quantity'].errors && (createInventoryForm.controls['quantity'].touched || createInventoryForm.controls['quantity'].dirty)}" />
+              <div class="text-danger error-message" *ngIf="createInventoryForm.controls['quantity'].errors && (createInventoryForm.controls['quantity'].touched || createInventoryForm.controls['quantity'].dirty)">
+                <p class="fw-light text-danger" *ngIf="createInventoryForm.controls['quantity'].errors['required']">Product Quantity is required</p>
+                <p class="fw-light text-danger" *ngIf="createInventoryForm.controls['quantity'].errors['min']">Product Quantity must be at least 1</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <!-- Category (Autofilled / Readonly) -->
+            <div class="col-md-6 mb-3">
+              <label class="d-block text-capitalize form-label form-lable-custom">Category</label>
+              <input type="text" class="d-block form-control form-input-custom w-100 bg-light" formControlName="category" placeholder="Category" readonly="true" />
+            </div>
+
+            <!-- Sub Category (Autofilled / Readonly) -->
+            <div class="col-md-6 mb-3">
+              <label class="d-block text-capitalize form-label form-lable-custom">Sub Category</label>
+              <input type="text" class="d-block form-control form-input-custom w-100 bg-light" formControlName="subCategory" placeholder="Sub Category" readonly="true" />
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer text-end">
+          <button class="btn btn-secondary main-btnfs px-4 py-2 me-4 text-gray-200" type="button" (click)="closeModal()">Close</button>
+          <button class="btn btn-custom-primary px-4 py-2" type="button" (click)="createInventoryItem()">Save</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 2. Bulk Upload Modal -->
+<div *ngIf="bulkUploadOpen" class="your-animation-class modal-container" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+  <div class="modal-contenttop modal-content-50" [@fadeIn]>
+    <form [formGroup]="bulkUploadForm">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+          <h5 class="modal-title pt-1 mb-0 tt-color">Bulk Upload</h5>
+          <button class="cross-btn-icon main-btn bg-transparent border-0 pb-0 pt-1" type="button" (click)="closeModal()">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <div class="modal-content-widthtop card-body mb-0 py-4">
+          <div class="mb-4">
+            <label class="d-block text-capitalize form-label form-lable-custom mb-2">Upload File</label>
+            <div class="d-flex align-items-center gap-3">
+              <label class="btn btn-outline-secondary mb-0 cursor-pointer px-4 py-2.5 rounded-3">
+                Choose file
+                <input type="file" (change)="onFileChange($event)" accept=".xlsx, .xls, .csv" />
+              </label>
+              <span class="text-muted fs-7">{{ uploadedFileName || 'No file chosen' }}</span>
+            </div>
+            <div class="text-danger error-message mt-2" *ngIf="bulkUploadForm.controls['file'].errors && bulkUploadForm.controls['file'].touched">
+              <p class="fw-light text-danger">A valid excel or csv file is required</p>
+            </div>
+          </div>
+
+          <div class="text-end">
+            <a href="assets/sample_inventory.xlsx" download class="btn btn-link text-primary fw-semibold p-0 text-decoration-none" style="font-size: 14px;">
+              Download Sample File
+            </a>
+          </div>
+        </div>
+        <div class="modal-footer text-end">
+          <button class="btn btn-secondary main-btnfs px-4 py-2 me-4 text-gray-200" type="button" (click)="closeModal()">Close</button>
+          <button class="btn btn-custom-primary px-4 py-2" type="button" (click)="uploadBulkFile()">Update</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 3. View Product Details Modal with Assignments History -->
+<div *ngIf="viewInventoryOpen" class="your-animation-class modal-container premium-detail-modal" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+  <div class="modal-contenttop" [@fadeIn] style="max-width: 800px; width: 94%;">
+    <div class="card border-0 shadow-lg">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <div>
+          <h5 class="modal-title pt-1 mb-0">Product Details</h5>
+          <p class="modal-subtitle">Full overview of inventory product ID: #{{selectedItem?.id}}</p>
+        </div>
+        <button class="cross-btn-icon border-0 p-0" type="button" (click)="closeModal()">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      
+      <div class="card-body p-4 mb-0" *ngIf="selectedItem">
+        <!-- Premium Product Summary Banner -->
+        <div class="dept-summary-banner">
+          <div class="banner-content">
+            <div class="banner-label">Product Details</div>
+            <div class="banner-value mb-2">{{ selectedItem.productName }}</div>
+            <div class="row g-3 text-white-50 mt-1" style="font-size: 13.5px;">
+              <div class="col-sm-4 text-white">
+                <span class="d-block text-uppercase fw-semibold" style="font-size: 10px; opacity: 0.8;">Category</span>
+                <span class="fw-bold">{{ selectedItem.category }}</span>
+              </div>
+              <div class="col-sm-4 text-white">
+                <span class="d-block text-uppercase fw-semibold" style="font-size: 10px; opacity: 0.8;">Sub Category</span>
+                <span class="fw-bold">{{ selectedItem.subCategory }}</span>
+              </div>
+              <div class="col-sm-4 text-white">
+                <span class="d-block text-uppercase fw-semibold" style="font-size: 10px; opacity: 0.8; margin-bottom: 4px;">Available Stock</span>
+                <span class="d-flex align-items-center gap-2">
+                  <span class="pulse-indicator"></span>
+                  <strong class="fs-5 text-white">{{ selectedItem.totalStock }}</strong>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Live Employee Assignments Table -->
+        <h5 class="fw-bold text-dark mb-3" style="font-family: 'Montserrat', sans-serif; font-size: 16px; letter-spacing: -0.3px;">
+          <i class="fa-solid fa-people-carry-box text-primary me-2"></i>Employee Allocation History
+        </h5>
+        
+        <div class="table-responsive border rounded-3 bg-white" style="max-height: 250px; overflow-y: auto;">
+          <table class="table table-bordered align-middle mb-0 custom-table">
+            <thead class="table-light">
+              <tr>
+                <th class="ps-3 text-center" style="width: 60px;">Sr No.</th>
+                <th>Employee Details</th>
+                <th>Site & Department</th>
+                <th class="text-center" style="width: 120px;">Qty Assigned</th>
+                <th class="text-center" style="width: 140px;">Issue Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let assign of getProductAssignments(selectedItem.productName); index as idx" class="hover-bg-light transition">
+                <td class="text-center fw-medium text-muted fs-7">{{ idx + 1 }}</td>
+                <td>
+                  <div class="d-flex flex-column">
+                    <span class="fw-bold text-dark fs-7">{{ assign.employeeName }}</span>
+                    <span class="text-muted fs-8">{{ assign.employeeId }}</span>
+                  </div>
+                </td>
+                <td>
+                  <div class="d-flex flex-column">
+                    <span class="fw-semibold text-dark fs-7">{{ assign.site }}</span>
+                    <span class="text-muted fs-8">{{ assign.department }}</span>
+                  </div>
+                </td>
+                <td class="text-center fw-bold text-primary fs-7">{{ assign.quantity }}</td>
+                <td class="text-center fw-medium text-muted fs-7">{{ assign.issueDate | date:'dd MMM yyyy' }}</td>
+              </tr>
+              <tr *ngIf="getProductAssignments(selectedItem.productName).length === 0">
+                <td colspan="5" class="text-center py-4 text-muted fs-7">
+                  <i class="fa-solid fa-box-open d-block fs-3 mb-2 text-light"></i>
+                  No active employee allocations found for this product.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      
+      <div class="modal-footer text-end bg-light border-top">
+        <button class="btn btn-premium-close px-4 py-2" type="button" (click)="closeModal()">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 4. Assign Product to Employee Modal -->
+<div *ngIf="assignProductOpen" class="your-animation-class modal-container" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+  <div class="modal-dialog-large bg-white rounded-3 shadow-lg d-flex flex-column h-auto-modal mx-3" style="width: 100%; max-width: 700px;" [@fadeIn]>
+    <div class="modal-header-custom px-4 py-3 d-flex justify-content-between align-items-center border-bottom">
+      <h4 class="mb-0 text-primary fw-bold">Assign Product to Employee</h4>
+      <button class="btn bg-transparent border-0 p-0" (click)="closeModal()">
+        <i class="fa-solid fa-xmark fs-4 text-muted"></i>
+      </button>
+    </div>
+
+    <form [formGroup]="assignForm" (ngSubmit)="submitAssignment()">
+      <div class="modal-body-custom p-4 overflow-auto flex-grow-1">
+        <!-- Part 1: Product Selection -->
+        <div class="row g-3 mb-3">
+          <div class="col-md-6">
+            <label class="form-label form-lable-custom">Select Product <span class="text-danger">*</span></label>
+            <select class="form-select form-input-custom w-100" formControlName="productName" (change)="onAssignProductChange($event)"
+                    [ngClass]="{'is-invalid': assignForm.get('productName')?.invalid && assignForm.get('productName')?.touched}">
+              <option value="">-- Choose Product --</option>
+              <!-- Show only items with active inventory stock -->
+              <option *ngFor="let item of inventoryItems" [value]="item.productName">
+                {{ item.productName }} (Avail: {{ item.totalStock }})
+              </option>
+            </select>
+            <div class="text-muted fs-8 mt-1 fw-medium text-success" *ngIf="selectedProductMaxStock > 0">
+              <i class="fa-solid fa-circle-info me-1"></i> Available Stock: {{ selectedProductMaxStock }} units
+            </div>
+            <div class="invalid-feedback" *ngIf="assignForm.get('productName')?.invalid && assignForm.get('productName')?.touched">
+              Product selection is required.
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label form-lable-custom">Issue Date <span class="text-danger">*</span></label>
+            <input type="date" class="form-control form-input-custom w-100" formControlName="issueDate"
+                   [ngClass]="{'is-invalid': assignForm.get('issueDate')?.invalid && assignForm.get('issueDate')?.touched}" />
+            <div class="invalid-feedback" *ngIf="assignForm.get('issueDate')?.invalid && assignForm.get('issueDate')?.touched">
+              Valid Issue Date is required.
+            </div>
+          </div>
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-md-6">
+            <label class="form-label form-lable-custom">Category</label>
+            <input type="text" class="form-control form-input-custom w-100 bg-light text-muted" formControlName="category" placeholder="Category" readonly />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label form-lable-custom">Sub Category</label>
+            <input type="text" class="form-control form-input-custom w-100 bg-light text-muted" formControlName="subCategory" placeholder="Sub Category" readonly />
+          </div>
+        </div>
+
+        <!-- Divider line -->
+        <hr class="text-muted my-4" />
+
+        <!-- Part 2: Employee Grouped Cascading Selectors -->
+        <h6 class="fw-bold text-muted text-uppercase mb-3 letter-spacing-1 fs-8">Employee Location & Allocation Details</h6>
+        
+        <div class="row g-3 mb-3">
+          <div class="col-md-6">
+            <label class="form-label form-lable-custom">Select Site <span class="text-danger">*</span></label>
+            <select class="form-select form-input-custom w-100" formControlName="site"
+                    [ngClass]="{'is-invalid': assignForm.get('site')?.invalid && assignForm.get('site')?.touched}">
+              <option value="">-- Choose Site --</option>
+              <option value="East Mine">East Mine</option>
+              <option value="West Mine">West Mine</option>
+              <option value="North Sector">North Sector</option>
+            </select>
+            <div class="invalid-feedback" *ngIf="assignForm.get('site')?.invalid && assignForm.get('site')?.touched">
+              Site selection is required.
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label form-lable-custom">Select Department <span class="text-danger">*</span></label>
+            <select class="form-select form-input-custom w-100" formControlName="department"
+                    [ngClass]="{'is-invalid': assignForm.get('department')?.invalid && assignForm.get('department')?.touched}">
+              <option value="">-- Choose Department --</option>
+              <option value="Excavation">Excavation</option>
+              <option value="Safety">Safety</option>
+              <option value="Maintenance">Maintenance</option>
+              <option value="Operations">Operations</option>
+            </select>
+            <div class="invalid-feedback" *ngIf="assignForm.get('department')?.invalid && assignForm.get('department')?.touched">
+              Department selection is required.
+            </div>
+          </div>
+        </div>
+
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label form-lable-custom">Select Employee <span class="text-danger">*</span></label>
+            <select class="form-select form-input-custom w-100" formControlName="employeeId"
+                    [ngClass]="{'is-invalid': assignForm.get('employeeId')?.invalid && assignForm.get('employeeId')?.touched}">
+              <option value="">-- Choose Employee --</option>
+              <option *ngFor="let emp of getFilteredEmployees()" [value]="emp.id">
+                {{ emp.name }} ({{ emp.id }})
+              </option>
+            </select>
+            <div class="text-muted fs-8 mt-1" *ngIf="assignForm.get('employeeId')?.disabled">
+              <i class="fa-solid fa-lock me-1 text-warning"></i> Select Site and Department to unlock employees.
+            </div>
+            <div class="invalid-feedback" *ngIf="assignForm.get('employeeId')?.invalid && assignForm.get('employeeId')?.touched">
+              Employee selection is required.
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label form-lable-custom">Quantity to Assign <span class="text-danger">*</span></label>
+            <input type="number" class="form-control form-input-custom w-100" formControlName="quantity" placeholder="Enter quantity"
+                   [ngClass]="{'is-invalid': assignForm.get('quantity')?.invalid && assignForm.get('quantity')?.touched}" />
+            <div class="invalid-feedback" *ngIf="assignForm.get('quantity')?.invalid && assignForm.get('quantity')?.touched">
+              <span *ngIf="assignForm.get('quantity')?.errors?.['required']">Quantity is required.</span>
+              <span *ngIf="assignForm.get('quantity')?.errors?.['min']">Quantity must be at least 1.</span>
+              <span *ngIf="assignForm.get('quantity')?.errors?.['max']">Quantity cannot exceed available stock ({{ selectedProductMaxStock }}).</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="px-4 py-3 border-top bg-light text-end">
+        <button class="btn btn-secondary px-4 py-2 me-3" type="button" (click)="closeModal()">Cancel</button>
+        <button class="btn btn-custom-primary px-4 py-2" type="submit" [disabled]="assignForm.invalid">
+          <i class="fa-solid fa-paper-plane me-1"></i> Assign Product
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
