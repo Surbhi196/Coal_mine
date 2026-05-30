@@ -20,7 +20,7 @@
       </div>
 
       <div class="col-md-10 d-flex justify-content-end align-items-center gap-2 flex-wrap">
-        <form [formGroup]="filterForm" class="d-flex gap-2">
+        <!-- <form [formGroup]="filterForm" class="d-flex gap-2">
           <select class="form-control form-select" formControlName="siteFilter" (change)="searchfun()">
             <option value="">All Sites</option>
             <option *ngFor="let site of mockSites" [value]="site">{{ site }}</option>
@@ -29,7 +29,7 @@
             <option value="">All Departments</option>
             <option *ngFor="let dept of mockDepartments" [value]="dept">{{ dept }}</option>
           </select>
-        </form>
+        </form> -->
 
         <form [formGroup]="searchbarform" class="d-flex align-items-center ms-2">
           <div class="position-relative">
@@ -68,15 +68,6 @@
               <th>
                 <p class="table-heading">{{ detail.heading4 }}</p>
               </th>
-              <th>
-                <p class="table-heading">{{ detail.heading5 }}</p>
-              </th>
-              <th>
-                <p class="table-heading">{{ detail.heading6 }}</p>
-              </th>
-              <th>
-                <p class="table-heading">{{ detail.heading7 }}</p>
-              </th>
             </tr>
           </thead>
           <tbody>
@@ -88,13 +79,6 @@
               </td>
               <td>
                 <p>{{ emp.mobile }}</p>
-              </td>
-              <td>
-                <p>{{ emp.site }}</p>
-              </td>
-              <td><span class="badge bg-secondary">{{ emp.department }}</span></td>
-              <td>
-                <p>{{ emp.designation }}</p>
               </td>
               <td>
                 <span [ngClass]="{'active-status': emp.is_active == 1, 'deactive-status': emp.is_active != 1}">
@@ -145,9 +129,7 @@
             </div>
           </div>
           <div class="mb-1"><span class="fw-bold fs-5">{{ emp.name }}</span></div>
-          <div class="mb-1 text-muted"><i class="fa-solid fa-phone me-2"></i>{{ emp.mobile }}</div>
-          <div class="mb-1"><strong>Site:</strong> {{ emp.site }} ({{ emp.department }})</div>
-          <div class="mb-2"><strong>Role:</strong> {{ emp.designation }}</div>
+          <div class="mb-2 text-muted"><i class="fa-solid fa-phone me-2"></i>{{ emp.mobile }}</div>
           <div>
             <span [ngClass]="{'active-status': emp.is_active == 1, 'deactive-status': emp.is_active != 1}">
               {{ emp.is_active == 1 ? "Active" : "Inactive" }}
@@ -187,12 +169,6 @@
             <a class="nav-link custom-tab" [ngClass]="{'active': activeTab === 'personal'}"
               (click)="setTab('personal')">
               <i class="fa-regular fa-user me-2"></i>Personal Details
-            </a>
-          </li>
-          <li class="nav-item cursor-pointer">
-            <a class="nav-link custom-tab" [ngClass]="{'active': activeTab === 'employment'}"
-              (click)="setTab('employment')">
-              <i class="fa-solid fa-briefcase me-2"></i>Employment Details
             </a>
           </li>
           <li class="nav-item cursor-pointer">
@@ -256,16 +232,6 @@
               [ngClass]="{'is-invalid': employeeForm.get('emergencyContact')?.invalid && employeeForm.get('emergencyContact')?.touched}" />
             <div class="invalid-feedback">Valid 10-digit Emergency Contact is required.</div>
           </div>
-          <div class="col-md-12">
-            <label class="form-label form-lable-custom">Address *</label>
-            <textarea class="form-control form-input-custom" formControlName="address" rows="2"
-              [ngClass]="{'is-invalid': employeeForm.get('address')?.invalid && employeeForm.get('address')?.touched}"></textarea>
-            <div class="invalid-feedback">Address is required.</div>
-          </div>
-        </div>
-
-        <!-- TAB 2: Employment Details -->
-        <div *ngIf="activeTab === 'employment'" class="row g-3">
           <div class="col-md-6">
             <label class="form-label form-lable-custom">Joining Date *</label>
             <input type="date" class="form-control form-input-custom" formControlName="joiningDate"
@@ -282,40 +248,13 @@
             </select>
             <div class="invalid-feedback">Employee Type is required.</div>
           </div>
-          <div class="col-md-6">
-            <label class="form-label form-lable-custom">Department *</label>
-            <select class="form-select form-input-custom" formControlName="department"
-              [ngClass]="{'is-invalid': employeeForm.get('department')?.invalid && employeeForm.get('department')?.touched}">
-              <option value="">Select Department</option>
-              <option *ngFor="let d of mockDepartments" [value]="d">{{ d }}</option>
-            </select>
-            <div class="invalid-feedback">Department is required.</div>
+          <div class="col-md-12">
+            <label class="form-label form-lable-custom">Address *</label>
+            <textarea class="form-control form-input-custom" formControlName="address" rows="2"
+              [ngClass]="{'is-invalid': employeeForm.get('address')?.invalid && employeeForm.get('address')?.touched}"></textarea>
+            <div class="invalid-feedback">Address is required.</div>
           </div>
-          <div class="col-md-6">
-            <label class="form-label form-lable-custom">Designation *</label>
-            <select class="form-select form-input-custom" formControlName="designation"
-              [ngClass]="{'is-invalid': employeeForm.get('designation')?.invalid && employeeForm.get('designation')?.touched}">
-              <option value="">Select Designation</option>
-              <option *ngFor="let d of mockDesignations" [value]="d">{{ d }}</option>
-            </select>
-            <div class="invalid-feedback">Designation is required.</div>
-          </div>
-          <div class="col-md-6">
-            <label class="form-label form-lable-custom">Site/Location *</label>
-            <select class="form-select form-input-custom" formControlName="site"
-              [ngClass]="{'is-invalid': employeeForm.get('site')?.invalid && employeeForm.get('site')?.touched}">
-              <option value="">Select Site</option>
-              <option *ngFor="let s of mockSites" [value]="s">{{ s }}</option>
-            </select>
-            <div class="invalid-feedback">Site/Location is required.</div>
-          </div>
-          <div class="col-md-6">
-            <label class="form-label form-lable-custom">Reporting Supervisor</label>
-            <select class="form-select form-input-custom" formControlName="supervisor">
-              <option value="">Select Supervisor</option>
-              <option *ngFor="let sup of mockSupervisors" [value]="sup">{{ sup }}</option>
-            </select>
-          </div>
+
         </div>
 
         <!-- TAB 3: Payroll Details -->
@@ -381,6 +320,22 @@
               <option value="Yes">Yes</option>
             </select>
           </div>
+          <div class="col-md-6">
+            <label class="form-label form-lable-custom">Others Deduction Applicable *</label>
+            <select class="form-select form-input-custom" formControlName="isOthersDeductionApplicable"
+              [ngClass]="{'is-invalid': employeeForm.get('isOthersDeductionApplicable')?.invalid && employeeForm.get('isOthersDeductionApplicable')?.touched}">
+              <option value="No">No</option>
+              <option value="Yes">Yes</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label form-lable-custom">Others Deduction Amount (₹) <span
+                *ngIf="employeeForm.get('isOthersDeductionApplicable')?.value === 'Yes'">*</span></label>
+            <input type="number" class="form-control form-input-custom" formControlName="othersDeductionAmount"
+              placeholder="Enter Others Deduction Amount"
+              [ngClass]="{'is-invalid': employeeForm.get('othersDeductionAmount')?.invalid && employeeForm.get('othersDeductionAmount')?.touched}" />
+            <div class="invalid-feedback">Others Deduction Amount is required when applicable.</div>
+          </div>
         </div>
       </div>
 
@@ -397,8 +352,8 @@
 </div>
 
 <!-- View Modal -->
-<div *ngIf="viewEmployeeOpen" class="your-animation-class modal-container premium-detail-modal" aria-labelledby="modal-title" role="dialog"
-  aria-modal="true">
+<div *ngIf="viewEmployeeOpen" class="your-animation-class modal-container premium-detail-modal"
+  aria-labelledby="modal-title" role="dialog" aria-modal="true">
   <div class="modal-contenttop modal-content-50" [@fadeIn]>
     <div class="card">
       <div class="card-header bg-white d-flex justify-content-between align-items-center">
@@ -418,7 +373,7 @@
             <div class="banner-value">{{ selectedEmployee?.name }}</div>
             <div class="banner-subtitle">
               <span class="pulse-indicator" [ngClass]="{'deactive': selectedEmployee?.is_active !== 1}"></span>
-              Status: 
+              Status:
               <span class="status-badge-pill" [ngClass]="selectedEmployee?.is_active === 1 ? 'active' : 'deactive'">
                 {{ selectedEmployee?.is_active === 1 ? 'Active' : 'Inactive' }}
               </span>
@@ -426,55 +381,200 @@
           </div>
         </div>
 
-        <!-- Details Grid Section -->
-        <div class="grid-section-title">Corporate Information</div>
-        <div class="row g-3">
-          <!-- Emp ID & Designation -->
-          <div class="col-md-4">
-            <div class="glass-info-card">
-              <div class="card-icon-wrapper code">
-                <i class="fa-solid fa-id-card"></i>
+        <!-- Scrollable Details Wrapper to prevent modal from growing too tall -->
+        <div class="view-details-scroll overflow-auto pe-1" style="max-height: 48vh;">
+          
+          <!-- SECTION 1: Personal Details -->
+          <div class="grid-section-title">Personal Details</div>
+          <div class="row g-3 mb-4">
+            <div class="col-md-6 col-lg-4">
+              <div class="glass-info-card">
+                <div class="card-icon-wrapper code"><i class="fa-solid fa-id-card"></i></div>
+                <div class="card-info-content">
+                  <span class="info-label">Employee ID</span>
+                  <span class="info-value text-dark fs-7">{{ selectedEmployee?.empId }}</span>
+                </div>
               </div>
-              <div class="card-info-content">
-                <span class="info-label">Employee ID</span>
-                <span class="info-value text-dark fs-7">{{ selectedEmployee?.empId }}</span>
-                <span class="info-subtext text-muted fs-8 mt-0.5 d-flex align-items-center gap-1">
-                  <i class="fa-solid fa-briefcase"></i>
-                  {{ selectedEmployee?.designation }}
-                </span>
+            </div>
+            <div class="col-md-6 col-lg-4">
+              <div class="glass-info-card">
+                <div class="card-icon-wrapper contact"><i class="fa-solid fa-user"></i></div>
+                <div class="card-info-content">
+                  <span class="info-label">Father's Name</span>
+                  <span class="info-value text-dark fs-7">{{ selectedEmployee?.fatherName }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+              <div class="glass-info-card">
+                <div class="card-icon-wrapper contact"><i class="fa-solid fa-cake-candles"></i></div>
+                <div class="card-info-content">
+                  <span class="info-label">Date of Birth</span>
+                  <span class="info-value text-dark fs-7">{{ selectedEmployee?.dob | date:'dd MMM yyyy' }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+              <div class="glass-info-card">
+                <div class="card-icon-wrapper contact"><i class="fa-solid fa-venus-mars"></i></div>
+                <div class="card-info-content">
+                  <span class="info-label">Gender</span>
+                  <span class="info-value text-dark fs-7">{{ selectedEmployee?.gender }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+              <div class="glass-info-card">
+                <div class="card-icon-wrapper contact"><i class="fa-solid fa-phone"></i></div>
+                <div class="card-info-content">
+                  <span class="info-label">Mobile Contact</span>
+                  <span class="info-value text-dark fs-7">{{ selectedEmployee?.mobile }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+              <div class="glass-info-card">
+                <div class="card-icon-wrapper contact"><i class="fa-solid fa-phone-slash"></i></div>
+                <div class="card-info-content">
+                  <span class="info-label">Emergency Contact</span>
+                  <span class="info-value text-dark fs-7">{{ selectedEmployee?.emergencyContact || '--' }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="col-12">
+              <div class="glass-info-card">
+                <div class="card-icon-wrapper contact"><i class="fa-solid fa-location-dot"></i></div>
+                <div class="card-info-content">
+                  <span class="info-label">Address</span>
+                  <span class="info-value text-dark fs-7">{{ selectedEmployee?.address }}</span>
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- Site & Department -->
-          <div class="col-md-4">
-            <div class="glass-info-card">
-              <div class="card-icon-wrapper site">
-                <i class="fa-solid fa-map-location-dot"></i>
+          <!-- SECTION 2: Employment Details -->
+          <div class="grid-section-title">Employment Details</div>
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <div class="glass-info-card">
+                <div class="card-icon-wrapper site"><i class="fa-solid fa-calendar-days"></i></div>
+                <div class="card-info-content">
+                  <span class="info-label">Joining Date</span>
+                  <span class="info-value text-dark fs-7">{{ selectedEmployee?.joiningDate | date:'dd MMM yyyy' }}</span>
+                </div>
               </div>
-              <div class="card-info-content">
-                <span class="info-label">Mine Location</span>
-                <span class="info-value text-dark fs-7">{{ selectedEmployee?.site }}</span>
-                <span class="info-subtext text-muted fs-8 mt-0.5 d-flex align-items-center gap-1">
-                  <i class="fa-solid fa-folder"></i>
-                  {{ selectedEmployee?.department }}
-                </span>
+            </div>
+            <div class="col-md-6">
+              <div class="glass-info-card">
+                <div class="card-icon-wrapper site"><i class="fa-solid fa-briefcase"></i></div>
+                <div class="card-info-content">
+                  <span class="info-label">Employee Type</span>
+                  <span class="info-value text-dark fs-7">{{ selectedEmployee?.empType }}</span>
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- Contact Number -->
-          <div class="col-md-4">
-            <div class="glass-info-card">
-              <div class="card-icon-wrapper contact">
-                <i class="fa-solid fa-phone"></i>
+          <!-- SECTION 3: Payroll Details -->
+          <div class="grid-section-title">Payroll Details</div>
+          <div class="row g-3 mb-4">
+            <div class="col-md-6 col-lg-4">
+              <div class="glass-info-card">
+                <div class="card-icon-wrapper code"><i class="fa-solid fa-money-bill-wave"></i></div>
+                <div class="card-info-content">
+                  <span class="info-label">Salary Type</span>
+                  <span class="info-value text-dark fs-7">{{ selectedEmployee?.salaryType }}</span>
+                </div>
               </div>
-              <div class="card-info-content">
-                <span class="info-label">Mobile Contact</span>
-                <span class="info-value text-dark fs-7">{{ selectedEmployee?.mobile }}</span>
+            </div>
+            <div class="col-md-6 col-lg-4">
+              <div class="glass-info-card">
+                <div class="card-icon-wrapper code"><i class="fa-solid fa-indian-rupee-sign"></i></div>
+                <div class="card-info-content">
+                  <span class="info-label">Basic Salary</span>
+                  <span class="info-value text-dark fs-7">₹{{ selectedEmployee?.basicSalary | number }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+              <div class="glass-info-card">
+                <div class="card-icon-wrapper code"><i class="fa-solid fa-piggy-bank"></i></div>
+                <div class="card-info-content">
+                  <span class="info-label">PF Applicable</span>
+                  <span class="info-value text-dark fs-7">{{ selectedEmployee?.isPfApplicable }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6 col-lg-4" *ngIf="selectedEmployee?.isPfApplicable === 'Yes'">
+              <div class="glass-info-card">
+                <div class="card-icon-wrapper code"><i class="fa-solid fa-hashtag"></i></div>
+                <div class="card-info-content">
+                  <span class="info-label">PF Number</span>
+                  <span class="info-value text-dark fs-7">{{ selectedEmployee?.pfNumber }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+              <div class="glass-info-card">
+                <div class="card-icon-wrapper code"><i class="fa-solid fa-utensils"></i></div>
+                <div class="card-info-content">
+                  <span class="info-label">Mess Deduction</span>
+                  <span class="info-value text-dark fs-7">{{ selectedEmployee?.isMessApplicable }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+              <div class="glass-info-card">
+                <div class="card-icon-wrapper code"><i class="fa-solid fa-calculator"></i></div>
+                <div class="card-info-content">
+                  <span class="info-label">Others Deduction</span>
+                  <span class="info-value text-dark fs-7">{{ selectedEmployee?.isOthersDeductionApplicable }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6 col-lg-4" *ngIf="selectedEmployee?.isOthersDeductionApplicable === 'Yes'">
+              <div class="glass-info-card">
+                <div class="card-icon-wrapper code"><i class="fa-solid fa-indian-rupee-sign"></i></div>
+                <div class="card-info-content">
+                  <span class="info-label">Others Deduction Amount</span>
+                  <span class="info-value text-dark fs-7">₹{{ selectedEmployee?.othersDeductionAmount | number }}</span>
+                </div>
               </div>
             </div>
           </div>
+
+          <!-- SECTION 4: Bank Details -->
+          <div class="grid-section-title">Bank Details</div>
+          <div class="row g-3">
+            <div class="col-md-6 col-lg-4">
+              <div class="glass-info-card">
+                <div class="card-icon-wrapper contact"><i class="fa-solid fa-building-columns"></i></div>
+                <div class="card-info-content">
+                  <span class="info-label">Bank Name</span>
+                  <span class="info-value text-dark fs-7">{{ selectedEmployee?.bankName }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+              <div class="glass-info-card">
+                <div class="card-icon-wrapper contact"><i class="fa-solid fa-credit-card"></i></div>
+                <div class="card-info-content">
+                  <span class="info-label">Account Number</span>
+                  <span class="info-value text-dark fs-7">{{ selectedEmployee?.accountNumber }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+              <div class="glass-info-card">
+                <div class="card-icon-wrapper contact"><i class="fa-solid fa-circle-info"></i></div>
+                <div class="card-info-content">
+                  <span class="info-label">IFSC Code</span>
+                  <span class="info-value text-dark fs-7">{{ selectedEmployee?.ifscCode }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
       <div class="modal-footer text-end">

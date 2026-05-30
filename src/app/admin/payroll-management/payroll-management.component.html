@@ -3,8 +3,15 @@
   <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4" style="margin-top: 15px;">
     <div>
       <h1 class="text-primary table-heading-detail mb-1">Payroll & Deduction Management</h1>
-      <p class="text-muted mb-0 fs-6">Manage employee salaries, shift allowances, incentives, and attendance-based deductions.</p>
+      <p class="text-muted mb-0 fs-6">Manage employee salaries, shift allowances, incentives, and attendance-based
+        deductions.</p>
     </div>
+    <!-- <div *ngIf="payrollState === 'Draft'">
+      <button class="btn btn-custom-primary px-4 py-2 hover-up d-flex align-items-center gap-2"
+        (click)="openAddModal()" style="height: 42px;">
+        <i class="fa-solid fa-plus"></i> Add Manual Record
+      </button>
+    </div> -->
   </div>
 
   <!-- Filters & Workflow Bar Card -->
@@ -43,7 +50,8 @@
 
         <!-- Search Filter -->
         <div class="col-md-4">
-          <label class="form-label form-lable-custom mb-1 text-muted fs-8 fw-bold text-uppercase">Search Employee</label>
+          <label class="form-label form-lable-custom mb-1 text-muted fs-8 fw-bold text-uppercase">Search
+            Employee</label>
           <div class="input-group">
             <span class="input-group-text bg-white text-muted border-end-0 py-2">
               <i class="fa-solid fa-magnifying-glass"></i>
@@ -88,12 +96,27 @@
         <table class="table table-bordered table-hover table-striped mb-0">
           <thead class="table-header">
             <tr>
-              <th><p class="table-heading">Employee Details</p></th>
-              <th><p class="table-heading text-center">Present</p></th>
-              <th><p class="table-heading text-center">Absent</p></th>
-              <th><p class="table-heading text-center">Leave</p></th>
-              <th><p class="table-heading text-center">Net Salary</p></th>
-              <th><p class="table-heading text-center">Action</p></th>
+              <th>
+                <p class="table-heading">Employee Details</p>
+              </th>
+              <th>
+                <p class="table-heading text-center">Created At</p>
+              </th>
+              <th>
+                <p class="table-heading text-center">Present</p>
+              </th>
+              <th>
+                <p class="table-heading text-center">Absent</p>
+              </th>
+              <th>
+                <p class="table-heading text-center">Leave</p>
+              </th>
+              <th>
+                <p class="table-heading text-center">Net Salary</p>
+              </th>
+              <th>
+                <p class="table-heading text-center">Action</p>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -101,15 +124,23 @@
               <td class="ps-3">
                 <div class="fw-bold text-dark fs-7">{{ rec.empName }}</div>
                 <div class="text-muted fs-8">ID: {{ rec.empId }} | {{ rec.designation }}</div>
-                <div class="badge bg-secondary-subtle text-secondary fs-8 mt-1">{{ rec.department }} | {{ rec.site }}</div>
+                <div class="badge bg-secondary-subtle text-secondary fs-8 mt-1">{{ rec.department }} | {{ rec.site }}
+                </div>
               </td>
               <td class="text-center">
-                <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1.5 fs-8 fw-semibold">
+                <span class="text-dark fs-8 fw-semibold">
+                  {{ rec.createdAt | date:'dd MMM yyyy' }}
+                </span>
+              </td>
+              <td class="text-center">
+                <span
+                  class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1.5 fs-8 fw-semibold">
                   {{ rec.presentCount }} Days
                 </span>
               </td>
               <td class="text-center">
-                <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2.5 py-1.5 fs-8 fw-semibold">
+                <span
+                  class="badge bg-danger-subtle text-danger border border-danger-subtle px-2.5 py-1.5 fs-8 fw-semibold">
                   {{ rec.absentCount + rec.unpaidLeaveCount }} Days
                 </span>
               </td>
@@ -124,20 +155,18 @@
               <td class="text-center">
                 <div class="d-flex align-items-center justify-content-center gap-2">
                   <!-- Action for Draft Mode: Edit adjustments -->
-                  <button *ngIf="payrollState === 'Draft'"
-                    class="btn-action edit-btn" (click)="openEditModal(rec)"
+                  <button *ngIf="payrollState === 'Draft'" class="btn-action edit-btn" (click)="openEditModal(rec)"
                     title="Edit Adjustments">
                     <i class="fa-solid fa-pen-to-square"></i>
                   </button>
                   <button *ngIf="payrollState === 'Draft' && isManualRecord(rec.empId)"
-                    class="btn-action deactivate-btn"
-                    (click)="deleteManualRecord(rec.empId)" title="Delete manual record">
+                    class="btn-action deactivate-btn" (click)="deleteManualRecord(rec.empId)"
+                    title="Delete manual record">
                     <i class="fa-solid fa-trash"></i>
                   </button>
 
                   <!-- Slip Icon for Payslip Preview (Available in all states) -->
-                  <button class="btn-action view-btn" (click)="viewPayslip(rec)"
-                    title="View Salary Slip">
+                  <button class="btn-action view-btn" (click)="viewPayslip(rec)" title="View Salary Slip">
                     <i class="fa-solid fa-receipt"></i>
                   </button>
 
@@ -160,8 +189,9 @@
 
       <!-- Card View for below lg -->
       <div class="lg:hidden space-y-4">
-        <div *ngFor="let rec of filteredPayrollRecords | paginate: { itemsPerPage: showEntries, currentPage: p }; index as i"
-             class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+        <div
+          *ngFor="let rec of filteredPayrollRecords | paginate: { itemsPerPage: showEntries, currentPage: p }; index as i"
+          class="bg-gray-50 border border-gray-200 rounded-lg p-4">
           <div class="flex justify-between items-center mb-2">
             <div>
               <strong>Employee:</strong> {{ rec.empName }} ({{ rec.empId }})
@@ -169,18 +199,15 @@
             <div>
               <div class="d-flex align-items-center gap-1">
                 <!-- Action for Draft Mode: Edit adjustments -->
-                <button *ngIf="payrollState === 'Draft'"
-                  class="btn-action edit-btn" (click)="openEditModal(rec)"
+                <button *ngIf="payrollState === 'Draft'" class="btn-action edit-btn" (click)="openEditModal(rec)"
                   title="Edit Adjustments">
                   <i class="fa-solid fa-pen-to-square"></i>
                 </button>
-                <button *ngIf="payrollState === 'Draft' && isManualRecord(rec.empId)"
-                  class="btn-action deactivate-btn"
+                <button *ngIf="payrollState === 'Draft' && isManualRecord(rec.empId)" class="btn-action deactivate-btn"
                   (click)="deleteManualRecord(rec.empId)" title="Delete manual record">
                   <i class="fa-solid fa-trash"></i>
                 </button>
-                <button class="btn-action view-btn" (click)="viewPayslip(rec)"
-                  title="View Salary Slip">
+                <button class="btn-action view-btn" (click)="viewPayslip(rec)" title="View Salary Slip">
                   <i class="fa-solid fa-receipt"></i>
                 </button>
               </div>
@@ -188,9 +215,14 @@
           </div>
           <div class="mb-2"><strong>Designation:</strong> {{ rec.designation }}</div>
           <div class="mb-2"><strong>Dept / Site:</strong> {{ rec.department }} | {{ rec.site }}</div>
+          <div class="mb-2 text-muted fs-8">
+            <i class="fa-solid fa-calendar-days me-1 text-secondary"></i>
+            <strong>Created At:</strong> {{ rec.createdAt | date:'dd MMM yyyy' }}
+          </div>
           <div class="mb-2">
             <strong>Present Days:</strong>
-            <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1 fs-9 fw-semibold">
+            <span
+              class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1 fs-9 fw-semibold">
               {{ rec.presentCount }} Days
             </span>
           </div>
@@ -216,11 +248,13 @@
         </div>
       </div>
 
-      <div class="d-md-flex justify-content-between bottom-0 end-0 py-2 align-items-center" *ngIf="filteredPayrollRecords.length > 0">
+      <div class="d-md-flex justify-content-between bottom-0 end-0 py-2 align-items-center"
+        *ngIf="filteredPayrollRecords.length > 0">
         <span class="showalltext">Showing
           {{ showEntries * (p - 1) > 0 ? showEntries * (p - 1) + 1 : 1 }} to
-          {{ showEntries * p <= filteredPayrollRecords.length ? showEntries * p : filteredPayrollRecords.length }} of {{ filteredPayrollRecords.length }} entries</span>
-        <pagination-controls (pageChange)="p = $event" class="my-pagination"></pagination-controls>
+          {{ showEntries * p <= filteredPayrollRecords.length ? showEntries * p : filteredPayrollRecords.length }} of {{
+            filteredPayrollRecords.length }} entries</span>
+            <pagination-controls (pageChange)="p = $event" class="my-pagination"></pagination-controls>
       </div>
     </div>
   </div>
@@ -244,7 +278,8 @@
       <form [formGroup]="editForm" (ngSubmit)="submitAdjustments()">
         <!-- Employee Info -->
         <div class="mb-3">
-          <label class="form-label form-lable-custom mb-1 text-muted fs-8 fw-bold text-uppercase">Employee ID & Name</label>
+          <label class="form-label form-lable-custom mb-1 text-muted fs-8 fw-bold text-uppercase">Employee ID &
+            Name</label>
           <div class="p-2.5 bg-light rounded border text-secondary fw-bold">
             {{ editForm.get('empId')?.value }} - {{ editForm.get('empName')?.value }}
           </div>
@@ -283,7 +318,7 @@
         </div>
 
         <!-- Mess Deduction -->
-        <div class="mb-4">
+        <div class="mb-3">
           <label class="form-label form-lable-custom">Mess Deduction (Rs.)</label>
           <div class="input-group">
             <span class="input-group-text bg-white text-muted border-end-0">
@@ -294,6 +329,22 @@
           </div>
           <div class="text-danger fs-8 mt-1"
             *ngIf="editForm.get('messDeduction')?.invalid && editForm.get('messDeduction')?.touched">
+            Please enter a valid positive number.
+          </div>
+        </div>
+
+        <!-- Others Deduction -->
+        <div class="mb-4">
+          <label class="form-label form-lable-custom">Others Deduction (Rs.)</label>
+          <div class="input-group">
+            <span class="input-group-text bg-white text-muted border-end-0">
+              <i class="fa-solid fa-calculator text-warning"></i>
+            </span>
+            <input type="number" class="form-control form-input-custom border-start-0 ps-0"
+              formControlName="othersDeduction">
+          </div>
+          <div class="text-danger fs-8 mt-1"
+            *ngIf="editForm.get('othersDeduction')?.invalid && editForm.get('othersDeduction')?.touched">
             Please enter a valid positive number.
           </div>
         </div>
@@ -346,7 +397,8 @@
         <div class="col-md-4 col-sm-6">
           <div class="mb-3">
             <span class="detail-label text-muted uppercase fw-bold"
-              style="font-size: 0.725rem; letter-spacing: 0.05em; display: block; margin-bottom: 2px;">EMPLOYEE ID</span>
+              style="font-size: 0.725rem; letter-spacing: 0.05em; display: block; margin-bottom: 2px;">EMPLOYEE
+              ID</span>
             <span class="detail-value fw-bold text-dark fs-6">{{ selectedPayslipRecord.empId }}</span>
           </div>
           <div>
@@ -359,12 +411,14 @@
         <div class="col-md-4 col-sm-6">
           <div class="mb-3">
             <span class="detail-label text-muted uppercase fw-bold"
-              style="font-size: 0.725rem; letter-spacing: 0.05em; display: block; margin-bottom: 2px;">EMPLOYEE NAME</span>
+              style="font-size: 0.725rem; letter-spacing: 0.05em; display: block; margin-bottom: 2px;">EMPLOYEE
+              NAME</span>
             <span class="detail-value fw-bold text-dark fs-6">{{ selectedPayslipRecord.empName }}</span>
           </div>
           <div>
             <span class="detail-label text-muted uppercase fw-bold"
-              style="font-size: 0.725rem; letter-spacing: 0.05em; display: block; margin-bottom: 2px;">MINE SITE LOCATION</span>
+              style="font-size: 0.725rem; letter-spacing: 0.05em; display: block; margin-bottom: 2px;">MINE SITE
+              LOCATION</span>
             <span class="detail-value fw-bold text-dark fs-6">{{ selectedPayslipRecord.site }}</span>
           </div>
         </div>
@@ -372,7 +426,8 @@
         <div class="col-md-4 col-sm-12">
           <div class="mb-3">
             <span class="detail-label text-muted uppercase fw-bold"
-              style="font-size: 0.725rem; letter-spacing: 0.05em; display: block; margin-bottom: 2px;">BANK ACCOUNT NO</span>
+              style="font-size: 0.725rem; letter-spacing: 0.05em; display: block; margin-bottom: 2px;">BANK ACCOUNT
+              NO</span>
             <span class="detail-value fw-bold text-dark fs-6">SBI 30291039201</span>
           </div>
           <div>
@@ -399,11 +454,13 @@
               <tbody style="font-size: 0.85rem; color: #334155;">
                 <tr class="border-bottom border-light">
                   <td class="ps-0 py-2.5 text-start">Basic Salary</td>
-                  <td class="pe-0 py-2.5 text-end fw-semibold">₹{{ selectedPayslipRecord.basicSalary.toLocaleString() }}</td>
+                  <td class="pe-0 py-2.5 text-end fw-semibold">₹{{ selectedPayslipRecord.basicSalary.toLocaleString() }}
+                  </td>
                 </tr>
                 <tr class="fw-bold fs-7 text-dark">
                   <td class="ps-0 pt-3 text-start" style="padding-top: 50px !important;">Gross Earnings</td>
-                  <td class="pe-0 pt-3 text-end" style="padding-top: 50px !important;">₹{{ selectedPayslipRecord.basicSalary.toLocaleString() }}</td>
+                  <td class="pe-0 pt-3 text-end" style="padding-top: 50px !important;">₹{{
+                    selectedPayslipRecord.basicSalary.toLocaleString() }}</td>
                 </tr>
               </tbody>
             </table>
@@ -424,15 +481,23 @@
               <tbody style="font-size: 0.85rem; color: #334155;">
                 <tr class="border-bottom border-light">
                   <td class="ps-0 py-2.5 text-start">EPF Provident Fund (12%)</td>
-                  <td class="pe-0 py-2.5 text-end fw-semibold">₹{{ selectedPayslipRecord.pfDeduction.toLocaleString() }}</td>
+                  <td class="pe-0 py-2.5 text-end fw-semibold">₹{{ selectedPayslipRecord.pfDeduction.toLocaleString() }}
+                  </td>
                 </tr>
                 <tr class="border-bottom border-light">
                   <td class="ps-0 py-2.5 text-start">Camp Mess Food Charge</td>
-                  <td class="pe-0 py-2.5 text-end fw-semibold">₹{{ selectedPayslipRecord.messDeduction.toLocaleString() }}</td>
+                  <td class="pe-0 py-2.5 text-end fw-semibold">₹{{ selectedPayslipRecord.messDeduction.toLocaleString()
+                    }}</td>
                 </tr>
                 <tr class="border-bottom border-light">
                   <td class="ps-0 py-2.5 text-start">Unpaid Leave / Absents</td>
-                  <td class="pe-0 py-2.5 text-end fw-semibold">₹{{ selectedPayslipRecord.leaveDeduction.toLocaleString() }}</td>
+                  <td class="pe-0 py-2.5 text-end fw-semibold">₹{{ selectedPayslipRecord.leaveDeduction.toLocaleString()
+                    }}</td>
+                </tr>
+                <tr class="border-bottom border-light">
+                  <td class="ps-0 py-2.5 text-start">Others Deduction</td>
+                  <td class="pe-0 py-2.5 text-end fw-semibold">₹{{
+                    selectedPayslipRecord.othersDeduction.toLocaleString() }}</td>
                 </tr>
                 <tr class="fw-bold fs-7 text-dark">
                   <td class="ps-0 pt-3 text-start">Gross Deductions</td>
@@ -451,7 +516,8 @@
           <span class="text-secondary fs-8 fw-semibold">Transferred electronically to bank account</span>
         </div>
         <div class="text-end">
-          <h2 class="mb-0 fw-extrabold net-salary-amount">₹{{ (selectedPayslipRecord.basicSalary - selectedPayslipRecord.totalDeductions).toLocaleString() }}</h2>
+          <h2 class="mb-0 fw-extrabold net-salary-amount">₹{{ (selectedPayslipRecord.basicSalary -
+            selectedPayslipRecord.totalDeductions).toLocaleString() }}</h2>
         </div>
       </div>
 
@@ -497,7 +563,8 @@
         <div class="form-check form-switch mb-3 p-0 d-flex align-items-center gap-2">
           <input class="form-check-input ms-0" type="checkbox" id="customEmpSwitch" formControlName="isCustomEmployee"
             (change)="onCustomEmployeeToggle()">
-          <label class="form-check-label fw-bold text-secondary mb-0" for="customEmpSwitch">Create Custom/Contract Employee (Not in Master List)</label>
+          <label class="form-check-label fw-bold text-secondary mb-0" for="customEmpSwitch">Create Custom/Contract
+            Employee (Not in Master List)</label>
         </div>
 
         <!-- Dropdown Selection for Master Employee -->
@@ -570,15 +637,20 @@
 
         <h6 class="border-bottom pb-2 mb-3 mt-4 text-primary fw-bold fs-7">Standard Deductions & Attendance Counts</h6>
 
-        <!-- PF, Mess Deductions -->
+        <!-- PF, Mess, Others Deductions -->
         <div class="row g-3 mb-3">
-          <div class="col-md-6">
+          <div class="col-md-4">
             <label class="form-label form-lable-custom">PF Deduction (Rs.) <span class="text-danger">*</span></label>
             <input type="number" class="form-control form-input-custom" formControlName="pfDeduction">
           </div>
-          <div class="col-md-6">
+          <div class="col-md-4">
             <label class="form-label form-lable-custom">Mess Deduction (Rs.) <span class="text-danger">*</span></label>
             <input type="number" class="form-control form-input-custom" formControlName="messDeduction">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label form-lable-custom">Others Deduction (Rs.) <span
+                class="text-danger">*</span></label>
+            <input type="number" class="form-control form-input-custom" formControlName="othersDeduction">
           </div>
         </div>
 

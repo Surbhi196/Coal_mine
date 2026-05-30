@@ -23,10 +23,12 @@ interface PayrollRecord {
   pfDeduction: number;
   messDeduction: number;
   leaveDeduction: number;
+  othersDeduction: number;
   incentives: number;
   totalEarnings: number;
   totalDeductions: number;
   netSalary: number;
+  createdAt: Date;
 }
 
 @Component({
@@ -92,7 +94,8 @@ export class PayrollManagementComponent implements OnInit {
       empName: [{ value: '', disabled: true }],
       incentives: [0, [Validators.required, Validators.min(0)]],
       messDeduction: [1000, [Validators.required, Validators.min(0)]],
-      pfDeduction: [1800, [Validators.required, Validators.min(0)]]
+      pfDeduction: [1800, [Validators.required, Validators.min(0)]],
+      othersDeduction: [0, [Validators.required, Validators.min(0)]]
     });
 
     this.addForm = this.fb.group({
@@ -108,6 +111,7 @@ export class PayrollManagementComponent implements OnInit {
       incentives: [0, [Validators.required, Validators.min(0)]],
       pfDeduction: [2000, [Validators.required, Validators.min(0)]],
       messDeduction: [1000, [Validators.required, Validators.min(0)]],
+      othersDeduction: [0, [Validators.required, Validators.min(0)]],
       presentCount: [26, [Validators.required, Validators.min(0)]],
       halfDayCount: [0, [Validators.required, Validators.min(0)]],
       absentCount: [0, [Validators.required, Validators.min(0)]]
@@ -261,6 +265,7 @@ export class PayrollManagementComponent implements OnInit {
       const empAdj = adjustments[empId] || {};
       const pfDeduction = empAdj.pf !== undefined ? empAdj.pf : Math.round(emp.basicSalary * 0.1);
       const messDeduction = empAdj.mess !== undefined ? empAdj.mess : 1000;
+      const othersDeduction = empAdj.others !== undefined ? empAdj.others : 0;
       const incentives = empAdj.incentives !== undefined ? empAdj.incentives : 0;
 
       // Calculations
@@ -271,7 +276,7 @@ export class PayrollManagementComponent implements OnInit {
 
       const shiftAllowance = emp.shiftAllowance || 1500;
       const totalEarnings = emp.basicSalary + shiftAllowance + incentives;
-      const totalDeductions = pfDeduction + messDeduction + leaveDeduction;
+      const totalDeductions = pfDeduction + messDeduction + leaveDeduction + othersDeduction;
       const netSalary = Math.max(0, totalEarnings - totalDeductions);
 
       return {
@@ -291,10 +296,17 @@ export class PayrollManagementComponent implements OnInit {
         pfDeduction,
         messDeduction,
         leaveDeduction: Math.round(leaveDeduction * 100) / 100,
+        othersDeduction,
         incentives,
         totalEarnings: Math.round(totalEarnings),
         totalDeductions: Math.round(totalDeductions),
-        netSalary: Math.round(netSalary)
+        netSalary: Math.round(netSalary),
+        createdAt: (() => {
+          const date = new Date();
+          date.setDate(15); // Mocked middle of the month
+          date.setHours(9, 15, 0, 0);
+          return date;
+        })()
       };
     });
 
@@ -312,10 +324,11 @@ export class PayrollManagementComponent implements OnInit {
       const empAdj = adjustments[m.empId] || {};
       const pfDeduction = empAdj.pf !== undefined ? empAdj.pf : m.pfDeduction;
       const messDeduction = empAdj.mess !== undefined ? empAdj.mess : m.messDeduction;
+      const othersDeduction = empAdj.others !== undefined ? empAdj.others : (m.othersDeduction || 0);
       const incentives = empAdj.incentives !== undefined ? empAdj.incentives : m.incentives;
 
       const totalEarnings = m.basicSalary + m.shiftAllowance + incentives;
-      const totalDeductions = pfDeduction + messDeduction + leaveDeduction;
+      const totalDeductions = pfDeduction + messDeduction + leaveDeduction + othersDeduction;
       const netSalary = Math.max(0, totalEarnings - totalDeductions);
 
       return {
@@ -335,10 +348,12 @@ export class PayrollManagementComponent implements OnInit {
         pfDeduction,
         messDeduction,
         leaveDeduction: Math.round(leaveDeduction * 100) / 100,
+        othersDeduction,
         incentives,
         totalEarnings: Math.round(totalEarnings),
         totalDeductions: Math.round(totalDeductions),
-        netSalary: Math.round(netSalary)
+        netSalary: Math.round(netSalary),
+        createdAt: m.createdAt ? new Date(m.createdAt) : new Date()
       };
     });
 
@@ -415,6 +430,7 @@ export class PayrollManagementComponent implements OnInit {
       incentives: 0,
       pfDeduction: 2000,
       messDeduction: 1000,
+      othersDeduction: 0,
       presentCount: 26,
       halfDayCount: 0,
       absentCount: 0
@@ -488,6 +504,7 @@ export class PayrollManagementComponent implements OnInit {
         return;
       }
 
+      rawVal.createdAt = new Date();
       manualRecordsList.push(rawVal);
       localStorage.setItem(manualKey, JSON.stringify(manualRecordsList));
 
@@ -539,6 +556,7 @@ export class PayrollManagementComponent implements OnInit {
       empName: rec.empName,
       pfDeduction: rec.pfDeduction,
       messDeduction: rec.messDeduction,
+      othersDeduction: rec.othersDeduction || 0,
       incentives: rec.incentives
     });
     this.showEditModal = true;
@@ -559,7 +577,8 @@ export class PayrollManagementComponent implements OnInit {
       adjustments[this.currentEditingRecord.empId] = {
         pf: formVal.pfDeduction,
         mess: formVal.messDeduction,
-        incentives: formVal.incentives
+        incentives: formVal.incentives,
+        others: formVal.othersDeduction
       };
 
       localStorage.setItem(adjKey, JSON.stringify(adjustments));

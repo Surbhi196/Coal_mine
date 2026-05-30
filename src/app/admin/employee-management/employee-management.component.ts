@@ -76,7 +76,7 @@ export class EmployeeManagementComponent implements OnInit {
   currentEmployeeId: any;
   selectedEmployee: any = null;
   
-  activeTab: 'personal' | 'employment' | 'payroll' = 'personal';
+  activeTab: 'personal' | 'payroll' = 'personal';
   
   employeeList: any[] = [];
   
@@ -85,11 +85,8 @@ export class EmployeeManagementComponent implements OnInit {
       heading0: 'Emp ID',
       heading1: 'Name',
       heading2: 'Contact',
-      heading3: 'Site',
-      heading4: 'Department',
-      heading5: 'Designation',
-      heading6: 'Status',
-      heading7: 'Action',
+      heading3: 'Status',
+      heading4: 'Action',
     },
   ];
 
@@ -123,6 +120,8 @@ export class EmployeeManagementComponent implements OnInit {
       accountNumber: '1234567890',
       ifscCode: 'SBIN0001234',
       isMessApplicable: 'Yes',
+      isOthersDeductionApplicable: 'No',
+      othersDeductionAmount: 0,
       is_active: 1 
     },
     { 
@@ -149,6 +148,8 @@ export class EmployeeManagementComponent implements OnInit {
       accountNumber: '0987654321',
       ifscCode: 'HDFC0004321',
       isMessApplicable: 'No',
+      isOthersDeductionApplicable: 'Yes',
+      othersDeductionAmount: 500,
       is_active: 1 
     },
     { 
@@ -175,6 +176,8 @@ export class EmployeeManagementComponent implements OnInit {
       accountNumber: '1122334455',
       ifscCode: 'ICIC0001122', 
       isMessApplicable: 'No',
+      isOthersDeductionApplicable: 'No',
+      othersDeductionAmount: 0,
       is_active: 1 
     },
   ];
@@ -213,10 +216,6 @@ export class EmployeeManagementComponent implements OnInit {
       // Employment
       joiningDate: ['', [Validators.required]],
       empType: ['', [Validators.required]],
-      department: ['', [Validators.required]],
-      designation: ['', [Validators.required]],
-      site: ['', [Validators.required]],
-      supervisor: [''],
       
       // Payroll
       salaryType: ['', [Validators.required]],
@@ -227,6 +226,8 @@ export class EmployeeManagementComponent implements OnInit {
       accountNumber: ['', [Validators.required]],
       ifscCode: ['', [Validators.required]],
       isMessApplicable: ['No', [Validators.required]],
+      isOthersDeductionApplicable: ['No', [Validators.required]],
+      othersDeductionAmount: [''],
     });
 
     // Dynamic validator for PF Number based on PF Applicability
@@ -240,9 +241,21 @@ export class EmployeeManagementComponent implements OnInit {
       }
       pfNumCtrl?.updateValueAndValidity();
     });
+
+    // Dynamic validator for Others Deduction Amount based on Others Deduction Applicability
+    this.employeeForm.get('isOthersDeductionApplicable')?.valueChanges.subscribe(val => {
+      const amtCtrl = this.employeeForm.get('othersDeductionAmount');
+      if (val === 'Yes') {
+        amtCtrl?.setValidators([Validators.required, Validators.min(0)]);
+      } else {
+        amtCtrl?.clearValidators();
+        amtCtrl?.setValue('');
+      }
+      amtCtrl?.updateValueAndValidity();
+    });
   }
 
-  setTab(tab: 'personal' | 'employment' | 'payroll') {
+  setTab(tab: 'personal' | 'payroll') {
     this.activeTab = tab;
   }
 
@@ -276,7 +289,12 @@ export class EmployeeManagementComponent implements OnInit {
 
   openAddModal() {
     this.isEditMode = false;
-    this.employeeForm.reset({ isPfApplicable: 'No', isMessApplicable: 'No' });
+    this.employeeForm.reset({ 
+      isPfApplicable: 'No', 
+      isMessApplicable: 'No', 
+      isOthersDeductionApplicable: 'No',
+      othersDeductionAmount: ''
+    });
     this.activeTab = 'personal';
     this.employeeModalOpen = true;
   }
@@ -322,16 +340,12 @@ export class EmployeeManagementComponent implements OnInit {
     } else {
       this.employeeForm.markAllAsTouched();
       // Switch to first invalid tab
-      const personalControls = ['name', 'fatherName', 'dob', 'gender', 'mobile', 'address'];
-      const employmentControls = ['joiningDate', 'empType', 'department', 'designation', 'site'];
+      const personalControls = ['name', 'fatherName', 'dob', 'gender', 'mobile', 'address', 'joiningDate', 'empType'];
       
       const isPersonalInvalid = personalControls.some(ctrl => this.employeeForm.get(ctrl)?.invalid);
-      const isEmploymentInvalid = employmentControls.some(ctrl => this.employeeForm.get(ctrl)?.invalid);
 
       if (isPersonalInvalid) {
         this.activeTab = 'personal';
-      } else if (isEmploymentInvalid) {
-        this.activeTab = 'employment';
       } else {
         this.activeTab = 'payroll';
       }
