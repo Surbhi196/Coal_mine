@@ -1,118 +1,20 @@
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-color: rgba(0, 0, 0, 0.4);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1050;
+.table-heading {
+    margin-bottom: 0;
 }
 
-.modal-dialog-large {
-  width: 90%;
-  max-width: 900px;
-  height: 85vh;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.2);
-  display: flex;
-  flex-direction: column;
+.modal-contenttop {
+    width: 35%;
 }
 
-.modal-header-custom {
-  background-color: #ffffff;
-  border-top-left-radius: 12px;
-  border-top-right-radius: 12px;
+p {
+    margin-bottom: 0;
 }
 
-.modal-body-custom {
-  background-color: #fafbfa;
+td {
+    vertical-align: middle;
 }
 
-/* Tabs Styling */
-.nav-tabs {
-  border-bottom: 2px solid #e9ecef;
-}
-
-.nav-link.custom-tab {
-  color: #6c757d;
-  font-weight: 500;
-  border: none;
-  border-bottom: 3px solid transparent;
-  padding: 10px 20px;
-  margin-right: 5px;
-  transition: color 0.3s ease, border-color 0.3s ease;
-}
-
-.nav-link.custom-tab:hover {
-  color: var(--primary-color, #007bff);
-  background-color: rgba(0, 123, 255, 0.05);
-  border-radius: 6px 6px 0 0;
-}
-
-.nav-link.custom-tab.active {
-  color: var(--primary-color, #007bff);
-  border-bottom: 3px solid var(--primary-color, #007bff);
-  background-color: transparent;
-  font-weight: 600;
-}
-
-/* Common form styles reusing master module variables */
-.form-lable-custom {
-  font-weight: 500;
-  color: #495057;
-  font-size: 14px;
-  margin-bottom: 6px;
-}
-
-.form-input-custom {
-  border: 1px solid #ced4da;
-  border-radius: 6px;
-  padding: 10px;
-  font-size: 14px;
-}
-
-.form-input-custom:focus {
-  border-color: var(--primary-color, #007bff);
-  box-shadow: 0 0 5px rgba(0, 123, 255, 0.25);
-  outline: none;
-}
-
-.active-status {
-  background-color: #d4edda;
-  color: #155724;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.deactive-status {
-  background-color: #f8d7da;
-  color: #721c24;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.show-entries-select {
-  width: auto;
-  display: inline-block;
-}
-
-.search-user {
-  width: 250px;
-}
-
-.cursor-pointer {
-  cursor: pointer;
-}
-
-/* Employee Details Premium Modal Styles */
+/* Premium Designation Detail Modal Styling */
 .premium-detail-modal {
   .card {
     border: none;
@@ -166,8 +68,8 @@
     background: #fafbfd;
   }
 
-  /* Status and Info Banner - Consistent Steel Blue Brand Gradient */
-  .emp-summary-banner {
+  /* Status and Info Banner */
+  .dept-summary-banner {
     background: linear-gradient(135deg, #468faf 0%, #2c7da0 100%);
     border-radius: 12px;
     padding: 20px 24px;
@@ -182,7 +84,7 @@
       position: absolute;
       width: 150px;
       height: 150px;
-      background: rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.05);
       border-radius: 50%;
       top: -30px;
       right: -30px;
@@ -211,7 +113,7 @@
 
     .banner-subtitle {
       font-size: 13px;
-      opacity: 0.95;
+      opacity: 0.9;
       margin-top: 4px;
       display: flex;
       align-items: center;
@@ -293,17 +195,13 @@
       font-size: 18px;
       flex-shrink: 0;
 
-      &.code {
+      &.structure {
         background: rgba(70, 143, 175, 0.1);
         color: #2c7da0;
       }
-      &.site {
-        background: rgba(16, 185, 129, 0.1);
-        color: #10b981;
-      }
-      &.contact {
-        background: rgba(139, 92, 246, 0.1);
-        color: #8b5cf6;
+      &.tag {
+        background: rgba(245, 158, 11, 0.1);
+        color: #f59e0b;
       }
     }
 
@@ -321,23 +219,10 @@
     }
 
     .info-value {
-      font-size: 15px;
+      font-size: 16px;
       font-weight: 700;
       color: #0f172a;
       font-family: 'Montserrat', sans-serif;
-    }
-
-    .info-subtext {
-      font-size: 11px;
-      color: #64748b;
-      margin-top: 4px;
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      
-      i {
-        font-size: 10px;
-      }
     }
   }
 
@@ -397,10 +282,3 @@
     box-shadow: 0 0 0 0 rgba(52, 211, 153, 0);
   }
 }
-
-/* Fix Bootstrap validation icon overlapping native calendar icon on date inputs */
-input[type="date"].is-invalid {
-  background-image: none !important;
-  padding-right: 12px !important;
-}
-

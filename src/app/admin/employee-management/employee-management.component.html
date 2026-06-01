@@ -52,21 +52,9 @@
       <div class="hidden lg:block">
         <table class="table table-bordered table-hover table-striped mb-0">
           <thead class="table-header">
-            <tr *ngFor="let detail of table_heading">
-              <th>
-                <p class="table-heading">{{ detail.heading0 }}</p>
-              </th>
-              <th>
-                <p class="table-heading">{{ detail.heading1 }}</p>
-              </th>
-              <th>
-                <p class="table-heading">{{ detail.heading2 }}</p>
-              </th>
-              <th>
-                <p class="table-heading">{{ detail.heading3 }}</p>
-              </th>
-              <th>
-                <p class="table-heading">{{ detail.heading4 }}</p>
+            <tr>
+              <th *ngFor="let heading of table_heading">
+                <p class="table-heading">{{ heading }}</p>
               </th>
             </tr>
           </thead>
@@ -79,6 +67,12 @@
               </td>
               <td>
                 <p>{{ emp.mobile }}</p>
+              </td>
+              <td>
+                <p class="mb-0 text-muted">{{ emp.department || '--' }}</p>
+              </td>
+              <td>
+                <p class="mb-0 text-muted">{{ emp.designation || '--' }}</p>
               </td>
               <td>
                 <span [ngClass]="{'active-status': emp.is_active == 1, 'deactive-status': emp.is_active != 1}">
@@ -130,6 +124,10 @@
           </div>
           <div class="mb-1"><span class="fw-bold fs-5">{{ emp.name }}</span></div>
           <div class="mb-2 text-muted"><i class="fa-solid fa-phone me-2"></i>{{ emp.mobile }}</div>
+          <div class="mb-2 d-flex gap-2 flex-wrap">
+            <span class="badge bg-light text-dark border px-2 py-1"><i class="fa-solid fa-sitemap me-1 text-muted"></i>{{ emp.department || '--' }}</span>
+            <span class="badge bg-light text-dark border px-2 py-1"><i class="fa-solid fa-id-badge me-1 text-muted"></i>{{ emp.designation || '--' }}</span>
+          </div>
           <div>
             <span [ngClass]="{'active-status': emp.is_active == 1, 'deactive-status': emp.is_active != 1}">
               {{ emp.is_active == 1 ? "Active" : "Inactive" }}
@@ -169,6 +167,12 @@
             <a class="nav-link custom-tab" [ngClass]="{'active': activeTab === 'personal'}"
               (click)="setTab('personal')">
               <i class="fa-regular fa-user me-2"></i>Personal Details
+            </a>
+          </li>
+          <li class="nav-item cursor-pointer">
+            <a class="nav-link custom-tab" [ngClass]="{'active': activeTab === 'employment'}"
+              (click)="setTab('employment')">
+              <i class="fa-solid fa-briefcase me-2"></i>Employment Details
             </a>
           </li>
           <li class="nav-item cursor-pointer">
@@ -232,6 +236,16 @@
               [ngClass]="{'is-invalid': employeeForm.get('emergencyContact')?.invalid && employeeForm.get('emergencyContact')?.touched}" />
             <div class="invalid-feedback">Valid 10-digit Emergency Contact is required.</div>
           </div>
+          <div class="col-md-12">
+            <label class="form-label form-lable-custom">Address *</label>
+            <textarea class="form-control form-input-custom" formControlName="address" rows="2"
+              [ngClass]="{'is-invalid': employeeForm.get('address')?.invalid && employeeForm.get('address')?.touched}"></textarea>
+            <div class="invalid-feedback">Address is required.</div>
+          </div>
+        </div>
+
+        <!-- TAB 2: Employment Details -->
+        <div *ngIf="activeTab === 'employment'" class="row g-3">
           <div class="col-md-6">
             <label class="form-label form-lable-custom">Joining Date *</label>
             <input type="date" class="form-control form-input-custom" formControlName="joiningDate"
@@ -248,13 +262,24 @@
             </select>
             <div class="invalid-feedback">Employee Type is required.</div>
           </div>
-          <div class="col-md-12">
-            <label class="form-label form-lable-custom">Address *</label>
-            <textarea class="form-control form-input-custom" formControlName="address" rows="2"
-              [ngClass]="{'is-invalid': employeeForm.get('address')?.invalid && employeeForm.get('address')?.touched}"></textarea>
-            <div class="invalid-feedback">Address is required.</div>
+          <div class="col-md-6">
+            <label class="form-label form-lable-custom">Department *</label>
+            <select class="form-select form-input-custom" formControlName="department"
+              [ngClass]="{'is-invalid': employeeForm.get('department')?.invalid && employeeForm.get('department')?.touched}">
+              <option value="">Select Department</option>
+              <option *ngFor="let dept of mockDepartments" [value]="dept">{{ dept }}</option>
+            </select>
+            <div class="invalid-feedback">Department is required.</div>
           </div>
-
+          <div class="col-md-6">
+            <label class="form-label form-lable-custom">Designation *</label>
+            <select class="form-select form-input-custom" formControlName="designation"
+              [ngClass]="{'is-invalid': employeeForm.get('designation')?.invalid && employeeForm.get('designation')?.touched}">
+              <option value="">Select Designation</option>
+              <option *ngFor="let desig of mockDesignations" [value]="desig">{{ desig }}</option>
+            </select>
+            <div class="invalid-feedback">Designation is required.</div>
+          </div>
         </div>
 
         <!-- TAB 3: Payroll Details -->
@@ -470,6 +495,24 @@
                 <div class="card-info-content">
                   <span class="info-label">Employee Type</span>
                   <span class="info-value text-dark fs-7">{{ selectedEmployee?.empType }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="glass-info-card">
+                <div class="card-icon-wrapper site"><i class="fa-solid fa-sitemap"></i></div>
+                <div class="card-info-content">
+                  <span class="info-label">Department</span>
+                  <span class="info-value text-dark fs-7">{{ selectedEmployee?.department || '--' }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="glass-info-card">
+                <div class="card-icon-wrapper site"><i class="fa-solid fa-id-badge"></i></div>
+                <div class="card-info-content">
+                  <span class="info-label">Designation</span>
+                  <span class="info-value text-dark fs-7">{{ selectedEmployee?.designation || '--' }}</span>
                 </div>
               </div>
             </div>

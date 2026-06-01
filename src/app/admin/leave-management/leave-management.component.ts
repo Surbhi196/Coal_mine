@@ -1,8 +1,9 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { DatePipe } from '@angular/common';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { CommonModule, DatePipe } from '@angular/common';
 import { EmployeeService } from 'src/app/core/services/Employee.service';
 import { NotificationService } from 'src/app/core/services/notificationnew.service';
+import { NgxPaginationModule } from 'ngx-pagination';
 
 interface LeaveRequest {
   id: string;
@@ -28,6 +29,8 @@ interface LeaveBalance {
 
 @Component({
   selector: 'app-leave-management',
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, NgxPaginationModule],
   templateUrl: './leave-management.component.html',
   styleUrl: './leave-management.component.scss',
   providers: [DatePipe]

@@ -25,10 +25,6 @@ import { EmployeeService } from './core/services/Employee.service';
 import { NgxPaginationModule } from 'ngx-pagination';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { NavbarComponent } from './website/navbar/navbar.component';
-import { LeaveManagementComponent } from './admin/leave-management/leave-management.component';
-import { CategoriesComponent } from './admin/inventory-management/categories/categories.component';
-import { ProductMasterComponent } from './admin/inventory-management/product-master/product-master.component';
-import { InventoryComponent } from './admin/inventory-management/inventory/inventory.component';
 
 
 
@@ -45,11 +41,6 @@ import { InventoryComponent } from './admin/inventory-management/inventory/inven
     SpinnerComponent,
     HomeComponent,
     NavbarComponent,
-    LeaveManagementComponent,
-    CategoriesComponent,
-    ProductMasterComponent,
-    InventoryComponent,
-
   ],
   imports: [
     BrowserModule,

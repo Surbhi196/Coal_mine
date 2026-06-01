@@ -13,6 +13,7 @@ import { AuthGuard } from './core/auth/auth-guard';
 import { UserManagementComponent } from './admin/user-management/user-management.component';
 import { MastersComponent } from './admin/masters/masters.component';
 import { DepartmentComponent } from './admin/masters/department/department.component';
+import { DesignationComponent } from './admin/masters/designation/designation.component';
 import { SiteMasterComponent } from './admin/masters/site-master/site-master.component';
 import { ShiftComponent } from './admin/masters/shift/shift.component';
 import { LeaveTypeComponent } from './admin/masters/leave-type/leave-type.component';
@@ -138,6 +139,10 @@ const routes: Routes = [
           {
             path: 'department',
             component: DepartmentComponent,
+          },
+          {
+            path: 'designation',
+            component: DesignationComponent,
           },
           {
             path: 'site',

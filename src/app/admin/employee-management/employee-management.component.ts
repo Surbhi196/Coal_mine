@@ -76,19 +76,11 @@ export class EmployeeManagementComponent implements OnInit {
   currentEmployeeId: any;
   selectedEmployee: any = null;
   
-  activeTab: 'personal' | 'payroll' = 'personal';
+  activeTab: 'personal' | 'employment' | 'payroll' = 'personal';
   
   employeeList: any[] = [];
   
-  table_heading = [
-    {
-      heading0: 'Emp ID',
-      heading1: 'Name',
-      heading2: 'Contact',
-      heading3: 'Status',
-      heading4: 'Action',
-    },
-  ];
+  table_heading = ['Emp ID', 'Name', 'Contact', 'Department', 'Designation', 'Status', 'Action'];
 
   mockSites = ['East Mine', 'West Mine', 'North Sector'];
   mockDepartments = ['Mining', 'Security', 'Maintenance', 'HR'];
@@ -216,6 +208,8 @@ export class EmployeeManagementComponent implements OnInit {
       // Employment
       joiningDate: ['', [Validators.required]],
       empType: ['', [Validators.required]],
+      department: ['', [Validators.required]],
+      designation: ['', [Validators.required]],
       
       // Payroll
       salaryType: ['', [Validators.required]],
@@ -255,7 +249,7 @@ export class EmployeeManagementComponent implements OnInit {
     });
   }
 
-  setTab(tab: 'personal' | 'payroll') {
+  setTab(tab: 'personal' | 'employment' | 'payroll') {
     this.activeTab = tab;
   }
 
@@ -340,12 +334,16 @@ export class EmployeeManagementComponent implements OnInit {
     } else {
       this.employeeForm.markAllAsTouched();
       // Switch to first invalid tab
-      const personalControls = ['name', 'fatherName', 'dob', 'gender', 'mobile', 'address', 'joiningDate', 'empType'];
+      const personalControls = ['name', 'fatherName', 'dob', 'gender', 'mobile', 'address'];
+      const employmentControls = ['joiningDate', 'empType', 'department', 'designation'];
       
       const isPersonalInvalid = personalControls.some(ctrl => this.employeeForm.get(ctrl)?.invalid);
+      const isEmploymentInvalid = employmentControls.some(ctrl => this.employeeForm.get(ctrl)?.invalid);
 
       if (isPersonalInvalid) {
         this.activeTab = 'personal';
+      } else if (isEmploymentInvalid) {
+        this.activeTab = 'employment';
       } else {
         this.activeTab = 'payroll';
       }

@@ -1,7 +1,9 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { trigger, state, style, transition, animate } from '@angular/animations';
 import { NotificationService } from 'src/app/core/services/notificationnew.service';
+import { CommonModule } from '@angular/common';
+import { NgxPaginationModule } from 'ngx-pagination';
 
 interface Category {
   id: number;
@@ -18,6 +20,8 @@ interface SubCategory {
 
 @Component({
   selector: 'app-categories',
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, NgxPaginationModule],
   templateUrl: './categories.component.html',
   styleUrl: './categories.component.scss',
   animations: [
