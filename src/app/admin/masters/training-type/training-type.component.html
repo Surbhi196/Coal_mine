@@ -68,7 +68,7 @@
               </td>
               <td>
                 <div class="d-flex align-items-center gap-2">
-                  <button class="btn-action edit-btn" (click)="openEditModal(t)" data-tooltip="Edit">
+                  <button *ngIf="t.is_active == 1" class="btn-action edit-btn" (click)="openEditModal(t)" data-tooltip="Edit">
                     <i class="fa-solid fa-pen-to-square"></i>
                   </button>
                   <button class="btn-action view-btn" (click)="openviewModal(t)" data-tooltip="View Details">
@@ -99,7 +99,7 @@
             </div>
             <div>
               <div class="d-flex align-items-center gap-2">
-                <button class="btn-action edit-btn" (click)="openEditModal(t)" data-tooltip="Edit">
+                <button *ngIf="t.is_active == 1" class="btn-action edit-btn" (click)="openEditModal(t)" data-tooltip="Edit">
                   <i class="fa-solid fa-pen-to-square"></i>
                 </button>
                 <button class="btn-action view-btn" (click)="openviewModal(t)" data-tooltip="View Details">

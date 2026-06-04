@@ -322,6 +322,8 @@ export class ShiftComponent implements OnInit {
             minWorkingHours: shift.minimum_working_hours,
             isNightShift: shift.is_night_shift == 1
           }, { emitEvent: false });
+          this.updateShiftForm.get('startTime')?.updateValueAndValidity();
+          this.updateShiftForm.get('endTime')?.updateValueAndValidity();
         }
       },
       error: (error: any) => {
