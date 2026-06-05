@@ -77,14 +77,8 @@
 
       <!-- Quick Actions -->
       <div class="d-flex gap-2">
-        <button class="btn btn-custom-primary px-3 py-2 animate-bounce-hover" (click)="openOverrideModal('change')">
-          <i class="fa-solid fa-pen-to-square me-2"></i>Manual Override
-        </button>
-        <button class="btn btn-outline-primary px-3 py-2" (click)="openOverrideModal('swap')">
-          <i class="fa-solid fa-arrow-right-arrow-left me-2"></i>Swap Shifts
-        </button>
-        <button class="btn btn-outline-primary px-3 py-2" (click)="openBulkRotationModal()">
-          <i class="fa-solid fa-rotate me-2"></i>Bulk Rotate Groups
+        <button class="btn btn-custom-primary px-3 py-2 animate-bounce-hover" (click)="openBulkRotationModal()">
+          <i class="fa-solid fa-rotate me-2"></i>Change Shift
         </button>
       </div>
     </div>
@@ -219,21 +213,6 @@
         </div>
 
         <div class="row g-3">
-          <!-- Date Range Selection -->
-          <div class="col-md-6">
-            <label class="form-label form-lable-custom">Start Date *</label>
-            <input type="date" class="form-control form-input-custom cursor-pointer" formControlName="startDate"
-              [ngClass]="{'is-invalid': overrideForm.get('startDate')?.invalid && overrideForm.get('startDate')?.touched}" />
-            <div class="invalid-feedback">Please select a start date.</div>
-          </div>
-
-          <div class="col-md-6">
-            <label class="form-label form-lable-custom">End Date *</label>
-            <input type="date" class="form-control form-input-custom cursor-pointer" formControlName="endDate"
-              [ngClass]="{'is-invalid': overrideForm.get('endDate')?.invalid && overrideForm.get('endDate')?.touched}" />
-            <div class="invalid-feedback">Please select an end date.</div>
-          </div>
-
           <!-- Primary Employee Selection -->
           <div class="col-md-12">
             <label class="form-label form-lable-custom">
@@ -435,11 +414,14 @@
 
 <!-- Bulk Group Rotation Modal -->
 <div *ngIf="isBulkRotateModalOpen" class="modal-overlay" [@fadeIn]>
-  <div class="modal-dialog-large bg-white rounded-3 shadow-lg d-flex flex-column max-w-600 h-auto-modal">
+  <div class="modal-dialog bg-white rounded-3 shadow-lg d-flex flex-column"
+    style="max-width: 550px; width: 90%; margin: 1.75rem auto; pointer-events: auto;">
     
     <!-- Modal Header -->
     <div class="modal-header-custom px-4 py-3 d-flex justify-content-between align-items-center border-bottom">
-      <h4 class="mb-0 text-primary fw-bold">Bulk Group Rotation</h4>
+      <h5 class="modal-title fw-bold text-primary mb-0">
+        <i class="fa-solid fa-rotate me-2"></i>Change Shift
+      </h5>
       <button class="btn bg-transparent border-0 p-0" (click)="closeBulkRotationModal()">
         <i class="fa-solid fa-xmark fs-4 text-muted"></i>
       </button>
@@ -447,58 +429,97 @@
 
     <!-- Modal Form -->
     <form [formGroup]="bulkRotateForm" (ngSubmit)="applyBulkRotation()" class="d-flex flex-column overflow-hidden">
-      <div class="px-4 py-4 overflow-auto">
-        
+      <div class="modal-body-custom p-4 overflow-auto">
         <div class="row g-3">
-          <!-- Source Group Selection -->
+          
+          <!-- Current Shift Selection -->
           <div class="col-md-12">
-            <label class="form-label form-lable-custom">Select Source Group (Tag) *</label>
-            <select class="form-select form-input-custom" formControlName="sourceGroup"
-              [ngClass]="{'is-invalid': bulkRotateForm.get('sourceGroup')?.invalid && bulkRotateForm.get('sourceGroup')?.touched}">
-              <option value="">Select Source Group</option>
-              <option value="Shift A">Shift A Group ({{ (shiftGroups['Shift A'] || []).length }} employees)</option>
-              <option value="Shift B">Shift B Group ({{ (shiftGroups['Shift B'] || []).length }} employees)</option>
-              <option value="Shift C">Shift C Group ({{ (shiftGroups['Shift C'] || []).length }} employees)</option>
+            <label class="form-label form-lable-custom">Filter by Current Shift <span class="text-danger">*</span></label>
+            <select class="form-select form-input-custom" formControlName="currentShift"
+              [ngClass]="{'is-invalid': bulkRotateForm.get('currentShift')?.invalid && bulkRotateForm.get('currentShift')?.touched}">
+              <option value="">Select Current Shift</option>
+              <option value="Shift A">Shift A (Morning) ({{ (shiftGroups['Shift A'] || []).length }} employees)</option>
+              <option value="Shift B">Shift B (Afternoon) ({{ (shiftGroups['Shift B'] || []).length }} employees)</option>
+              <option value="Shift C">Shift C (Night) ({{ (shiftGroups['Shift C'] || []).length }} employees)</option>
             </select>
-            <div class="invalid-feedback">Please select the source group to rotate.</div>
-            <div class="form-text text-muted fs-8 mt-1" *ngIf="bulkRotateForm.get('sourceGroup')?.value">
-              This rotation will apply to all {{ (shiftGroups[bulkRotateForm.get('sourceGroup')?.value] || []).length }} active employee(s) in this group.
+            <div class="invalid-feedback">Please select the current shift.</div>
+          </div>
+
+          <!-- Select Employees List -->
+          <div class="col-md-12">
+            <label class="form-label form-lable-custom">Select Employees to Rotate <span class="text-danger">*</span></label>
+            <ng-select
+              formControlName="employeeIds"
+              [items]="filteredEmployeesForRotation"
+              bindLabel="name"
+              bindValue="id"
+              [multiple]="true"
+              [closeOnSelect]="false"
+              placeholder="Search & Select Employees"
+              class="custom-ng-select w-100">
+              <ng-template ng-multi-label-tmp let-items="items" let-clear="clear">
+                <ng-container *ngIf="items.length === filteredEmployeesForRotation.length && filteredEmployeesForRotation.length > 0">
+                  <div class="ng-value">
+                    <span class="ng-value-label fw-semibold text-primary">All Employees Selected ({{ items.length }})</span>
+                    <span class="ng-value-icon right" (click)="clearAllRotateSelection($event)" aria-hidden="true">×</span>
+                  </div>
+                </ng-container>
+                <ng-container *ngIf="items.length !== filteredEmployeesForRotation.length || filteredEmployeesForRotation.length === 0">
+                  <div class="ng-value" *ngFor="let item of items">
+                    <span class="ng-value-label">{{ item.name }}</span>
+                    <span class="ng-value-icon right" (click)="clear(item)" aria-hidden="true">×</span>
+                  </div>
+                </ng-container>
+              </ng-template>
+              <ng-template ng-header-tmp>
+                <div class="d-flex align-items-center gap-2 p-2 border-bottom cursor-pointer select-all-header" 
+                     (click)="toggleAllRotateEmployees()"
+                     style="user-select: none;">
+                  <input type="checkbox" class="form-check-input cursor-pointer" [checked]="areAllRotateEmployeesSelected()" style="margin-top: 0; pointer-events: none;" />
+                  <span class="fw-bold fs-7 text-dark">Select All ({{ filteredEmployeesForRotation.length }} employees)</span>
+                </div>
+              </ng-template>
+              <ng-template ng-option-tmp let-item="item" let-item$="item$" let-index="index">
+                <div class="d-flex align-items-center gap-2 py-1">
+                  <input type="checkbox" class="form-check-input cursor-pointer" [checked]="item$.selected" style="margin-top: 0;" />
+                  <div class="d-flex flex-column text-start">
+                    <span class="fw-semibold fs-7">{{ item.name }}</span>
+                    <span class="text-muted fs-8">{{ item.employee_code || item.empId }}</span>
+                  </div>
+                </div>
+              </ng-template>
+            </ng-select>
+            <div class="text-danger fs-8 mt-1" *ngIf="bulkRotateForm.get('employeeIds')?.invalid && bulkRotateForm.get('employeeIds')?.touched">
+              Please select at least one employee to rotate.
+            </div>
+          </div>
+
+          <!-- No Employees Warning -->
+          <div class="col-md-12" *ngIf="bulkRotateForm.get('currentShift')?.value && filteredEmployeesForRotation.length === 0">
+            <div class="alert alert-warning py-2 fs-8 mb-0 d-flex align-items-center gap-2">
+              <i class="fa-solid fa-circle-info"></i>
+              <span>No employees are currently assigned to this shift group.</span>
             </div>
           </div>
 
           <!-- Target Shift Selection -->
-          <div class="col-md-6">
-            <label class="form-label form-lable-custom">Target Shift *</label>
+          <div class="col-md-12">
+            <label class="form-label form-lable-custom">Target Shift <span class="text-danger">*</span></label>
             <select class="form-select form-input-custom" formControlName="targetShift"
               [ngClass]="{'is-invalid': bulkRotateForm.get('targetShift')?.invalid && bulkRotateForm.get('targetShift')?.touched}">
+              <option value="">Select Target Shift</option>
               <option *ngFor="let shift of shifts" [value]="shift.code">{{ shift.name }}</option>
             </select>
             <div class="invalid-feedback">Please select the target shift.</div>
           </div>
-
-          <!-- Effective Date Range -->
-          <div class="col-md-6">
-            <label class="form-label form-lable-custom">Effective Start Date *</label>
-            <input type="date" class="form-control form-input-custom cursor-pointer" formControlName="startDate"
-              [ngClass]="{'is-invalid': bulkRotateForm.get('startDate')?.invalid && bulkRotateForm.get('startDate')?.touched}" />
-            <div class="invalid-feedback">Please select the effective start date.</div>
-          </div>
-
-          <div class="col-md-6">
-            <label class="form-label form-lable-custom">Effective End Date *</label>
-            <input type="date" class="form-control form-input-custom cursor-pointer" formControlName="endDate"
-              [ngClass]="{'is-invalid': bulkRotateForm.get('endDate')?.invalid && bulkRotateForm.get('endDate')?.touched}" />
-            <div class="invalid-feedback">Please select the effective end date.</div>
-          </div>
         </div>
-
       </div>
 
       <!-- Footer Buttons -->
-      <div class="px-4 py-3 border-top bg-light text-end">
-        <button class="btn btn-secondary px-4 py-2 me-2" type="button" (click)="closeBulkRotationModal()">Cancel</button>
-        <button class="btn btn-custom-primary px-4 py-2" type="submit">
-          <i class="fa-solid fa-rotate me-1"></i> Rotate / Swap
+      <div class="modal-footer px-4 py-3 border-top bg-light d-flex gap-3">
+        <button class="btn btn-secondary flex-grow-1 py-2" type="button" (click)="closeBulkRotationModal()">Cancel</button>
+        <button class="btn btn-custom-primary flex-grow-1 py-2" type="submit">
+          <i class="fa-solid fa-rotate me-1"></i> Rotate Shift
         </button>
       </div>
     </form>

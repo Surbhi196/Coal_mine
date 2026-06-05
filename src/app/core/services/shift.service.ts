@@ -105,89 +105,65 @@ export class ShiftService {
 
     localStorage.setItem('shiftAssignments', JSON.stringify(assignments));
 
-    // Update dynamic grouping
-    this.updateLocalShiftGroup(employee_ids, shift_code);
-
     return of({ status: 200, message: `Shift "${shift_code}" successfully assigned to ${employee_ids.length} employee(s) from ${startDate} to ${endDate}.` });
   }
 
   getShiftGroups(): Observable<any> {
-    const stored = localStorage.getItem('shiftGroups');
-    const groups = stored ? JSON.parse(stored) : { "Shift A": [], "Shift B": [], "Shift C": [] };
+    const storedDefault = localStorage.getItem('employeeDefaultShifts');
+    const defaultShifts = storedDefault ? JSON.parse(storedDefault) : {};
+
+    const employeeIds = new Set<string>();
+    for (const empId in defaultShifts) {
+      employeeIds.add(empId);
+    }
+    ['1', '2', '3', '4', '5', '6'].forEach(id => employeeIds.add(id));
+
+    const groups: { [shiftCode: string]: string[] } = { "Shift A": [], "Shift B": [], "Shift C": [] };
+
+    employeeIds.forEach(empId => {
+      const shiftCode = defaultShifts[empId] || 'Shift A';
+      if (groups[shiftCode] !== undefined) {
+        groups[shiftCode].push(empId);
+      }
+    });
+
     return of({ status: 200, data: groups });
   }
 
-  rotateBulkGroup(payload: { source_group: string, target_shift: string, date?: string, start_date?: string, end_date?: string }): Observable<any> {
+  rotateBulkGroup(payload: { source_group: string, target_shift: string }): Observable<any> {
     const { source_group, target_shift } = payload;
-    const startDate = payload.start_date || payload.date || '';
-    const endDate = payload.end_date || startDate;
-
-    if (!startDate || !endDate) {
-      return of({ status: 400, message: 'Please select a valid rotation date range.' });
-    }
     
-    // Fetch group members from localStorage
-    const storedGroups = localStorage.getItem('shiftGroups');
-    const groups = storedGroups ? JSON.parse(storedGroups) : { "Shift A": [], "Shift B": [], "Shift C": [] };
-    const employeeIds = groups[source_group] || [];
+    const storedDefault = localStorage.getItem('employeeDefaultShifts');
+    const defaultShifts = storedDefault ? JSON.parse(storedDefault) : {};
 
-    if (employeeIds.length === 0) {
-      return of({ status: 400, message: `The selected group "${source_group}" has no active employees assigned.` });
+    const employeeIds = new Set<string>();
+    for (const empId in defaultShifts) {
+      employeeIds.add(empId);
     }
+    ['1', '2', '3', '4', '5', '6'].forEach(id => employeeIds.add(id));
 
-    // Update roster assignments in localStorage
-    const storedAssignments = localStorage.getItem('shiftAssignments');
-    const assignments = storedAssignments ? JSON.parse(storedAssignments) : {};
-    
-    const dates = this.getDateRange(startDate, endDate);
-    if (dates.length === 0) {
-      return of({ status: 400, message: 'End date cannot be before start date.' });
-    }
-
-    employeeIds.forEach((empId: string) => {
-      const idStr = String(empId);
-      if (!assignments[idStr]) {
-        assignments[idStr] = {};
+    const targetEmployeeIds: string[] = [];
+    employeeIds.forEach(empId => {
+      const currentDefault = defaultShifts[empId] || 'Shift A';
+      if (currentDefault === source_group) {
+        targetEmployeeIds.push(empId);
       }
-      dates.forEach(date => {
-        assignments[idStr][date] = target_shift;
-      });
     });
-    localStorage.setItem('shiftAssignments', JSON.stringify(assignments));
 
-    // Move employees to the new Group bucket (Tag Rotation)
-    groups[source_group] = groups[source_group].filter((id: string) => !employeeIds.includes(id));
-    if (!groups[target_shift]) {
-      groups[target_shift] = [];
+    if (targetEmployeeIds.length === 0) {
+      return of({ status: 400, message: `No employees currently have "${source_group}" set as their default shift.` });
     }
-    groups[target_shift] = Array.from(new Set([...groups[target_shift], ...employeeIds]));
-    localStorage.setItem('shiftGroups', JSON.stringify(groups));
+
+    targetEmployeeIds.forEach(empId => {
+      defaultShifts[empId] = target_shift;
+    });
+
+    localStorage.setItem('employeeDefaultShifts', JSON.stringify(defaultShifts));
 
     return of({
       status: 200,
-      message: `Successfully rotated ${employeeIds.length} employee(s) from "${source_group}" to "${target_shift}" from ${startDate} to ${endDate}.`
+      message: `Successfully rotated default shift of ${targetEmployeeIds.length} employee(s) from "${source_group}" to "${target_shift}".`
     });
-  }
-
-  private updateLocalShiftGroup(employeeIds: string[], shiftCode: string): void {
-    const stored = localStorage.getItem('shiftGroups');
-    const groups = stored ? JSON.parse(stored) : { "Shift A": [], "Shift B": [], "Shift C": [] };
-
-    if (!groups[shiftCode]) {
-      groups[shiftCode] = [];
-    }
-
-    employeeIds.forEach((id: string) => {
-      const idStr = String(id);
-      for (const groupName in groups) {
-        if (Array.isArray(groups[groupName])) {
-          groups[groupName] = groups[groupName].filter((empId: any) => String(empId) !== idStr);
-        }
-      }
-      groups[shiftCode].push(idStr);
-    });
-
-    localStorage.setItem('shiftGroups', JSON.stringify(groups));
   }
 
   private getDateRange(startDate: string, endDate: string): string[] {

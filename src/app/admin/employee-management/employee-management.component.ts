@@ -87,7 +87,7 @@ export class EmployeeManagementComponent implements OnInit {
 
   employeeList: any[] = [];
 
-  table_heading = ['S.No.', 'Emp ID', 'Name', 'Contact', 'Department', 'Designation', 'Shift Group', 'Status', 'Action'];
+  table_heading = ['S.No.', 'Emp ID', 'Name', 'Contact', 'Department', 'Designation', 'Shift Type', 'Status', 'Action'];
 
   sitesList: any[] = [];
   departmentsList: any[] = [];
@@ -98,16 +98,61 @@ export class EmployeeManagementComponent implements OnInit {
   selectedUploadFile: any = null;
   selectedUploadFileName: string = '';
 
+  // Bulk Assign Shift variables
+  bulkAssignModalOpen: boolean = false;
+  bulkAssignForm!: FormGroup;
+  selectedBulkAssignFile: any = null;
+  selectedBulkAssignFileName: string = '';
+
   // Assign Shift variables
   assignShiftModalOpen: boolean = false;
   allShiftsList: any[] = [];
   allEmployeesList: any[] = [];
   selectedEmployeeIds = new Set<string>();
+  selectedEmployeeIdsForAssign: string[] = [];
   assignShiftStartDate: string = '';
   assignShiftEndDate: string = '';
   assignShiftType: string = '';
   shiftGroups: { [groupName: string]: string[] } = {};
-  assignShiftModalLabel: string = '';
+  get assignShiftModalLabel(): string {
+    if (!this.selectedEmployeeIdsForAssign || this.selectedEmployeeIdsForAssign.length === 0) {
+      return '';
+    }
+    if (this.selectedEmployeeIdsForAssign.length === 1) {
+      const empId = this.selectedEmployeeIdsForAssign[0];
+      const emp = this.allEmployeesList.find(e => String(e.id) === String(empId));
+      if (emp) {
+        const currentGroup = this.getEmployeeShiftGroup(empId);
+        if (currentGroup) {
+          return `${emp.name} is currently assigned to ${currentGroup}.`;
+        }
+      }
+      return '';
+    }
+
+    // If multiple employees selected
+    const groupCounts: { [group: string]: number } = {};
+    let withGroupCount = 0;
+    this.selectedEmployeeIdsForAssign.forEach(id => {
+      const grp = this.getEmployeeShiftGroup(id);
+      if (grp) {
+        groupCounts[grp] = (groupCounts[grp] || 0) + 1;
+        withGroupCount++;
+      }
+    });
+
+    if (withGroupCount === 0) {
+      return '';
+    }
+
+    const parts = Object.entries(groupCounts).map(([grp, count]) => `${count} in ${grp}`);
+    if (parts.length === 1 && withGroupCount === this.selectedEmployeeIdsForAssign.length) {
+      const [grp] = Object.keys(groupCounts);
+      return `All selected employees are currently in ${grp}.`;
+    }
+
+    return `Current breakdown: ${parts.join(', ')}.`;
+  }
 
   constructor(
     private formBuilder: FormBuilder,
@@ -131,6 +176,10 @@ export class EmployeeManagementComponent implements OnInit {
     });
 
     this.uploadForm = this.formBuilder.group({
+      file: [null, [Validators.required]]
+    });
+
+    this.bulkAssignForm = this.formBuilder.group({
       file: [null, [Validators.required]]
     });
 
@@ -330,6 +379,103 @@ export class EmployeeManagementComponent implements OnInit {
     const a = document.createElement('a');
     a.href = url;
     a.download = 'employee_bulk_upload_sample.csv';
+    a.click();
+    window.URL.revokeObjectURL(url);
+    this.notificationService.show('Sample file downloaded successfully', 'success', 2000);
+  }
+
+  openBulkAssignModal() {
+    this.bulkAssignModalOpen = true;
+    this.selectedBulkAssignFile = null;
+    this.selectedBulkAssignFileName = '';
+    this.bulkAssignForm.reset();
+  }
+
+  closeBulkAssignModal() {
+    this.bulkAssignModalOpen = false;
+    this.selectedBulkAssignFile = null;
+    this.selectedBulkAssignFileName = '';
+    this.bulkAssignForm.reset();
+  }
+
+  onBulkAssignFileSelected(event: any) {
+    const file = event.target.files[0];
+    if (file) {
+      this.selectedBulkAssignFile = file;
+      this.selectedBulkAssignFileName = file.name;
+      this.bulkAssignForm.patchValue({ file: file });
+      this.bulkAssignForm.get('file')?.markAsTouched();
+      this.bulkAssignForm.get('file')?.updateValueAndValidity();
+    }
+  }
+
+  removeBulkAssignFile(fileInput: any) {
+    this.selectedBulkAssignFile = null;
+    this.selectedBulkAssignFileName = '';
+    this.bulkAssignForm.reset();
+    if (fileInput) {
+      fileInput.value = '';
+    }
+  }
+
+  uploadBulkAssignFile() {
+    if (this.bulkAssignForm.invalid || !this.selectedBulkAssignFile) {
+      this.bulkAssignForm.markAllAsTouched();
+      return;
+    }
+
+    const file = this.selectedBulkAssignFile;
+    const reader = new FileReader();
+    reader.onload = (e: any) => {
+      const text = e.target.result;
+      const lines = text.split('\n');
+      if (lines.length > 1) {
+        const defaultShifts = JSON.parse(localStorage.getItem('employeeDefaultShifts') || '{}');
+        let count = 0;
+        for (let i = 1; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (!line) continue;
+          const parts = line.split(',');
+          if (parts.length >= 2) {
+            const empCode = parts[0].trim();
+            const shiftCode = parts[1].trim(); // Shift A, Shift B, etc.
+            
+            // Find employee by employee_code
+            const emp = this.allEmployeesList.find(e => 
+              (e.employee_code && e.employee_code.trim().toLowerCase() === empCode.toLowerCase()) || 
+              (e.empId && e.empId.trim().toLowerCase() === empCode.toLowerCase())
+            );
+            if (emp) {
+              defaultShifts[emp.id] = shiftCode;
+              count++;
+            }
+          }
+        }
+        localStorage.setItem('employeeDefaultShifts', JSON.stringify(defaultShifts));
+        this.notificationService.show(`Successfully assigned shifts to ${count} employee(s) from CSV.`, 'success', 3000);
+        this.closeBulkAssignModal();
+        this.loadShiftGroups(); // Refresh count of chips
+        this.GetEmployeeFun(); // Refresh table view
+      } else {
+        this.notificationService.show('CSV file is empty or invalid.', 'error', 3000);
+      }
+    };
+
+    reader.onerror = () => {
+      this.notificationService.show('Failed to read file.', 'error', 3000);
+    };
+
+    reader.readAsText(file);
+  }
+
+  downloadBulkAssignSampleFile() {
+    const headers = 'employee_code,shift_code\n';
+    const sampleData = 'EMP001,Shift B\nEMP002,Shift A\nEMP003,Shift C\n';
+    const blob = new Blob([headers + sampleData], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'bulk_shift_assignment_sample.csv';
     a.click();
     window.URL.revokeObjectURL(url);
     this.notificationService.show('Sample file downloaded successfully', 'success', 2000);
@@ -804,64 +950,45 @@ export class EmployeeManagementComponent implements OnInit {
   }
 
   openAssignShiftModal(employee?: any) {
-    if (!employee && this.selectedEmployeeIds.size === 0) {
-      this.notificationService.show('Please select at least one active employee using the checkboxes first.', 'error', 3000);
-      return;
-    }
     this.assignShiftModalOpen = true;
     this.loadShifts();
     this.loadAllEmployees();
 
-    const today = new Date().toISOString().split('T')[0];
-    this.assignShiftStartDate = today;
-    this.assignShiftEndDate = today;
     this.assignShiftType = '';
-    this.assignShiftModalLabel = '';
 
     if (employee) {
-      this.selectedEmployeeIds.clear();
-      this.selectedEmployeeIds.add(String(employee.id));
-    }
-
-    // Determine current shift group for pre-selection / helper label
-    const targetIds = Array.from(this.selectedEmployeeIds);
-    if (targetIds.length === 1) {
-      const singleId = targetIds[0];
-      const currentGroup = this.getEmployeeShiftGroup(singleId);
+      this.selectedEmployeeIdsForAssign = [String(employee.id)];
+      const currentGroup = this.getEmployeeShiftGroup(employee.id);
       if (currentGroup) {
         this.assignShiftType = currentGroup;
-        const emp = this.allEmployeesList.find(e => String(e.id) === String(singleId)) || this.employeeList.find(e => String(e.id) === String(singleId));
-        const name = emp ? emp.name : 'Employee';
-        this.assignShiftModalLabel = `${name} is currently in ${currentGroup} Group.`;
       }
-    } else if (targetIds.length > 1) {
-      const groupCounts: { [key: string]: number } = {};
-      targetIds.forEach(id => {
-        const group = this.getEmployeeShiftGroup(id) || 'No Group';
-        groupCounts[group] = (groupCounts[group] || 0) + 1;
-      });
-
-      const uniqueGroups = Object.keys(groupCounts);
-      if (uniqueGroups.length === 1) {
-        const group = uniqueGroups[0];
-        if (group !== 'No Group') {
-          this.assignShiftType = group;
-        }
-        this.assignShiftModalLabel = `All selected employees are currently in ${group} Group.`;
-      } else {
-        const summary = uniqueGroups.map(g => `${groupCounts[g]} in ${g}`).join(', ');
-        this.assignShiftModalLabel = `Current assignment breakdown: ${summary}`;
-      }
+    } else {
+      this.selectedEmployeeIdsForAssign = [];
     }
   }
 
   closeAssignShiftModal() {
     this.assignShiftModalOpen = false;
-    this.selectedEmployeeIds.clear();
+    this.selectedEmployeeIdsForAssign = [];
     this.assignShiftType = '';
-    this.assignShiftStartDate = '';
-    this.assignShiftEndDate = '';
-    this.assignShiftModalLabel = '';
+  }
+
+  areAllAssignEmployeesSelected(): boolean {
+    if (!this.allEmployeesList || this.allEmployeesList.length === 0) return false;
+    return this.allEmployeesList.every(emp => this.selectedEmployeeIdsForAssign.includes(String(emp.id)));
+  }
+
+  toggleAllAssignEmployees() {
+    if (this.areAllAssignEmployeesSelected()) {
+      this.selectedEmployeeIdsForAssign = [];
+    } else {
+      this.selectedEmployeeIdsForAssign = this.allEmployeesList.map(emp => String(emp.id));
+    }
+  }
+
+  clearAllAssignSelection(event: Event) {
+    event.stopPropagation();
+    this.selectedEmployeeIdsForAssign = [];
   }
 
   loadShifts() {
@@ -897,64 +1024,47 @@ export class EmployeeManagementComponent implements OnInit {
     this.employeeManagementService.getEmployees('all', 1).subscribe({
       next: (res: any) => {
         if (res.status === 200 && res.data && res.data.length > 0) {
-          this.allEmployeesList = res.data;
+          this.allEmployeesList = res.data.filter((emp: any) => {
+            const activeVal = emp.status !== undefined ? emp.status : emp.is_active;
+            return activeVal == 1;
+          });
         } else {
-          this.allEmployeesList = this.employeeList.length > 0 ? this.employeeList : [
-            { id: '1', name: 'Ramesh Kumar', employee_code: 'EMP-001' },
-            { id: '2', name: 'Suresh Singh', employee_code: 'EMP-002' },
-            { id: '3', name: 'Anita Sharma', employee_code: 'EMP-003' },
-            { id: '4', name: 'Rajesh Patel', employee_code: 'EMP-004' },
-            { id: '5', name: 'Amit Sen', employee_code: 'EMP-005' },
-            { id: '6', name: 'Vikram Singh', employee_code: 'EMP-006' }
-          ];
+          this.allEmployeesList = this.employeeList.filter(emp => emp.is_active == 1);
         }
       },
       error: (err) => {
         console.error('Error fetching all employees', err);
-        this.allEmployeesList = this.employeeList.length > 0 ? this.employeeList : [
-          { id: '1', name: 'Ramesh Kumar', employee_code: 'EMP-001' },
-          { id: '2', name: 'Suresh Singh', employee_code: 'EMP-002' },
-          { id: '3', name: 'Anita Sharma', employee_code: 'EMP-003' },
-          { id: '4', name: 'Rajesh Patel', employee_code: 'EMP-004' },
-          { id: '5', name: 'Amit Sen', employee_code: 'EMP-005' },
-          { id: '6', name: 'Vikram Singh', employee_code: 'EMP-006' }
-        ];
+        this.allEmployeesList = this.employeeList.filter(emp => emp.is_active == 1);
       }
     });
   }
 
   saveBulkShift() {
-    const startDate = this.assignShiftStartDate;
-    const endDate = this.assignShiftEndDate;
     const shiftCode = this.assignShiftType;
-
-    if (!startDate || !endDate) {
-      this.notificationService.show('Please select a valid start and end date.', 'error', 3000);
-      return;
-    }
-
-    if (new Date(startDate) > new Date(endDate)) {
-      this.notificationService.show('End date cannot be before start date.', 'error', 3000);
-      return;
-    }
 
     if (!shiftCode) {
       this.notificationService.show('Please select a shift to assign.', 'error', 3000);
       return;
     }
 
-    const targetIds = Array.from(this.selectedEmployeeIds);
+    const targetIds = this.selectedEmployeeIdsForAssign;
 
     if (targetIds.length === 0) {
       this.notificationService.show('Please select at least one employee.', 'error', 3000);
       return;
     }
 
+    // Check if all selected employees are already on this shift
+    const allAlreadyOnShift = targetIds.every(id => this.getEmployeeShiftGroup(id) === shiftCode);
+    if (allAlreadyOnShift) {
+      this.notificationService.show(`Selected employee(s) are already assigned to ${shiftCode}.`, 'info', 3000);
+      this.closeAssignShiftModal();
+      return;
+    }
+
     const payload = {
       employee_ids: targetIds,
-      shift_code: shiftCode,
-      start_date: startDate,
-      end_date: endDate
+      shift_code: shiftCode
     };
 
     this.shiftService.assignBulkShift(payload).subscribe({

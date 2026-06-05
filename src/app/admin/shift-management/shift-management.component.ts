@@ -8,6 +8,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { trigger, state, style, transition, animate } from '@angular/animations';
 import { NotificationService } from 'src/app/core/services/notificationnew.service';
 import { ShiftService } from 'src/app/core/services/shift.service';
+import { EmployeeManagementService } from 'src/app/core/services/employee-management.service';
+import { NgSelectModule } from '@ng-select/ng-select';
 
 @Component({
   selector: 'app-shift-management',
@@ -18,7 +20,8 @@ import { ShiftService } from 'src/app/core/services/shift.service';
     FormsModule,
     MatMenuModule,
     MatIconModule,
-    MatButtonModule
+    MatButtonModule,
+    NgSelectModule
   ],
   templateUrl: './shift-management.component.html',
   styleUrl: './shift-management.component.scss',
@@ -60,6 +63,8 @@ export class ShiftManagementComponent implements OnInit {
   isBulkRotateModalOpen = false;
   bulkRotateForm!: FormGroup;
   shiftGroups: { [groupName: string]: string[] } = {};
+  filteredEmployeesForRotation: any[] = [];
+  selectedEmployeeIdsForRotation: string[] = [];
 
   // Tab and Week/Month filtering state
   activeTab: string = 'Shift A';
@@ -103,19 +108,19 @@ export class ShiftManagementComponent implements OnInit {
   constructor(
     private formBuilder: FormBuilder,
     private notificationService: NotificationService,
-    private shiftService: ShiftService
+    private shiftService: ShiftService,
+    private employeeManagementService: EmployeeManagementService
   ) { }
 
   ngOnInit(): void {
     // Generate active week days starting with Monday
     this.currentDate = this.getMonday(new Date());
     this.generateActiveWeekDays(this.currentDate);
-    this.initRosterForWeek(this.currentDate);
     this.generateWeeksList();
     this.selectedWeekMondayStr = this.formatDateStr(this.currentDate);
     this.initOverrideForm();
     this.initBulkRotateForm();
-    this.loadShiftGroups();
+    this.loadLiveEmployees();
 
     // Seed initial logs
     this.rotationLogs = [
@@ -134,6 +139,26 @@ export class ShiftManagementComponent implements OnInit {
         supervisor: 'Supervisor Admin'
       }
     ];
+  }
+
+  loadLiveEmployees() {
+    this.employeeManagementService.getEmployees('all', 1).subscribe({
+      next: (res: any) => {
+        if (res.status === 200 && res.data && res.data.length > 0) {
+          this.employees = res.data.map((emp: any) => ({
+            ...emp,
+            empId: emp.employee_code || `EMP-${String(emp.id).padStart(3, '0')}`,
+            rotationGroup: emp.rotationGroup || 'Group Alpha',
+            rotationPattern: emp.rotationPattern || '[A] → [C] → [B]'
+          }));
+          this.initRosterForWeek(this.currentDate);
+          this.loadShiftGroups();
+        }
+      },
+      error: (err) => {
+        console.error('Error fetching live employees for roster:', err);
+      }
+    });
   }
 
   // Returns Monday of the week containing date d
@@ -175,17 +200,12 @@ export class ShiftManagementComponent implements OnInit {
     const stored = localStorage.getItem('shiftAssignments');
     const localAssignments = stored ? JSON.parse(stored) : {};
 
+    const storedDefault = localStorage.getItem('employeeDefaultShifts');
+    const defaultShifts = storedDefault ? JSON.parse(storedDefault) : {};
+
     this.employees.forEach(emp => {
       if (!this.shiftAssignments[emp.id]) {
         this.shiftAssignments[emp.id] = {};
-      }
-
-      // Pre-merge localStorage values for this employee ID or code to ensure updates show immediately
-      if (localAssignments[emp.id]) {
-        Object.assign(this.shiftAssignments[emp.id], localAssignments[emp.id]);
-      }
-      if (emp.empId && localAssignments[emp.empId]) {
-        Object.assign(this.shiftAssignments[emp.id], localAssignments[emp.empId]);
       }
 
       for (let i = 0; i < 7; i++) {
@@ -197,19 +217,21 @@ export class ShiftManagementComponent implements OnInit {
           this.shiftAssignments[emp.id][dayStr] = localAssignments[emp.id][dayStr];
         } else if (emp.empId && localAssignments[emp.empId] && localAssignments[emp.empId][dayStr]) {
           this.shiftAssignments[emp.id][dayStr] = localAssignments[emp.empId][dayStr];
-        }
-
-        if (!this.shiftAssignments[emp.id][dayStr]) {
-          // Default Seeding: Sat-Sun Off, Mon-Fri rotating
-          if (i >= 5) {
-            this.shiftAssignments[emp.id][dayStr] = 'Off';
-          } else {
-            if (emp.id === '1' || emp.id === '3') {
-              this.shiftAssignments[emp.id][dayStr] = 'Shift A';
-            } else if (emp.id === '2' || emp.id === '5') {
-              this.shiftAssignments[emp.id][dayStr] = 'Shift B';
+        } else {
+          // If no specific day override exists, check if there is a default shift assigned in Employee Management
+          const defaultShift = defaultShifts[emp.id] || (emp.empId ? defaultShifts[emp.empId] : '');
+          if (defaultShift) {
+            if (i >= 5) {
+              this.shiftAssignments[emp.id][dayStr] = 'Off'; // Weekends are off
             } else {
-              this.shiftAssignments[emp.id][dayStr] = 'Shift C';
+              this.shiftAssignments[emp.id][dayStr] = defaultShift;
+            }
+          } else {
+            // Default Seeding: Sat-Sun Off, Mon-Fri Shift A
+            if (i >= 5) {
+              this.shiftAssignments[emp.id][dayStr] = 'Off';
+            } else {
+              this.shiftAssignments[emp.id][dayStr] = 'Shift A';
             }
           }
         }
@@ -676,11 +698,26 @@ export class ShiftManagementComponent implements OnInit {
     return matched ? matched.time : 'Rest Day';
   }
 
+  // Helper to get date range array
+  getDateRangeArray(startDate: string, endDate: string): string[] {
+    const dates: string[] = [];
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const current = new Date(start);
+    while (current <= end) {
+      const year = current.getFullYear();
+      const month = String(current.getMonth() + 1).padStart(2, '0');
+      const day = String(current.getDate()).padStart(2, '0');
+      dates.push(`${year}-${month}-${day}`);
+      current.setDate(current.getDate() + 1);
+    }
+    return dates;
+  }
+
   // Setup reactive form
   initOverrideForm() {
     this.overrideForm = this.formBuilder.group({
       type: ['change', Validators.required],
-      dateStr: ['', Validators.required],
       employeeId: ['', Validators.required],
       newShift: ['Shift A'],
       swapEmployeeId: [''],
@@ -716,7 +753,6 @@ export class ShiftManagementComponent implements OnInit {
   openOverrideModal(type: 'change' | 'swap' | 'standby', empId?: string, dateStr?: string) {
     this.overrideForm.reset({
       type: type,
-      dateStr: dateStr || (this.activeWeekDays[0] ? this.activeWeekDays[0].dateStr : ''),
       employeeId: empId || '',
       newShift: 'Shift A',
       swapEmployeeId: '',
@@ -737,27 +773,35 @@ export class ShiftManagementComponent implements OnInit {
       return;
     }
 
-    const { type, dateStr, employeeId, newShift, swapEmployeeId, standbyEmployeeId } = this.overrideForm.value;
+    const { type, employeeId, newShift, swapEmployeeId, standbyEmployeeId } = this.overrideForm.value;
     const emp1 = this.employees.find(e => e.id === employeeId);
 
+    const storedDefault = localStorage.getItem('employeeDefaultShifts');
+    const defaultShifts = storedDefault ? JSON.parse(storedDefault) : {};
+
     if (type === 'change') {
-      const oldShift = this.shiftAssignments[employeeId]?.[dateStr] || 'Off';
+      const oldShift = defaultShifts[employeeId] || 'Shift A';
       if (oldShift === newShift) {
-        this.notificationService.show('Employee is already assigned to this shift on selected date.', 'error', 3000);
+        this.notificationService.show(`Employee is already assigned to ${newShift}.`, 'info', 3000);
         return;
       }
 
-      this.shiftAssignments[employeeId][dateStr] = newShift;
+      defaultShifts[employeeId] = newShift;
+
+      // Save to localStorage
+      localStorage.setItem('employeeDefaultShifts', JSON.stringify(defaultShifts));
 
       this.rotationLogs.unshift({
         id: Math.floor(1000 + Math.random() * 9000).toString(),
         timestamp: new Date(),
         type: 'Shift Override',
-        description: `Manually changed ${emp1?.name}'s shift on ${dateStr} from ${oldShift} to ${newShift}.`,
+        description: `Manually changed ${emp1?.name}'s default shift from ${oldShift} to ${newShift}.`,
         supervisor: 'Supervisor Admin'
       });
 
-      this.notificationService.show('Shift updated successfully!', 'success', 3000);
+      this.notificationService.show('Default shift updated successfully!', 'success', 3000);
+      this.initRosterForWeek(this.currentDate); // Refresh grid
+      this.loadShiftGroups(); // Refresh counts
       this.closeModal();
 
     } else if (type === 'swap') {
@@ -767,27 +811,32 @@ export class ShiftManagementComponent implements OnInit {
       }
 
       const emp2 = this.employees.find(e => e.id === swapEmployeeId);
-      const shift1 = this.shiftAssignments[employeeId]?.[dateStr] || 'Off';
-      const shift2 = this.shiftAssignments[swapEmployeeId]?.[dateStr] || 'Off';
+      const shift1 = defaultShifts[employeeId] || 'Shift A';
+      const shift2 = defaultShifts[swapEmployeeId] || 'Shift A';
 
       if (shift1 === shift2) {
-        this.notificationService.show(`Both employees are already on the same shift (${shift1}) on this day.`, 'error', 3000);
+        this.notificationService.show(`Both employees are already on the same default shift (${shift1}).`, 'error', 3000);
         return;
       }
 
       // Perform Swap
-      this.shiftAssignments[employeeId][dateStr] = shift2;
-      this.shiftAssignments[swapEmployeeId][dateStr] = shift1;
+      defaultShifts[employeeId] = shift2;
+      defaultShifts[swapEmployeeId] = shift1;
+
+      // Save to localStorage
+      localStorage.setItem('employeeDefaultShifts', JSON.stringify(defaultShifts));
 
       this.rotationLogs.unshift({
         id: Math.floor(1000 + Math.random() * 9000).toString(),
         timestamp: new Date(),
         type: 'Shift Swap',
-        description: `Swapped shifts on ${dateStr} between ${emp1?.name} (${shift1}) and ${emp2?.name} (${shift2}).`,
+        description: `Swapped default shifts between ${emp1?.name} (${shift1}) and ${emp2?.name} (${shift2}).`,
         supervisor: 'Supervisor Admin'
       });
 
-      this.notificationService.show('Shifts swapped successfully!', 'success', 3000);
+      this.notificationService.show('Default shifts swapped successfully!', 'success', 3000);
+      this.initRosterForWeek(this.currentDate); // Refresh grid
+      this.loadShiftGroups(); // Refresh counts
       this.closeModal();
 
     } else if (type === 'standby') {
@@ -797,32 +846,37 @@ export class ShiftManagementComponent implements OnInit {
       }
 
       const standbyEmp = this.employees.find(e => e.id === standbyEmployeeId);
-      const originalShift = this.shiftAssignments[employeeId]?.[dateStr] || 'Off';
+      const originalShift = defaultShifts[employeeId] || 'Shift A';
 
       if (originalShift === 'Off') {
         this.notificationService.show('Original employee is already off. No active shift to stand by for.', 'error', 3000);
         return;
       }
 
-      const standbyCurrentShift = this.shiftAssignments[standbyEmployeeId]?.[dateStr] || 'Off';
+      const standbyCurrentShift = defaultShifts[standbyEmployeeId] || 'Shift A';
       if (standbyCurrentShift !== 'Off') {
-        this.notificationService.show(`Standby employee ${standbyEmp?.name} is already working on ${dateStr} (${standbyCurrentShift}) and cannot stand by.`, 'error', 4000);
+        this.notificationService.show(`Standby employee ${standbyEmp?.name} is already working (${standbyCurrentShift}) and cannot stand by.`, 'error', 4000);
         return;
       }
 
       // Perform Standby Override
-      this.shiftAssignments[employeeId][dateStr] = 'Off'; // Original employee gets Off
-      this.shiftAssignments[standbyEmployeeId][dateStr] = originalShift; // Standby employee takes the shift
+      defaultShifts[employeeId] = 'Off';
+      defaultShifts[standbyEmployeeId] = originalShift;
+
+      // Save to localStorage
+      localStorage.setItem('employeeDefaultShifts', JSON.stringify(defaultShifts));
 
       this.rotationLogs.unshift({
         id: Math.floor(1000 + Math.random() * 9000).toString(),
         timestamp: new Date(),
         type: 'Standby Assignment',
-        description: `Assigned standby ${standbyEmp?.name} to replace ${emp1?.name} for ${originalShift} on ${dateStr}.`,
+        description: `Assigned standby ${standbyEmp?.name} to replace ${emp1?.name} for ${originalShift} default shift.`,
         supervisor: 'Supervisor Admin'
       });
 
-      this.notificationService.show('Standby shift assigned successfully!', 'success', 3000);
+      this.notificationService.show('Standby default shift assigned successfully!', 'success', 3000);
+      this.initRosterForWeek(this.currentDate); // Refresh grid
+      this.loadShiftGroups(); // Refresh counts
       this.closeModal();
     }
   }
@@ -871,6 +925,9 @@ export class ShiftManagementComponent implements OnInit {
     const nextEndDay = new Date(nextMonday);
     nextEndDay.setDate(nextMonday.getDate() + 6);
 
+    // Save assignments back to local storage
+    localStorage.setItem('shiftAssignments', JSON.stringify(this.shiftAssignments));
+
     // Log Batch Entry
     this.rotationLogs.unshift({
       id: Math.floor(1000 + Math.random() * 9000).toString(),
@@ -890,10 +947,54 @@ export class ShiftManagementComponent implements OnInit {
 
   initBulkRotateForm() {
     this.bulkRotateForm = this.formBuilder.group({
-      sourceGroup: ['', Validators.required],
-      targetShift: ['', Validators.required],
-      effectiveDate: ['', Validators.required]
+      currentShift: ['', Validators.required],
+      employeeIds: [[], Validators.required],
+      targetShift: ['', Validators.required]
     });
+
+    this.bulkRotateForm.get('currentShift')?.valueChanges.subscribe(val => {
+      this.updateFilteredEmployees(val);
+    });
+
+    this.bulkRotateForm.get('employeeIds')?.valueChanges.subscribe(val => {
+      this.selectedEmployeeIdsForRotation = (val || []).map((id: any) => String(id));
+      if (this.selectedEmployeeIdsForRotation.length === 0) {
+        this.bulkRotateForm.get('targetShift')?.setValue('');
+      }
+    });
+  }
+
+  updateFilteredEmployees(currentShift: string) {
+    if (!currentShift) {
+      this.filteredEmployeesForRotation = [...this.employees];
+      this.selectedEmployeeIdsForRotation = [];
+      this.bulkRotateForm.get('employeeIds')?.setValue([]);
+      return;
+    }
+    const ids = this.shiftGroups[currentShift] || [];
+    this.filteredEmployeesForRotation = this.employees.filter(emp => ids.includes(String(emp.id)));
+    const allIds = this.filteredEmployeesForRotation.map(emp => String(emp.id));
+    this.bulkRotateForm.get('employeeIds')?.setValue(allIds);
+  }
+
+  areAllRotateEmployeesSelected(): boolean {
+    if (this.filteredEmployeesForRotation.length === 0) return false;
+    return this.filteredEmployeesForRotation.every(emp => this.selectedEmployeeIdsForRotation.includes(String(emp.id)));
+  }
+
+  toggleAllRotateEmployees() {
+    if (this.areAllRotateEmployeesSelected()) {
+      this.bulkRotateForm.get('employeeIds')?.setValue([]);
+    } else {
+      const allIds = this.filteredEmployeesForRotation.map(emp => String(emp.id));
+      this.bulkRotateForm.get('employeeIds')?.setValue(allIds);
+    }
+    this.bulkRotateForm.get('employeeIds')?.markAsTouched();
+  }
+
+  clearAllRotateSelection(event: Event) {
+    event.stopPropagation();
+    this.bulkRotateForm.get('employeeIds')?.setValue([]);
   }
 
   loadShiftGroups() {
@@ -901,6 +1002,11 @@ export class ShiftManagementComponent implements OnInit {
       next: (res: any) => {
         if (res.status === 200 && res.data) {
           this.shiftGroups = res.data;
+          // Refresh filtered lists based on the active selection
+          const currentShiftVal = this.bulkRotateForm?.get('currentShift')?.value;
+          if (currentShiftVal) {
+            this.updateFilteredEmployees(currentShiftVal);
+          }
         }
       },
       error: (err) => console.error('Error loading shift groups in Roster', err)
@@ -908,13 +1014,14 @@ export class ShiftManagementComponent implements OnInit {
   }
 
   openBulkRotationModal() {
-    this.loadShiftGroups();
-    const today = new Date().toISOString().split('T')[0];
     this.bulkRotateForm.reset({
-      sourceGroup: '',
-      targetShift: 'Shift A',
-      effectiveDate: today
+      currentShift: '',
+      employeeIds: [],
+      targetShift: ''
     });
+    this.filteredEmployeesForRotation = [...this.employees];
+    this.selectedEmployeeIdsForRotation = [];
+    this.loadShiftGroups();
     this.isBulkRotateModalOpen = true;
   }
 
@@ -929,43 +1036,35 @@ export class ShiftManagementComponent implements OnInit {
       return;
     }
 
-    const { sourceGroup, targetShift, effectiveDate } = this.bulkRotateForm.value;
+    const { currentShift, employeeIds, targetShift } = this.bulkRotateForm.value;
 
-    if (sourceGroup === targetShift) {
-      this.notificationService.show('Source group and target shift cannot be the same.', 'error', 3000);
+    if (currentShift === targetShift) {
+      this.notificationService.show('Current shift and target shift cannot be the same.', 'error', 3000);
       return;
     }
 
-    const payload = {
-      source_group: sourceGroup,
-      target_shift: targetShift,
-      date: effectiveDate
-    };
+    // Update default fallback shifts in localStorage for only the selected employees
+    const storedDefault = localStorage.getItem('employeeDefaultShifts');
+    const defaultShifts = storedDefault ? JSON.parse(storedDefault) : {};
 
-    this.shiftService.rotateBulkGroup(payload).subscribe({
-      next: (res: any) => {
-        if (res.status === 200) {
-          this.notificationService.show(res.message || 'Group rotated successfully', 'success', 3000);
-          this.initRosterForWeek(this.currentDate); // Refresh grid
-          this.loadShiftGroups(); // Refresh count
-          
-          this.rotationLogs.unshift({
-            id: Math.floor(1000 + Math.random() * 9000).toString(),
-            timestamp: new Date(),
-            type: 'Shift Override',
-            description: `Bulk rotated dynamic tag cohort "${sourceGroup}" to "${targetShift}" effective ${effectiveDate}.`,
-            supervisor: 'Supervisor Admin'
-          });
-
-          this.closeBulkRotationModal();
-        } else {
-          this.notificationService.show(res.message || 'Rotation failed', 'error', 3000);
-        }
-      },
-      error: (err: any) => {
-        console.error('Rotation failed', err);
-        this.notificationService.show('An error occurred during bulk rotation.', 'error', 3000);
-      }
+    employeeIds.forEach((empId: any) => {
+      defaultShifts[String(empId)] = targetShift;
     });
+
+    localStorage.setItem('employeeDefaultShifts', JSON.stringify(defaultShifts));
+
+    this.notificationService.show(`Successfully rotated shift for ${employeeIds.length} employee(s) to ${targetShift}.`, 'success', 3000);
+    this.initRosterForWeek(this.currentDate); // Refresh roster grid display
+    this.loadShiftGroups(); // Refresh dynamic group metrics
+
+    this.rotationLogs.unshift({
+      id: Math.floor(1000 + Math.random() * 9000).toString(),
+      timestamp: new Date(),
+      type: 'Shift Override',
+      description: `Bulk rotated shift for ${employeeIds.length} employee(s) from "${currentShift}" to "${targetShift}".`,
+      supervisor: 'Supervisor Admin'
+    });
+
+    this.closeBulkRotationModal();
   }
 }

@@ -3,7 +3,10 @@
     <h1 class="text-primary table-heading-detail">Employee Management</h1>
     <div>
       <button class="btn btn-outline-primary px-4 py-2 me-2" (click)="openAssignShiftModal()">
-        <i class="fa-solid fa-calendar-check me-2"></i>Assign Shift <span *ngIf="selectedEmployeeIds.size > 0">({{ selectedEmployeeIds.size }})</span>
+        <i class="fa-solid fa-calendar-check me-2"></i>Assign Shift
+      </button>
+      <button class="btn btn-bulk-assign px-4 py-2 me-2" (click)="openBulkAssignModal()">
+        <i class="fa-solid fa-users-gear me-2"></i>Bulk Assign Shift
       </button>
       <button class="btn btn-outline-primary px-4 py-2 me-2" (click)="openUploadModal()">
         <i class="fa-solid fa-cloud-arrow-up me-2"></i>Bulk Upload
@@ -33,10 +36,6 @@
             <option value="">All Departments</option>
             <option *ngFor="let dept of departmentsList" [value]="dept.id">{{ dept.name }}</option>
           </select>
-          <select class="form-control form-select" formControlName="designationFilter" (change)="searchfun()">
-            <option value="">All Designations</option>
-            <option *ngFor="let desig of designationsList" [value]="desig.id">{{ desig.name }}</option>
-          </select>
         </form>
 
         <form [formGroup]="searchbarform" class="d-flex align-items-center ms-2">
@@ -61,9 +60,6 @@
         <table class="table table-bordered table-hover table-striped mb-0">
           <thead class="table-header">
             <tr>
-              <th style="width: 40px; text-align: center; vertical-align: middle;">
-                <input type="checkbox" class="form-check-input" [checked]="areAllEmployeesSelected()" (change)="toggleAllEmployees($event)" />
-              </th>
               <th *ngFor="let heading of table_heading">
                 <p class="table-heading">{{ heading }}</p>
               </th>
@@ -72,13 +68,10 @@
           <tbody>
             <tr
               *ngFor="let emp of employeeList | paginate : { itemsPerPage: tableSize != 'all' ? tableSize : totalRecords, currentPage: page, totalItems: totalRecords }; index as i">
-              <td style="text-align: center; vertical-align: middle;">
-                <input type="checkbox" class="form-check-input" [disabled]="emp.is_active != 1" [checked]="isEmployeeSelected(emp.id)" (change)="toggleEmployeeSelection(emp.id)" />
-              </td>
               <td>{{ (page - 1) * (tableSize === 'all' ? totalRecords : +tableSize) + i + 1 }}</td>
               <td>{{ emp.empId }}</td>
               <td>
-                <p class="fw-bold mb-0">{{ emp.name }}</p>
+                <span class="fw-bold">{{ emp.name }}</span>
               </td>
               <td>
                 <p>{{ emp.mobile }}</p>
@@ -90,16 +83,14 @@
                 <p class="mb-0 text-muted">{{ emp.designation || '--' }}</p>
               </td>
               <td>
-                <span *ngIf="getEmployeeShiftGroup(emp.id); else noShiftGroup" [ngClass]="{
+                <span *ngIf="getEmployeeShiftGroup(emp.id)" [ngClass]="{
                   'shift-tag-a': getEmployeeShiftGroup(emp.id) === 'Shift A',
                   'shift-tag-b': getEmployeeShiftGroup(emp.id) === 'Shift B',
                   'shift-tag-c': getEmployeeShiftGroup(emp.id) === 'Shift C'
                 }" class="shift-group-badge">
-                  {{ getEmployeeShiftGroup(emp.id) }} Group
+                  {{ getEmployeeShiftGroup(emp.id) }}
                 </span>
-                <ng-template #noShiftGroup>
-                  <span class="text-muted">--</span>
-                </ng-template>
+                <span *ngIf="!getEmployeeShiftGroup(emp.id)" class="text-muted">--</span>
               </td>
               <td>
                 <span [ngClass]="{'active-status': emp.is_active == 1, 'deactive-status': emp.is_active != 1}">
@@ -108,10 +99,12 @@
               </td>
               <td>
                 <div class="d-flex align-items-center gap-2">
-                  <button *ngIf="emp.is_active == 1" class="btn-action edit-btn" (click)="openAssignShiftModal(emp)" data-tooltip="Assign Shift">
+                  <button *ngIf="emp.is_active == 1" class="btn-action edit-btn" (click)="openAssignShiftModal(emp)"
+                    data-tooltip="Assign Shift">
                     <i class="fa-solid fa-calendar-day"></i>
                   </button>
-                  <button *ngIf="emp.is_active == 1" class="btn-action edit-btn" (click)="openEditModal(emp)" data-tooltip="Edit">
+                  <button *ngIf="emp.is_active == 1" class="btn-action edit-btn" (click)="openEditModal(emp)"
+                    data-tooltip="Edit">
                     <i class="fa-solid fa-pen-to-square"></i>
                   </button>
                   <button class="btn-action view-btn" (click)="openviewModal(emp)" data-tooltip="View Details">
@@ -136,15 +129,16 @@
           class="bg-gray-50 border border-gray-200 rounded-lg p-4">
           <div class="flex justify-between items-center mb-2 border-b pb-2">
             <div class="d-flex align-items-center">
-              <input type="checkbox" class="form-check-input me-2" [disabled]="emp.is_active != 1" [checked]="isEmployeeSelected(emp.id)" (change)="toggleEmployeeSelection(emp.id)" />
               <strong>{{ emp.empId }}</strong>
             </div>
             <div>
               <div class="d-flex align-items-center gap-1">
-                <button *ngIf="emp.is_active == 1" class="btn-action edit-btn" (click)="openAssignShiftModal(emp)" data-tooltip="Assign Shift">
+                <button *ngIf="emp.is_active == 1" class="btn-action edit-btn" (click)="openAssignShiftModal(emp)"
+                  data-tooltip="Assign Shift">
                   <i class="fa-solid fa-calendar-day"></i>
                 </button>
-                <button *ngIf="emp.is_active == 1" class="btn-action edit-btn" (click)="openEditModal(emp)" data-tooltip="Edit">
+                <button *ngIf="emp.is_active == 1" class="btn-action edit-btn" (click)="openEditModal(emp)"
+                  data-tooltip="Edit">
                   <i class="fa-solid fa-pen-to-square"></i>
                 </button>
                 <button class="btn-action view-btn" (click)="openviewModal(emp)" data-tooltip="View Details">
@@ -165,7 +159,7 @@
               'shift-tag-b': getEmployeeShiftGroup(emp.id) === 'Shift B',
               'shift-tag-c': getEmployeeShiftGroup(emp.id) === 'Shift C'
             }" class="shift-group-badge">
-              {{ getEmployeeShiftGroup(emp.id) }} Group
+              {{ getEmployeeShiftGroup(emp.id) }}
             </span>
           </div>
           <div class="mb-2 text-muted"><i class="fa-solid fa-phone me-2"></i>{{ emp.mobile }}</div>
@@ -238,8 +232,7 @@
           <div class="col-md-6">
             <label class="form-label form-lable-custom">Employee ID *</label>
             <input type="text" class="form-control form-input-custom" formControlName="empId"
-              placeholder="Enter Employee ID"
-              [readonly]="isEditMode"
+              placeholder="Enter Employee ID" [readonly]="isEditMode"
               [ngClass]="{'is-invalid': employeeForm.get('empId')?.invalid && employeeForm.get('empId')?.touched}" />
             <div class="invalid-feedback">Employee ID is required.</div>
           </div>
@@ -776,47 +769,69 @@
     </div>
 
     <div class="modal-body-custom p-4 overflow-auto">
-      <!-- Selected Employees Count Display -->
+      <!-- Select Employees -->
       <div class="mb-3">
-        <p class="text-muted fs-7 mb-0">Assigning shift to <strong>{{ selectedEmployeeIds.size }}</strong> selected employee(s).</p>
-        <small class="text-primary d-block mt-1 fw-semibold" *ngIf="assignShiftModalLabel">
-          <i class="fa-solid fa-circle-info me-1"></i>{{ assignShiftModalLabel }}
-        </small>
+        <label class="form-label form-lable-custom">Select Employees <span class="text-danger">*</span></label>
+        <ng-select
+          [(ngModel)]="selectedEmployeeIdsForAssign"
+          [items]="allEmployeesList"
+          bindLabel="name"
+          bindValue="id"
+          [multiple]="true"
+          [closeOnSelect]="false"
+          placeholder="Search & Select Employees"
+          class="custom-ng-select w-100">
+          <ng-template ng-multi-label-tmp let-items="items" let-clear="clear">
+            <ng-container *ngIf="items.length === allEmployeesList.length && allEmployeesList.length > 0">
+              <div class="ng-value">
+                <span class="ng-value-label fw-semibold text-primary">All Employees Selected ({{ items.length }})</span>
+                <span class="ng-value-icon right" (click)="clearAllAssignSelection($event)" aria-hidden="true">×</span>
+              </div>
+            </ng-container>
+            <ng-container *ngIf="items.length !== allEmployeesList.length || allEmployeesList.length === 0">
+              <div class="ng-value" *ngFor="let item of items">
+                <span class="ng-value-label">{{ item.name }}</span>
+                <span class="ng-value-icon right" (click)="clear(item)" aria-hidden="true">×</span>
+              </div>
+            </ng-container>
+          </ng-template>
+          <ng-template ng-header-tmp>
+            <div class="d-flex align-items-center gap-2 p-2 border-bottom cursor-pointer select-all-header" 
+                 (click)="toggleAllAssignEmployees()"
+                 style="user-select: none;">
+              <input type="checkbox" class="form-check-input cursor-pointer" [checked]="areAllAssignEmployeesSelected()" style="margin-top: 0; pointer-events: none;" />
+              <span class="fw-bold fs-7 text-dark">Select All ({{ allEmployeesList.length }})</span>
+            </div>
+          </ng-template>
+          <ng-template ng-option-tmp let-item="item" let-item$="item$" let-index="index">
+            <div class="d-flex align-items-center gap-2 py-1">
+              <input type="checkbox" class="form-check-input cursor-pointer" [checked]="item$.selected" style="margin-top: 0;" />
+              <div class="d-flex flex-column text-start">
+                <span class="fw-semibold fs-7">{{ item.name }}</span>
+                <span class="text-muted fs-8">{{ item.employee_code || item.empId }}</span>
+              </div>
+            </div>
+          </ng-template>
+        </ng-select>
       </div>
 
       <!-- Shift Type Select -->
       <div class="mb-3">
         <label class="form-label form-lable-custom">Shift Type <span class="text-danger">*</span></label>
-        <ng-select
-          [(ngModel)]="assignShiftType"
-          class="custom-ng-select w-100"
-          [items]="allShiftsList"
-          bindLabel="name"
-          bindValue="id"
-          placeholder="Select Shift"
-          [clearable]="true">
+        <ng-select [(ngModel)]="assignShiftType" class="custom-ng-select w-100" [items]="allShiftsList" bindLabel="name"
+          bindValue="id" placeholder="Select Shift" [clearable]="true">
         </ng-select>
       </div>
 
-      <!-- Date Range Selection -->
-      <div class="row g-3 mb-4">
-        <div class="col-md-6">
-          <label class="form-label form-lable-custom">Effective Start Date <span class="text-danger">*</span></label>
-          <input
-            type="date"
-            [(ngModel)]="assignShiftStartDate"
-            class="form-control form-input-custom cursor-pointer"
-            (click)="onDateClick($event)" />
-        </div>
-        <div class="col-md-6">
-          <label class="form-label form-lable-custom">Effective End Date <span class="text-danger">*</span></label>
-          <input
-            type="date"
-            [(ngModel)]="assignShiftEndDate"
-            class="form-control form-input-custom cursor-pointer"
-            (click)="onDateClick($event)" />
-        </div>
+      <!-- Selected Employees Count Display -->
+      <div class="mt-3" *ngIf="selectedEmployeeIdsForAssign && selectedEmployeeIdsForAssign.length > 0">
+        <p class="text-muted fs-7 mb-0">Assigning shift to <strong>{{ selectedEmployeeIdsForAssign.length }}</strong> selected
+          employee(s).</p>
+        <small class="text-primary d-block mt-1 fw-semibold" *ngIf="assignShiftModalLabel">
+          <i class="fa-solid fa-circle-info me-1"></i>{{ assignShiftModalLabel }}
+        </small>
       </div>
+
     </div>
 
     <div class="modal-footer px-4 py-3 border-top bg-light d-flex gap-3">
@@ -825,6 +840,69 @@
       </button>
       <button class="btn btn-custom-primary flex-grow-1 py-2" (click)="saveBulkShift()">
         <i class="fa-solid fa-save me-2"></i> Save Shift
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Bulk Assign Shift (Excel/CSV Upload) Modal -->
+<div *ngIf="bulkAssignModalOpen" class="modal-overlay" [@fadeIn]>
+  <div class="modal-dialog bg-white rounded-3 shadow-lg d-flex flex-column"
+    style="max-width: 500px; width: 90%; margin: 1.75rem auto; pointer-events: auto;">
+    <div class="modal-header-custom px-4 py-3 d-flex justify-content-between align-items-center border-bottom">
+      <h5 class="modal-title fw-bold text-primary mb-0">
+        <i class="fa-solid fa-users-gear me-2"></i>Bulk Shift Assignment
+      </h5>
+      <button class="btn bg-transparent border-0 p-0" (click)="closeBulkAssignModal()">
+        <i class="fa-solid fa-xmark fs-4 text-muted"></i>
+      </button>
+    </div>
+
+    <div class="modal-body-custom p-4 overflow-auto">
+      <div class="w-100">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h6 class="fw-bold mb-0">Upload Excel/CSV Template</h6>
+          <button class="btn btn-link btn-sm text-primary p-0 text-decoration-none fw-semibold" (click)="downloadBulkAssignSampleFile()">
+            <i class="fa-solid fa-download me-1"></i>Download Sample
+          </button>
+        </div>
+
+        <form [formGroup]="bulkAssignForm">
+          <div class="upload-zone p-5 text-center rounded-4 mb-4 border border-dashed"
+            [ngClass]="{ 'has-file': selectedBulkAssignFile }" (click)="bulkAssignFileInput.click()"
+            style="min-height: 200px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+            <input type="file" #bulkAssignFileInput class="d-none" (change)="onBulkAssignFileSelected($event)"
+              accept=".csv, .xlsx, .xls" />
+
+            <div *ngIf="!selectedBulkAssignFile">
+              <div class="upload-icon-circle mx-auto mb-3">
+                <i class="fa-solid fa-file-excel fs-2 text-primary"></i>
+              </div>
+              <p class="mb-1 fw-bold">Click to select file</p>
+              <small class="text-muted d-block mt-1">Accepts .csv, .xls, .xlsx</small>
+            </div>
+
+            <div *ngIf="selectedBulkAssignFile" class="file-info-view">
+              <i class="fa-solid fa-file-circle-check fs-1 text-success mb-2"></i>
+              <h6 class="fw-bold mb-0 text-truncate px-3" style="max-width: 250px;">
+                {{ selectedBulkAssignFileName }}
+              </h6>
+              <button class="btn btn-link btn-sm text-danger mt-2"
+                (click)="$event.stopPropagation(); removeBulkAssignFile(bulkAssignFileInput)">
+                Remove
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="modal-footer px-4 py-3 border-top bg-light d-flex gap-3">
+      <button class="btn btn-secondary flex-grow-1 py-2" (click)="closeBulkAssignModal()">
+        Cancel
+      </button>
+      <button class="btn btn-custom-primary flex-grow-1 py-2" [disabled]="!selectedBulkAssignFile" (click)="uploadBulkAssignFile()">
+        <i class="fa-solid fa-circle-check me-2"></i> Apply Assignments
       </button>
     </div>
   </div>
