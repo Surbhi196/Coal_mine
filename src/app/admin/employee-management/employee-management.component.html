@@ -83,6 +83,9 @@
                 <p class="mb-0 text-muted">{{ emp.designation || '--' }}</p>
               </td>
               <td>
+                <p class="mb-0 text-muted">{{ emp.relay || '--' }}</p>
+              </td>
+              <td>
                 <span *ngIf="emp.shift" [ngClass]="{
                   'shift-tag-a': emp.shift === 'Shift A',
                   'shift-tag-b': emp.shift === 'Shift B',
@@ -327,6 +330,28 @@
             </select>
             <div class="invalid-feedback">Designation is required.</div>
           </div>
+          <div class="col-md-12 mt-3">
+            <label class="form-label form-lable-custom">Relay / Shift *</label>
+            <div class="d-flex gap-3 mt-2 flex-wrap">
+              <div class="form-check">
+                <input class="form-check-input cursor-pointer" type="radio" formControlName="relay" id="relayGeneral" value="General">
+                <label class="form-check-label cursor-pointer" for="relayGeneral">General</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input cursor-pointer" type="radio" formControlName="relay" id="relay1" value="Relay 1">
+                <label class="form-check-label cursor-pointer" for="relay1">Relay 1</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input cursor-pointer" type="radio" formControlName="relay" id="relay2" value="Relay 2">
+                <label class="form-check-label cursor-pointer" for="relay2">Relay 2</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input cursor-pointer" type="radio" formControlName="relay" id="relay3" value="Relay 3">
+                <label class="form-check-label cursor-pointer" for="relay3">Relay 3</label>
+              </div>
+            </div>
+            <div class="text-danger mt-1 fs-8" *ngIf="employeeForm.get('relay')?.invalid && employeeForm.get('relay')?.touched">Relay is required.</div>
+          </div>
         </div>
 
         <!-- TAB 3: Payroll Details -->
@@ -354,6 +379,15 @@
             </div>
           </div>
           <div class="col-md-6">
+            <label class="form-label form-lable-custom">Rest Day *</label>
+            <select class="form-select form-input-custom" formControlName="restDay"
+              [ngClass]="{'is-invalid': employeeForm.get('restDay')?.invalid && employeeForm.get('restDay')?.touched}">
+              <option value="">Select Rest Day</option>
+              <option *ngFor="let day of [1,2,3,4,5,6,7,8,9,10]" [value]="day">{{ day }}</option>
+            </select>
+            <div class="invalid-feedback">Rest Day is required.</div>
+          </div>
+          <div class="col-md-6">
             <label class="form-label form-lable-custom">PF Applicable *</label>
             <select class="form-select form-input-custom" formControlName="isPfApplicable"
               [ngClass]="{'is-invalid': employeeForm.get('isPfApplicable')?.invalid && employeeForm.get('isPfApplicable')?.touched}">
@@ -361,9 +395,15 @@
               <option value="Yes">Yes</option>
             </select>
           </div>
-          <div class="col-md-6">
-            <label class="form-label form-lable-custom">PF Number <span
-                *ngIf="employeeForm.get('isPfApplicable')?.value === 'Yes'">*</span></label>
+          <div class="col-md-6" *ngIf="employeeForm.get('isPfApplicable')?.value === 'Yes'">
+            <label class="form-label form-lable-custom">PF Amount (₹) *</label>
+            <input type="number" class="form-control form-input-custom" formControlName="pfAmount"
+              placeholder="Enter PF Amount"
+              [ngClass]="{'is-invalid': employeeForm.get('pfAmount')?.invalid && employeeForm.get('pfAmount')?.touched}" />
+            <div class="invalid-feedback">PF Amount is required when PF is applicable.</div>
+          </div>
+          <div class="col-md-6" *ngIf="employeeForm.get('isPfApplicable')?.value === 'Yes'">
+            <label class="form-label form-lable-custom">PF Number *</label>
             <input type="text" class="form-control form-input-custom" formControlName="pfNumber"
               placeholder="Enter PF Number"
               [ngClass]="{'is-invalid': employeeForm.get('pfNumber')?.invalid && employeeForm.get('pfNumber')?.touched}" />
@@ -398,6 +438,13 @@
               <option value="Yes">Yes</option>
             </select>
           </div>
+          <div class="col-md-6" *ngIf="employeeForm.get('isMessApplicable')?.value === 'Yes'">
+            <label class="form-label form-lable-custom">Mess Deduction Amount (₹) *</label>
+            <input type="number" class="form-control form-input-custom" formControlName="messDeductionAmount"
+              placeholder="Enter Mess Deduction Amount"
+              [ngClass]="{'is-invalid': employeeForm.get('messDeductionAmount')?.invalid && employeeForm.get('messDeductionAmount')?.touched}" />
+            <div class="invalid-feedback">Mess Deduction Amount is required when applicable.</div>
+          </div>
           <div class="col-md-6">
             <label class="form-label form-lable-custom">Others Deduction Applicable *</label>
             <select class="form-select form-input-custom" formControlName="isOthersDeductionApplicable"
@@ -406,9 +453,8 @@
               <option value="Yes">Yes</option>
             </select>
           </div>
-          <div class="col-md-6">
-            <label class="form-label form-lable-custom">Others Deduction Amount (₹) <span
-                *ngIf="employeeForm.get('isOthersDeductionApplicable')?.value === 'Yes'">*</span></label>
+          <div class="col-md-6" *ngIf="employeeForm.get('isOthersDeductionApplicable')?.value === 'Yes'">
+            <label class="form-label form-lable-custom">Others Deduction Amount (₹) *</label>
             <input type="number" class="form-control form-input-custom" formControlName="othersDeductionAmount"
               placeholder="Enter Others Deduction Amount"
               [ngClass]="{'is-invalid': employeeForm.get('othersDeductionAmount')?.invalid && employeeForm.get('othersDeductionAmount')?.touched}" />
@@ -586,6 +632,15 @@
                 </div>
               </div>
             </div>
+            <div class="col-md-6">
+              <div class="glass-info-card">
+                <div class="card-icon-wrapper site"><i class="fa-solid fa-clock"></i></div>
+                <div class="card-info-content">
+                  <span class="info-label">Relay / Shift</span>
+                  <span class="info-value text-dark fs-7">{{ selectedEmployee?.relay || '--' }}</span>
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- SECTION 3: Payroll Details -->
@@ -611,6 +666,15 @@
             </div>
             <div class="col-md-6 col-lg-4">
               <div class="glass-info-card">
+                <div class="card-icon-wrapper site"><i class="fa-solid fa-bed"></i></div>
+                <div class="card-info-content">
+                  <span class="info-label">Rest Day</span>
+                  <span class="info-value text-dark fs-7">{{ selectedEmployee?.restDay || '--' }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+              <div class="glass-info-card">
                 <div class="card-icon-wrapper code"><i class="fa-solid fa-piggy-bank"></i></div>
                 <div class="card-info-content">
                   <span class="info-label">PF Applicable</span>
@@ -620,10 +684,19 @@
             </div>
             <div class="col-md-6 col-lg-4" *ngIf="selectedEmployee?.isPfApplicable === 'Yes'">
               <div class="glass-info-card">
+                <div class="card-icon-wrapper code"><i class="fa-solid fa-indian-rupee-sign"></i></div>
+                <div class="card-info-content">
+                  <span class="info-label">PF Amount</span>
+                  <span class="info-value text-dark fs-7">₹{{ selectedEmployee?.pfAmount | number }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6 col-lg-4" *ngIf="selectedEmployee?.isPfApplicable === 'Yes'">
+              <div class="glass-info-card">
                 <div class="card-icon-wrapper code"><i class="fa-solid fa-hashtag"></i></div>
                 <div class="card-info-content">
                   <span class="info-label">PF Number</span>
-                  <span class="info-value text-dark fs-7">{{ selectedEmployee?.pfNumber }}</span>
+                  <span class="info-value text-dark fs-7">{{ selectedEmployee?.pfNumber || '--' }}</span>
                 </div>
               </div>
             </div>
@@ -633,6 +706,15 @@
                 <div class="card-info-content">
                   <span class="info-label">Mess Deduction</span>
                   <span class="info-value text-dark fs-7">{{ selectedEmployee?.isMessApplicable }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6 col-lg-4" *ngIf="selectedEmployee?.isMessApplicable === 'Yes'">
+              <div class="glass-info-card">
+                <div class="card-icon-wrapper code"><i class="fa-solid fa-indian-rupee-sign"></i></div>
+                <div class="card-info-content">
+                  <span class="info-label">Mess Deduction Amount</span>
+                  <span class="info-value text-dark fs-7">₹{{ selectedEmployee?.messDeductionAmount | number }}</span>
                 </div>
               </div>
             </div>

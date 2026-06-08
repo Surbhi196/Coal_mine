@@ -284,4 +284,62 @@ export class AttendanceManagementService {
     // return this.apiservice.postWithoutHeader("student-attendance/get-employees-monthly-attendance="+role_id,body);
     return this.apiservice.postWithoutHeader(url,body);
   }
+
+  getAttendance(limit: any, page: any, search: string, fromDate: string, toDate: string, status: string): Observable<any> {
+    const token = this.jwtService.getToken();
+    const headers = new HttpHeaders({
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    });
+
+    let url = `v1/admin/attendance?limit=${limit}&page=${page}`;
+    if (search) {
+      url += `&search=${search}`;
+    }
+    if (fromDate) {
+      url += `&from_date=${fromDate}`;
+    }
+    if (toDate) {
+      url += `&to_date=${toDate}`;
+    }
+    if (status) {
+      url += `&status=${status.toLowerCase()}`;
+    }
+
+    return this.apiservice.get(url, headers);
+  }
+
+  bulkUploadAttendance(file: File): Observable<any> {
+    const token = this.jwtService.getToken();
+    const headers = new HttpHeaders({
+      Authorization: `Bearer ${token}`
+    });
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.apiservice.post('v1/admin/attendance/bulk-upload', formData, headers);
+  }
+
+  getAttendanceById(id: string): Observable<any> {
+    const token = this.jwtService.getToken();
+    const headers = new HttpHeaders({
+      Authorization: `Bearer ${token}`
+    });
+    return this.apiservice.get(`v1/admin/attendance/${id}`, headers);
+  }
+
+  updateAttendance(id: string, formData: FormData): Observable<any> {
+    const token = this.jwtService.getToken();
+    const headers = new HttpHeaders({
+      Authorization: `Bearer ${token}`
+    });
+    return this.apiservice.post(`v1/admin/attendance/${id}`, formData, headers);
+  }
+
+  updateBulkAttendanceStatus(formData: FormData): Observable<any> {
+    const token = this.jwtService.getToken();
+    const headers = new HttpHeaders({
+      Authorization: `Bearer ${token}`
+    });
+    return this.apiservice.post(`v1/admin/attendance/bulk-status`, formData, headers);
+  }
 }

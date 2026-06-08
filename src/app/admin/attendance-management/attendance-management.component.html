@@ -16,31 +16,48 @@
     <!-- Filters Bar -->
     <div class="row g-3 mb-4 align-items-end">
       <!-- Search Filter -->
-      <div class="col-md-3">
+      <div class="col-md-3 col-sm-12">
         <label class="form-label form-lable-custom mb-1 text-muted fs-8 fw-bold text-uppercase">Search Employee</label>
-        <div class="input-group">
-          <span class="input-group-text bg-white text-muted border-end-0 py-2">
-            <i class="fa-solid fa-magnifying-glass"></i>
-          </span>
-          <input type="text" class="form-control form-input-custom border-start-0 ps-0 py-2"
-            [(ngModel)]="filterSearch" (input)="applyFilters()" placeholder="Search Name/ID...">
-        </div>
+        <form [formGroup]="searchbarform" class="d-flex align-items-center">
+          <div class="position-relative flex-grow-1">
+            <input type="text" class="form-control form-input-custom py-2" placeholder="Search Name/ID..." autocomplete="off"
+              formControlName="searchbar" (keyup.enter)="searchfun()" />
+          </div>
+          <button class="btn btn-primary search-btn ms-2" (click)="searchfun()" type="button" style="height: 42px;">
+            <span><i class="fa-solid fa-magnifying-glass text-white"></i></span>
+          </button>
+          <button class="btn btn-secondary ms-2" (click)="resetsearchbar()" type="button" *ngIf="showreset" style="height: 42px;">
+            <span><i class="fa-solid fa-rotate-right text-white"></i></span>
+          </button>
+        </form>
       </div>
 
-      <!-- Date Filter -->
-      <div class="col-md-2">
-        <label class="form-label form-lable-custom mb-1 text-muted fs-8 fw-bold text-uppercase">Date Filter</label>
+      <!-- From Date Filter -->
+      <div class="col-md-2 col-sm-6">
+        <label class="form-label form-lable-custom mb-1 text-muted fs-8 fw-bold text-uppercase">From Date</label>
         <div class="input-group">
           <span class="input-group-text bg-white text-muted border-end-0 py-2">
             <i class="fa-solid fa-calendar-days"></i>
           </span>
           <input type="date" class="form-control form-input-custom border-start-0 ps-0 py-2"
-            [(ngModel)]="filterDate" (change)="applyFilters()">
+            [(ngModel)]="filterFromDate" (change)="applyFilters()">
+        </div>
+      </div>
+
+      <!-- To Date Filter -->
+      <div class="col-md-2 col-sm-6">
+        <label class="form-label form-lable-custom mb-1 text-muted fs-8 fw-bold text-uppercase">To Date</label>
+        <div class="input-group">
+          <span class="input-group-text bg-white text-muted border-end-0 py-2">
+            <i class="fa-solid fa-calendar-days"></i>
+          </span>
+          <input type="date" class="form-control form-input-custom border-start-0 ps-0 py-2"
+            [(ngModel)]="filterToDate" (change)="applyFilters()">
         </div>
       </div>
 
       <!-- Site Filter -->
-      <div class="col-md-3">
+      <div class="col-md-2 col-sm-6">
         <label class="form-label form-lable-custom mb-1 text-muted fs-8 fw-bold text-uppercase">Site Filter</label>
         <select class="form-select form-input-custom py-2" [(ngModel)]="filterSite" (change)="applyFilters()">
           <option value="">All Sites</option>
@@ -49,7 +66,7 @@
       </div>
 
       <!-- Status Filter -->
-      <div class="col-md-2">
+      <div class="col-md-2 col-sm-6">
         <label class="form-label form-lable-custom mb-1 text-muted fs-8 fw-bold text-uppercase">Status Filter</label>
         <select class="form-select form-input-custom py-2" [(ngModel)]="filterStatus" (change)="applyFilters()">
           <option value="">All Statuses</option>
@@ -61,11 +78,11 @@
       </div>
 
       <!-- Reset Button -->
-      <div class="col-md-2">
+      <div class="col-md-1 col-sm-12">
         <button
-          class="btn btn-outline-secondary w-100 py-2 d-flex align-items-center justify-content-center gap-2 hover-up"
-          (click)="resetFilters()" style="height: 42px;">
-          <i class="fa-solid fa-rotate-right"></i> Reset
+          class="btn btn-outline-secondary w-100 py-2 d-flex align-items-center justify-content-center gap-2 hover-up px-1"
+          (click)="resetFilters()" style="height: 42px;" title="Reset Filters">
+          <i class="fa-solid fa-rotate-right"></i> <span class="d-md-none d-xl-inline">Reset</span>
         </button>
       </div>
     </div>
@@ -98,20 +115,22 @@
           (click)="markBulkAttendance('Leave')">
           <i class="fa-solid fa-circle-info"></i> Leave
         </button>
+        <button class="btn btn-sm btn-warning bulk-btn px-3 py-2 fs-8 fw-bold d-flex align-items-center gap-1.5 rounded-pill hover-up" 
+          (click)="markBulkAttendance('Half Day')">
+          <i class="fa-solid fa-circle-half-stroke"></i> Half Day
+        </button>
+        <button class="btn btn-sm btn-primary text-white bulk-btn px-3 py-2 fs-8 fw-bold d-flex align-items-center gap-1.5 rounded-pill hover-up" 
+          (click)="markBulkAttendance('Rest Day')">
+          <i class="fa-solid fa-bed"></i> Rest Day
+        </button>
       </div>
     </div>
 
     <!-- Entries Select Row -->
     <div class="d-flex align-items-center mb-4">
       <span class="me-1 show-entery-text">Show</span>
-      <select class="form-control form-select show-entries-select" [(ngModel)]="showEntries" style="width: auto;">
-        <option [ngValue]="5">5</option>
-        <option [ngValue]="10">10</option>
-        <option [ngValue]="15">15</option>
-        <option [ngValue]="20">20</option>
-        <option [ngValue]="25">25</option>
-        <option [ngValue]="50">50</option>
-        <option [ngValue]="100">100</option>
+      <select class="form-control form-select show-entries-select" [(ngModel)]="showEntries" (change)="onShowEntriesChange()" style="width: auto;">
+        <option *ngFor="let size of tableSizes" [ngValue]="size">{{ size === 'all' ? 'All' : size }}</option>
       </select>
       <span class="ms-1 show-entery-text">entries</span>
     </div>
@@ -139,7 +158,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let record of attendanceRecords | paginate: { itemsPerPage: showEntries, currentPage: p }"
+            <tr *ngFor="let record of attendanceRecords | paginate: { itemsPerPage: showEntries != 'all' ? showEntries : totalRecords, currentPage: p, totalItems: totalRecords }"
               class="hover-bg-light transition">
               <td class="text-center">
                 <div class="custom-control custom-checkbox d-flex align-items-center justify-content-center">
@@ -202,6 +221,14 @@
                     <mat-icon class="text-info">info</mat-icon>
                     <span>Mark Leave</span>
                   </button>
+                  <button mat-menu-item (click)="markIndividualAttendance(record, 'Half Day')">
+                    <mat-icon class="text-warning">timelapse</mat-icon>
+                    <span>Mark Half Day</span>
+                  </button>
+                  <button mat-menu-item (click)="markIndividualAttendance(record, 'Rest Day')">
+                    <mat-icon class="text-primary">hotel</mat-icon>
+                    <span>Mark Rest Day</span>
+                  </button>
                 </mat-menu>
               </td>
             </tr>
@@ -216,7 +243,7 @@
 
       <!-- Card View for below lg -->
       <div class="lg:hidden space-y-4">
-        <div *ngFor="let record of attendanceRecords | paginate: { itemsPerPage: showEntries, currentPage: p }; index as i"
+        <div *ngFor="let record of attendanceRecords | paginate: { itemsPerPage: showEntries != 'all' ? showEntries : totalRecords, currentPage: p, totalItems: totalRecords }; index as i"
              class="bg-gray-50 border border-gray-200 rounded-lg p-4">
           <div class="flex justify-between items-center mb-2">
             <div class="d-flex align-items-center gap-2">
@@ -248,6 +275,14 @@
                 <mat-icon class="text-info">info</mat-icon>
                 <span>Mark Leave</span>
               </button>
+              <button mat-menu-item (click)="markIndividualAttendance(record, 'Half Day')">
+                <mat-icon class="text-warning">timelapse</mat-icon>
+                <span>Mark Half Day</span>
+              </button>
+              <button mat-menu-item (click)="markIndividualAttendance(record, 'Rest Day')">
+                <mat-icon class="text-primary">hotel</mat-icon>
+                <span>Mark Rest Day</span>
+              </button>
             </mat-menu>
           </div>
           <div class="mb-2"><strong>Employee:</strong> {{ record.empName }} ({{ record.empId }})</div>
@@ -275,9 +310,9 @@
 
       <div class="d-md-flex justify-content-between bottom-0 end-0 py-2 align-items-center" *ngIf="attendanceRecords.length > 0">
         <span class="showalltext">Showing
-          {{ showEntries * (p - 1) > 0 ? showEntries * (p - 1) + 1 : 1 }} to
-          {{ showEntries * p <= attendanceRecords.length ? showEntries * p : attendanceRecords.length }} of {{ attendanceRecords.length }} entries</span>
-        <pagination-controls (pageChange)="p = $event" class="my-pagination"></pagination-controls>
+          {{ showEntries === 'all' ? (totalRecords > 0 ? 1 : 0) : (showEntries * (p - 1) > 0 ? showEntries * (p - 1) + 1 : (totalRecords > 0 ? 1 : 0)) }} to
+          {{ showEntries === 'all' ? totalRecords : (showEntries * p <= totalRecords ? showEntries * p : totalRecords) }} of {{ totalRecords }} entries</span>
+        <pagination-controls (pageChange)="onPageChange($event)" class="my-pagination"></pagination-controls>
       </div>
     </div>
   </div>

@@ -87,7 +87,7 @@ export class EmployeeManagementComponent implements OnInit {
 
   employeeList: any[] = [];
 
-  table_heading = ['S.No.', 'Emp ID', 'Name', 'Contact', 'Department', 'Designation', 'Shift Type', 'Status', 'Action'];
+  table_heading = ['S.No.', 'Emp ID', 'Name', 'Contact', 'Department', 'Designation', 'Relay/General', 'Shift Type', 'Status', 'Action'];
 
   sitesList: any[] = [];
   departmentsList: any[] = [];
@@ -213,30 +213,51 @@ export class EmployeeManagementComponent implements OnInit {
       empType: ['', [Validators.required]],
       department: ['', [Validators.required]],
       designation: ['', [Validators.required]],
+      relay: ['', [Validators.required]],
 
       // Payroll
+      restDay: ['', [Validators.required]],
       salaryType: ['', [Validators.required]],
       basicSalary: ['', [Validators.required, Validators.min(0)]],
       isPfApplicable: ['No', [Validators.required]],
+      pfAmount: [''],
       pfNumber: [''],
       bankName: ['', [Validators.required]],
       accountNumber: ['', [Validators.required]],
       ifscCode: ['', [Validators.required]],
       isMessApplicable: ['No', [Validators.required]],
+      messDeductionAmount: [''],
       isOthersDeductionApplicable: ['No', [Validators.required]],
       othersDeductionAmount: [''],
     });
 
-    // Dynamic validator for PF Number based on PF Applicability
+    // Dynamic validator for PF Number & Amount based on PF Applicability
     this.employeeForm.get('isPfApplicable')?.valueChanges.subscribe(val => {
       const pfNumCtrl = this.employeeForm.get('pfNumber');
+      const pfAmtCtrl = this.employeeForm.get('pfAmount');
       if (val === 'Yes') {
         pfNumCtrl?.setValidators([Validators.required]);
+        pfAmtCtrl?.setValidators([Validators.required, Validators.min(0)]);
       } else {
         pfNumCtrl?.clearValidators();
+        pfAmtCtrl?.clearValidators();
         pfNumCtrl?.setValue('');
+        pfAmtCtrl?.setValue('');
       }
       pfNumCtrl?.updateValueAndValidity();
+      pfAmtCtrl?.updateValueAndValidity();
+    });
+
+    // Dynamic validator for Mess Deduction Amount based on Mess Deduction Applicability
+    this.employeeForm.get('isMessApplicable')?.valueChanges.subscribe(val => {
+      const amtCtrl = this.employeeForm.get('messDeductionAmount');
+      if (val === 'Yes') {
+        amtCtrl?.setValidators([Validators.required, Validators.min(0)]);
+      } else {
+        amtCtrl?.clearValidators();
+        amtCtrl?.setValue('');
+      }
+      amtCtrl?.updateValueAndValidity();
     });
 
     // Dynamic validator for Others Deduction Amount based on Others Deduction Applicability
@@ -568,7 +589,6 @@ export class EmployeeManagementComponent implements OnInit {
   openAddModal() {
     this.isEditMode = false;
     this.employeeForm.reset({
-      isPfApplicable: 'No',
       isMessApplicable: 'No',
       isOthersDeductionApplicable: 'No',
       othersDeductionAmount: ''
@@ -598,12 +618,15 @@ export class EmployeeManagementComponent implements OnInit {
             gender: emp.gender ? (emp.gender.charAt(0).toUpperCase() + emp.gender.slice(1)) : '',
             emergencyContact: emp.emergency_contact,
             joiningDate: emp.joining_date,
+            restDay: emp.rest_day || '',
             empType: emp.employee_type === 'permanent' ? 'Permanent' : (emp.employee_type === 'daily_wage' ? 'Daily Wage' : emp.employee_type),
             salaryType: emp.salary_type === 'monthly' ? 'Monthly' : (emp.salary_type === 'daily_wage' ? 'Daily Wage' : emp.salary_type),
             basicSalary: emp.salary_type === 'monthly' ? emp.basic_salary : emp.daily_wage,
             isPfApplicable: emp.pf_applicable == 1 ? 'Yes' : 'No',
+            pfAmount: emp.pf_amount || '',
             pfNumber: emp.pf_number,
             isMessApplicable: emp.mess_deduction_applicable == 1 ? 'Yes' : 'No',
+            messDeductionAmount: emp.mess_deduction || '',
             isOthersDeductionApplicable: emp.other_deduction_appliacble == 1 ? 'Yes' : 'No',
             othersDeductionAmount: emp.other_deduction,
             bankName: emp.bank_name,
@@ -684,12 +707,16 @@ export class EmployeeManagementComponent implements OnInit {
             designation: desigId,
             salaryType: salType,
             basicSalary: basicSal,
-            isPfApplicable: emp.pf_applicable == 1 ? 'Yes' : 'No',
+            relay: emp.relay || 'General',
+            restDay: emp.rest_day || '',
+            pfAmount: emp.pf_amount || '',
             pfNumber: emp.pf_number || '',
             bankName: emp.bank_name || '',
             accountNumber: emp.bank_account_number || '',
             ifscCode: emp.ifsc_code || '',
+            isPfApplicable: emp.pf_applicable == 1 ? 'Yes' : 'No',
             isMessApplicable: emp.mess_deduction_applicable == 1 ? 'Yes' : 'No',
+            messDeductionAmount: emp.mess_deduction || '',
             isOthersDeductionApplicable: emp.other_deduction_appliacble == 1 ? 'Yes' : 'No',
             othersDeductionAmount: emp.other_deduction || ''
           };
@@ -740,12 +767,16 @@ export class EmployeeManagementComponent implements OnInit {
         formData.append('daily_wage', empData.basicSalary ? empData.basicSalary.toString() : '0.00');
       }
 
+      formData.append('relay', empData.relay || '');
+      formData.append('rest_day', empData.restDay || '');
       formData.append('pf_applicable', empData.isPfApplicable === 'Yes' ? '1' : '0');
+      formData.append('pf_amount', empData.isPfApplicable === 'Yes' ? (empData.pfAmount ? empData.pfAmount.toString() : '0.00') : '0.00');
       formData.append('pf_number', empData.isPfApplicable === 'Yes' ? (empData.pfNumber || '') : '');
       formData.append('bank_name', empData.bankName || '');
       formData.append('bank_account_number', empData.accountNumber || '');
       formData.append('ifsc_code', empData.ifscCode || '');
       formData.append('mess_deduction_applicable', empData.isMessApplicable === 'Yes' ? '1' : '0');
+      formData.append('mess_deduction', empData.isMessApplicable === 'Yes' ? (empData.messDeductionAmount ? empData.messDeductionAmount.toString() : '0.00') : '0.00');
       formData.append('other_deduction_appliacble', empData.isOthersDeductionApplicable === 'Yes' ? '1' : '0');
       formData.append('other_deduction', empData.isOthersDeductionApplicable === 'Yes' ? (empData.othersDeductionAmount || '0.00') : '0.00');
 
