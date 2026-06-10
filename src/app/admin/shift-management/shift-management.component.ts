@@ -1,5 +1,5 @@
 
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { MatMenuModule } from '@angular/material/menu';
@@ -11,7 +11,8 @@ import { ShiftService } from 'src/app/core/services/shift.service';
 import { EmployeeManagementService } from 'src/app/core/services/employee-management.service';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { NgxPaginationModule } from 'ngx-pagination';
-
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -66,7 +67,8 @@ import { MatInputModule } from '@angular/material/input';
     ]),
   ]
 })
-export class ShiftManagementComponent implements OnInit {
+export class ShiftManagementComponent implements OnInit, OnDestroy {
+  private destroy$ = new Subject<void>();
   currentDate = new Date();
   activeWeekDays: any[] = [];
   isOverrideModalOpen = false;
@@ -133,7 +135,7 @@ export class ShiftManagementComponent implements OnInit {
     this.initBulkRotateForm();
     this.loadLiveEmployees();
 
-    this.shiftService.getShifts('all', 1, '').subscribe({
+    this.shiftService.getShifts('all', 1, '').pipe(takeUntil(this.destroy$)).subscribe({
       next: (res: any) => {
         if (res.status === 200 && res.data) {
           this.allShiftsList = res.data;
@@ -153,13 +155,18 @@ export class ShiftManagementComponent implements OnInit {
     this.rotationLogs = [];
   }
 
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
   loadWeeklyShiftRotations() {
     if (!this.activeWeekDays || this.activeWeekDays.length === 0) return;
 
     const fromDate = this.activeWeekDays[0].dateStr;
     const toDate = this.activeWeekDays[6].dateStr;
 
-    this.shiftService.getShiftRotation(fromDate, toDate, this.activeTabId).subscribe({
+    this.shiftService.getShiftRotation(fromDate, toDate, this.activeTabId).pipe(takeUntil(this.destroy$)).subscribe({
       next: (res: any) => {
         if (res.status === 200 && res.data) {
           this.weeklyShiftEmployees = res.data.map((emp: any) => ({
@@ -179,7 +186,7 @@ export class ShiftManagementComponent implements OnInit {
   }
 
   loadLiveEmployees() {
-    this.employeeManagementService.getEmployees('all', 1).subscribe({
+    this.employeeManagementService.getEmployees('all', 1).pipe(takeUntil(this.destroy$)).subscribe({
       next: (res: any) => {
         if (res.status === 200 && res.data && res.data.length > 0) {
           this.employees = res.data.map((emp: any) => ({
@@ -419,7 +426,7 @@ export class ShiftManagementComponent implements OnInit {
 
   fetchMonthlyDetails(empId: string, monthStr: string) {
     this.monthlyDetailsData = null;
-    this.shiftService.getMonthlyRosterDetails(empId, monthStr).subscribe({
+    this.shiftService.getMonthlyRosterDetails(empId, monthStr).pipe(takeUntil(this.destroy$)).subscribe({
       next: (res: any) => {
         if (res.status === 200 && res.data) {
           this.monthlyDetailsData = res.data;
@@ -800,7 +807,7 @@ export class ShiftManagementComponent implements OnInit {
     });
 
     // Update validators on type changes
-    this.overrideForm.get('type')?.valueChanges.subscribe(type => {
+    this.overrideForm.get('type')?.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(type => {
       const newShiftCtrl = this.overrideForm.get('newShift');
       const swapEmpCtrl = this.overrideForm.get('swapEmployeeId');
       const standbyEmpCtrl = this.overrideForm.get('standbyEmployeeId');
@@ -868,7 +875,7 @@ export class ShiftManagementComponent implements OnInit {
         return;
       }
 
-      this.shiftService.assignBulkShift({ employee_ids: [String(employeeId)], shift_code: String(targetShiftObj.id) }).subscribe({
+      this.shiftService.assignBulkShift({ employee_ids: [String(employeeId)], shift_code: String(targetShiftObj.id) }).pipe(takeUntil(this.destroy$)).subscribe({
         next: (res: any) => {
           this.rotationLogs.unshift({
             id: Math.floor(1000 + Math.random() * 9000).toString(),
@@ -910,9 +917,9 @@ export class ShiftManagementComponent implements OnInit {
         return;
       }
 
-      this.shiftService.assignBulkShift({ employee_ids: [String(employeeId)], shift_code: String(targetShift1.id) }).subscribe({
+      this.shiftService.assignBulkShift({ employee_ids: [String(employeeId)], shift_code: String(targetShift1.id) }).pipe(takeUntil(this.destroy$)).subscribe({
         next: () => {
-          this.shiftService.assignBulkShift({ employee_ids: [String(swapEmployeeId)], shift_code: String(targetShift2.id) }).subscribe({
+          this.shiftService.assignBulkShift({ employee_ids: [String(swapEmployeeId)], shift_code: String(targetShift2.id) }).pipe(takeUntil(this.destroy$)).subscribe({
             next: (res: any) => {
               this.rotationLogs.unshift({
                 id: Math.floor(1000 + Math.random() * 9000).toString(),
@@ -955,7 +962,7 @@ export class ShiftManagementComponent implements OnInit {
       }
 
       // 1. Assign original shift to standby employee
-      this.shiftService.assignBulkShift({ employee_ids: [String(standbyEmployeeId)], shift_code: String(originalShiftObj.id) }).subscribe({
+      this.shiftService.assignBulkShift({ employee_ids: [String(standbyEmployeeId)], shift_code: String(originalShiftObj.id) }).pipe(takeUntil(this.destroy$)).subscribe({
         next: () => {
           // 2. Assign off shift (if exists)
           const nextFn = () => {
@@ -973,7 +980,7 @@ export class ShiftManagementComponent implements OnInit {
           };
 
           if (offShiftObj) {
-            this.shiftService.assignBulkShift({ employee_ids: [String(employeeId)], shift_code: String(offShiftObj.id) }).subscribe({
+            this.shiftService.assignBulkShift({ employee_ids: [String(employeeId)], shift_code: String(offShiftObj.id) }).pipe(takeUntil(this.destroy$)).subscribe({
               next: nextFn,
               error: () => nextFn()
             });
@@ -1056,7 +1063,7 @@ export class ShiftManagementComponent implements OnInit {
       targetShift: ['', Validators.required]
     });
 
-    this.bulkRotateForm.get('employeeIds')?.valueChanges.subscribe(val => {
+    this.bulkRotateForm.get('employeeIds')?.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(val => {
       this.selectedEmployeeIdsForRotation = val || [];
       if (this.selectedEmployeeIdsForRotation.length === 0) {
         this.bulkRotateForm.get('targetShift')?.setValue('');
@@ -1107,7 +1114,7 @@ export class ShiftManagementComponent implements OnInit {
   }
 
   loadShiftGroups() {
-    this.shiftService.getShiftGroups().subscribe({
+    this.shiftService.getShiftGroups().pipe(takeUntil(this.destroy$)).subscribe({
       next: (res: any) => {
         if (res.status === 200 && res.data) {
           this.shiftGroups = res.data;
@@ -1166,7 +1173,7 @@ export class ShiftManagementComponent implements OnInit {
       target_shift_id: String(targetShiftObj.id)
     };
 
-    this.shiftService.rotateShiftBulk(payload).subscribe({
+    this.shiftService.rotateShiftBulk(payload).pipe(takeUntil(this.destroy$)).subscribe({
       next: (res: any) => {
         if (res.status === 200 || res.status === 201) {
           this.notificationService.show(res.message || `Successfully rotated shift for ${employeeIds.length} employee(s) to ${targetShift}.`, 'success', 3000);

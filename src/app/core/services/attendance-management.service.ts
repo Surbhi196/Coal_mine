@@ -1,8 +1,9 @@
-import { HttpClient, HttpHeaders } from "@angular/common/http";
+import { HttpClient, HttpHeaders, HttpParams } from "@angular/common/http";
 import { Injectable } from "@angular/core";
 import { ApiService } from "./api.service";
 import { JwtService } from "./jwt.service";
 import { BehaviorSubject, Observable } from "rxjs";
+
 @Injectable({
   providedIn: "root",
 })
@@ -10,336 +11,210 @@ export class AttendanceManagementService {
   private approvalStageMessage = new BehaviorSubject("");
   currentApprovalStageMessage = this.approvalStageMessage.asObservable();
   sessionId!: string;
+
   constructor(
     private http: HttpClient,
     private apiservice: ApiService,
     private jwtService: JwtService
   ) { }
- 
 
+  private getHeaders(): HttpHeaders {
+    const token = this.jwtService.getToken();
+    return new HttpHeaders({ Authorization: `Bearer ${token}` });
+  }
 
   Getbatchassign(body:any){
     const headers = { 'content-type': 'application/json' };
-    return this.apiservice.post("student-attendance/assigned-batches",body,headers);
+    return this.apiservice.post("student-attendance/assigned-batches", body, headers);
   }
 
-  // GetDailyAttendanceApi(body:any){
-  //   const headers = { 'content-type': 'application/json' };
-  //   console.log("student-attendance/get-students");
-  //   return this.apiservice.post("student-attendance/get-students",body,headers);
-  // }
-  GetDailyAttendanceBatchApi(body:any,batchId:any,tableSize:any,page:any,searchText:any){
+  GetDailyAttendanceBatchApi(body:any, batchId:any, tableSize:any, page:any, searchText:any){
     const headers = { 'content-type': 'application/json' };
-    var url='student-attendance/get-students?limit=' +tableSize+ "&page="+page;
-    if(batchId!='all'){
-      url=url+"&batchId="+batchId;
-    }else{
-      url=url;
+    let params = new HttpParams().set('limit', String(tableSize)).set('page', String(page));
+    
+    if (batchId && batchId !== 'all') {
+      params = params.set('batchId', String(batchId));
     }
-
-    if(searchText!=undefined){
-      if(searchText.length>0){
-        url=url+ "&search="+searchText;
-      }
+    if (searchText && searchText.trim().length > 0) {
+      params = params.set('search', searchText.trim());
     }
-    console.log(url);
-    return this.apiservice.post(url,body,headers);
+    
+    return this.apiservice.post(`student-attendance/get-students?${params.toString()}`, body, headers);
   }
 
-  Getstudentattendancepagination(tableSize:any, page:any,body:any,searchText:any,batchId:any) {
+  Getstudentattendancepagination(tableSize:any, page:any, body:any, searchText:any, batchId:any) {
     const headers = { 'content-type': 'application/json' };
-    var url='student-attendance/get-students?limit=' +tableSize+ "&page="+page;
-    if(searchText!=undefined){
-      if(searchText.length>0){
-        url=url+ "&search="+searchText;
-      }
+    let params = new HttpParams().set('limit', String(tableSize)).set('page', String(page));
+    
+    if (searchText && searchText.trim().length > 0) {
+      params = params.set('search', searchText.trim());
     }
-    if(batchId!=undefined){
-      if(batchId.length>0){
-        if(batchId!='all'){
-          url=url+"&batchId="+batchId;
-        }else{
-          url=url;
-        }
-      }
+    if (batchId && batchId !== 'all') {
+      params = params.set('batchId', String(batchId));
     }
-    console.log(url);
-    return this.apiservice.post(url,body,headers);
+    
+    return this.apiservice.post(`student-attendance/get-students?${params.toString()}`, body, headers);
   }
 
-
-  GetstudentattendanceSearch(tableSize:any, page:any,searchText:any ,body:any,batchId:any)  {
+  GetstudentattendanceSearch(tableSize:any, page:any, searchText:any, body:any, batchId:any)  {
     const headers = { 'content-type': 'application/json' };
-    var url='student-attendance/get-students?limit=' +tableSize+ "&page="+page;
-    if(searchText!=undefined){
-      if(searchText.length>0){
-        url=url+ "&search="+searchText;
-      }
+    let params = new HttpParams().set('limit', String(tableSize)).set('page', String(page));
+    
+    if (searchText && searchText.trim().length > 0) {
+      params = params.set('search', searchText.trim());
     }
-    if(batchId!=undefined){
-      if(batchId.length>0){
-        if(batchId!='all'){
-          url=url+"&batchId="+batchId;
-        }else{
-          url=url;
-        }
-      }
+    if (batchId && batchId !== 'all') {
+      params = params.set('batchId', String(batchId));
     }
 
-    console.log(url);
-    return this.apiservice.post(url ,body,headers);
- 
-    // return this.apiservice.post('student-attendance/get-students/?limit=' +tableSize+ "&page=" +page+ "&search="+searchText ,body,headers);
- 
+    return this.apiservice.post(`student-attendance/get-students?${params.toString()}`, body, headers);
   }
 
-  
   MarkAttedanceApi(body: any) {
     const headers = new HttpHeaders().set('Content-Type', 'application/json');
     return this.apiservice.post('student-attendance/mark-attendance', body, headers);
   }
 
   MarkAttendanceExcelApi(formData:any){
-    const headers = { 'content-type': 'application/json' };
-    return this.apiservice.postWithoutHeader("student-attendance/upload-attendance-file",formData);
+    return this.apiservice.postWithoutHeader("student-attendance/upload-attendance-file", formData);
   }
 
-
-  GetDailyAttendanceroleemployeeApi(body:any,role_id:any){
-    const headers = { 'content-type': 'application/json' };
-    var url;
-    if(role_id!='all'){
-      url="student-attendance/get-employees?roleId="+role_id
-    }else{
-      url="student-attendance/get-employees"
+  GetDailyAttendanceroleemployeeApi(body:any, role_id:any){
+    let url = "student-attendance/get-employees";
+    if (role_id && role_id !== 'all') {
+      url += `?roleId=${role_id}`;
     }
-    console.log(url);
-    return this.apiservice.postWithoutHeader(url,body);
+    return this.apiservice.postWithoutHeader(url, body);
   }
 
-
-
-  GetMonthlyAttendacneRoleId(body:any,role_id:any){
-    const headers = { 'content-type': 'application/json' };
-    console.log("student-attendance/get-employees?roleId="+role_id);
-    return this.apiservice.postWithoutHeader("student-attendance/get-students-monthly-attendance?roleId="+role_id,body);
+  GetMonthlyAttendacneRoleId(body:any, role_id:any){
+    return this.apiservice.postWithoutHeader(`student-attendance/get-students-monthly-attendance?roleId=${role_id}`, body);
   }
 
-
-  // GetMonthlyAttendanceBatchApi(body:any,batchId:any){
-
-  //   var url;
-  //   if(batchId!='all'){
-  //      url ="student-attendance/get-students-monthly-attendance?batchId="+batchId
-  //   }else{
-  //     url ="student-attendance/get-students-monthly-attendance"
-  //   }
- 
-  //   console.log(url);
-  //   // return this.apiservice.postWithoutHeader("student-attendance/get-employees-monthly-attendance="+role_id,body);
-  
-  //   const headers = { 'content-type': 'application/json' };
-
-  //   return this.apiservice.post(url,body,headers);
-  // }
-
-  GetMonthlyAttendanceBatchApi(body:any,batchId:any,tableSize:any,page:any,searchText:any){
+  GetMonthlyAttendanceBatchApi(body:any, batchId:any, tableSize:any, page:any, searchText:any){
     const headers = { 'content-type': 'application/json' };
-    var url='student-attendance/get-students-monthly-attendance?limit=' +tableSize+ "&page="+page;
-    if(batchId!='all'){
-      url=url+"&batchId="+batchId;
-    }else{
-      url=url;
+    let params = new HttpParams().set('limit', String(tableSize)).set('page', String(page));
+    
+    if (batchId && batchId !== 'all') {
+      params = params.set('batchId', String(batchId));
     }
-
-    if(searchText!=undefined){
-      if(searchText.length>0){
-        url=url+ "&search="+searchText;
-      }
+    if (searchText && searchText.trim().length > 0) {
+      params = params.set('search', searchText.trim());
     }
-    console.log(url);
-    return this.apiservice.post(url,body,headers);
+    
+    return this.apiservice.post(`student-attendance/get-students-monthly-attendance?${params.toString()}`, body, headers);
   }
 
-
-
-  
-  Getstudentattendancemonthlypagination(tableSize:any, page:any,body:any,searchText:any,batchId:any) {
+  Getstudentattendancemonthlypagination(tableSize:any, page:any, body:any, searchText:any, batchId:any) {
     const headers = { 'content-type': 'application/json' };
-    var url='student-attendance/get-students-monthly-attendance?limit=' +tableSize+ "&page="+page;
-    if(searchText!=undefined){
-      if(searchText.length>0){
-        url=url+ "&search="+searchText;
-      }
+    let params = new HttpParams().set('limit', String(tableSize)).set('page', String(page));
+    
+    if (searchText && searchText.trim().length > 0) {
+      params = params.set('search', searchText.trim());
     }
-    if(batchId!=undefined){
-      if(batchId.length>0){
-        if(batchId!='all'){
-          url=url+"&batchId="+batchId;
-        }else{
-          url=url;
-        }
-      }
+    if (batchId && batchId !== 'all') {
+      params = params.set('batchId', String(batchId));
     }
-    return this.apiservice.post(url,body,headers);
+    
+    return this.apiservice.post(`student-attendance/get-students-monthly-attendance?${params.toString()}`, body, headers);
   }
 
-
-  GetstudentattendancemonthlySearch(tableSize:any, page:any,searchText:any ,body:any,batchId:any)  {
+  GetstudentattendancemonthlySearch(tableSize:any, page:any, searchText:any, body:any, batchId:any)  {
     const headers = { 'content-type': 'application/json' };
-    var url='student-attendance/get-students-monthly-attendance?limit=' +tableSize+ "&page="+page;
-    if(searchText!=undefined){
-      if(searchText.length>0){
-        url=url+ "&search="+searchText;
-      }
+    let params = new HttpParams().set('limit', String(tableSize)).set('page', String(page));
+    
+    if (searchText && searchText.trim().length > 0) {
+      params = params.set('search', searchText.trim());
     }
-    if(batchId!=undefined){
-      if(batchId.length>0){
-        if(batchId!='all'){
-          url=url+"&batchId="+batchId;
-        }else{
-          url=url;
-        }
-      }
+    if (batchId && batchId !== 'all') {
+      params = params.set('batchId', String(batchId));
     }
-
-
-    return this.apiservice.post(url ,body,headers);
- 
-    // return this.apiservice.post('student-attendance/get-students/?limit=' +tableSize+ "&page=" +page+ "&search="+searchText ,body,headers);
- 
+    
+    return this.apiservice.post(`student-attendance/get-students-monthly-attendance?${params.toString()}`, body, headers);
   }
-
-
-
-
 
   MarkAttedanceEmployeeApi(body: any) {
     const headers = new HttpHeaders().set('Content-Type', 'application/json');
     return this.apiservice.post('student-attendance/mark-employeeAttendance', body, headers);
   }
 
-
   GetDailyAttendanceEmployeeApi(body:any){
     const headers = { 'content-type': 'application/json' };
-    console.log("student-attendance/get-employees");
-    return this.apiservice.post("student-attendance/get-employees",body,headers);
+    return this.apiservice.post("student-attendance/get-employees", body, headers);
   }
+
   GetRoles(){
-    const token = this.jwtService.getToken();
-    const headers = new HttpHeaders({
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    });
+    const headers = this.getHeaders().set('Content-Type', 'application/json');
     return this.apiservice.get("auth/getUserManagementRoles", headers);
   }
   
   MarkAttendanceemployeeExcelApi(formData:any){
-    const headers = { 'content-type': 'application/json' };
-    return this.apiservice.postWithoutHeader("student-attendance/mark-employeeAttendance-file",formData);
+    return this.apiservice.postWithoutHeader("student-attendance/mark-employeeAttendance-file", formData);
   }
 
-
-
-  
   GetemployeemonthlyAttendanceApi(body:any){
     const headers = { 'content-type': 'application/json' };
-    // console.log("student-attendance/get-students");
-    return this.apiservice.post("student-attendance/get-employees-monthly-attendance",body,headers);
+    return this.apiservice.post("student-attendance/get-employees-monthly-attendance", body, headers);
   }
+
   GetemployeeAttendancemonthlywiseApi(body:any){
     const headers = { 'content-type': 'application/json' };
-    // console.log("student-attendance/get-students");
-    return this.apiservice.post("student-attendance/get-employee-attendance-mont-wise",body,headers);
+    return this.apiservice.post("student-attendance/get-employee-attendance-mont-wise", body, headers);
   }
-
-
-
-
-  // student monthly attendance
 
   GetstudentmonthlyAttendanceApi(body:any){
     const headers = { 'content-type': 'application/json' };
-    return this.apiservice.post("student-attendance/get-students-monthly-attendance",body,headers);
+    return this.apiservice.post("student-attendance/get-students-monthly-attendance", body, headers);
   }
-
 
   GetStudentAttendancemonthlywiseApi(body:any){
     const headers = { 'content-type': 'application/json' };
-    return this.apiservice.post("student-attendance/get-students-attendance-mont-wise",body,headers);
+    return this.apiservice.post("student-attendance/get-students-attendance-mont-wise", body, headers);
   }
 
-
-
-  GetMonthlyAttendanceroleemployeeApi(body:any,role_id:any){
-    // const headers = { 'content-type': 'application/json' };
-    var url;
-    if(role_id!='all'){
-       url ="student-attendance/get-employees-monthly-attendance?roleId="+role_id
-    }else{
-      url ="student-attendance/get-employees-monthly-attendance"
+  GetMonthlyAttendanceroleemployeeApi(body:any, role_id:any){
+    let url = "student-attendance/get-employees-monthly-attendance";
+    if (role_id && role_id !== 'all') {
+      url += `?roleId=${role_id}`;
     }
- 
-    console.log(url);
-    // return this.apiservice.postWithoutHeader("student-attendance/get-employees-monthly-attendance="+role_id,body);
-    return this.apiservice.postWithoutHeader(url,body);
+    return this.apiservice.postWithoutHeader(url, body);
   }
 
   getAttendance(limit: any, page: any, search: string, fromDate: string, toDate: string, status: string): Observable<any> {
-    const token = this.jwtService.getToken();
-    const headers = new HttpHeaders({
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    });
+    const headers = this.getHeaders().set('Content-Type', 'application/json');
+    let params = new HttpParams().set('limit', String(limit)).set('page', String(page));
 
-    let url = `v1/admin/attendance?limit=${limit}&page=${page}`;
-    if (search) {
-      url += `&search=${search}`;
+    if (search && search.trim().length > 0) {
+      params = params.set('search', search.trim());
     }
     if (fromDate) {
-      url += `&from_date=${fromDate}`;
+      params = params.set('from_date', fromDate);
     }
     if (toDate) {
-      url += `&to_date=${toDate}`;
+      params = params.set('to_date', toDate);
     }
     if (status) {
-      url += `&status=${status.toLowerCase()}`;
+      params = params.set('status', status.toLowerCase());
     }
 
-    return this.apiservice.get(url, headers);
+    return this.apiservice.get(`v1/admin/attendance`, headers, params);
   }
 
   bulkUploadAttendance(file: File): Observable<any> {
-    const token = this.jwtService.getToken();
-    const headers = new HttpHeaders({
-      Authorization: `Bearer ${token}`
-    });
     const formData = new FormData();
     formData.append('file', file);
-    return this.apiservice.post('v1/admin/attendance/bulk-upload', formData, headers);
+    return this.apiservice.post('v1/admin/attendance/bulk-upload', formData, this.getHeaders());
   }
 
   getAttendanceById(id: string): Observable<any> {
-    const token = this.jwtService.getToken();
-    const headers = new HttpHeaders({
-      Authorization: `Bearer ${token}`
-    });
-    return this.apiservice.get(`v1/admin/attendance/${id}`, headers);
+    return this.apiservice.get(`v1/admin/attendance/${id}`, this.getHeaders());
   }
 
   updateAttendance(id: string, formData: FormData): Observable<any> {
-    const token = this.jwtService.getToken();
-    const headers = new HttpHeaders({
-      Authorization: `Bearer ${token}`
-    });
-    return this.apiservice.post(`v1/admin/attendance/${id}`, formData, headers);
+    return this.apiservice.post(`v1/admin/attendance/${id}`, formData, this.getHeaders());
   }
 
   updateBulkAttendanceStatus(formData: FormData): Observable<any> {
-    const token = this.jwtService.getToken();
-    const headers = new HttpHeaders({
-      Authorization: `Bearer ${token}`
-    });
-    return this.apiservice.post(`v1/admin/attendance/bulk-status`, formData, headers);
+    return this.apiservice.post(`v1/admin/attendance/bulk-status`, formData, this.getHeaders());
   }
 }

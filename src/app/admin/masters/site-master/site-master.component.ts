@@ -159,15 +159,10 @@ export class SiteMasterComponent implements OnInit {
     this.siteService.getSiteById(site.id).subscribe({
       next: (response: any) => {
         if (response.status === 200) {
-          const resSite = response.data;
-          this.selectedSite = {
-            ...resSite,
-            siteName: resSite.name,
-            is_active: resSite.status !== undefined ? resSite.status : resSite.is_active
-          };
+          this.selectedSite = response.data;
           this.viewSiteForm.patchValue({ 
-            siteName: resSite.name,
-            address: resSite.address
+            siteName: response.data.siteName,
+            address: response.data.address
           });
         }
       },
@@ -283,11 +278,7 @@ export class SiteMasterComponent implements OnInit {
       .subscribe({
         next: (response: any) => {
           if (response.status === 200) {
-            this.siteList = response.data.map((item: any) => ({
-              ...item,
-              siteName: item.name,
-              is_active: item.status !== undefined ? item.status : item.is_active
-            }));
+            this.siteList = response.data;
             this.totalRecords = response.pagination?.total || response.data.length;
           } else {
             console.error('Failed to fetch sites:', response.message);

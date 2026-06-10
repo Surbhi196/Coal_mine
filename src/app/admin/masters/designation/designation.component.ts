@@ -116,11 +116,7 @@ export class DesignationComponent implements OnInit {
     this.designationService.getDesignationById(designation.id).subscribe({
       next: (response: any) => {
         if (response.status === 200) {
-          const resDesignation = response.data;
-          this.selectedDesignation = {
-            ...resDesignation,
-            is_active: resDesignation.status !== undefined ? resDesignation.status : resDesignation.is_active
-          };
+          this.selectedDesignation = response.data;
         }
       },
       error: (error: any) => {
@@ -142,10 +138,7 @@ export class DesignationComponent implements OnInit {
       .subscribe({
         next: (response: any) => {
           if (response.status === 200) {
-            this.designationList = response.data.map((item: any) => ({
-              ...item,
-              is_active: item.status !== undefined ? item.status : item.is_active
-            }));
+            this.designationList = response.data;
             this.totalRecords = response.pagination?.total || response.data.length;
           } else {
             console.error('Failed to fetch designations:', response.message);

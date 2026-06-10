@@ -206,23 +206,19 @@ export class SalaryStructureComponent implements OnInit {
       next: (response: any) => {
         if (response.status === 200 && response.data) {
           const resSalary = response.data;
-          
-          let designationIdVal = resSalary.designation_id;
+          let designationIdVal = resSalary.designationId;
           if (!designationIdVal && resSalary.designation) {
             const foundDesignation = this.designations.find(d => d.name === resSalary.designation);
             designationIdVal = foundDesignation ? foundDesignation.id : resSalary.designation;
           }
 
           this.selectedSalary = {
-            id: resSalary.id,
+            ...resSalary,
             designationId: designationIdVal,
-            basicSalary: Number(resSalary.basic_salary),
-            shiftAllowance: Number(resSalary.shift_allowance),
+            basicSalary: Number(resSalary.basicSalary),
+            shiftAllowance: Number(resSalary.shiftAllowance),
             incentives: Number(resSalary.incentives || 0),
-            otherDeductions: Number(resSalary.other_deduction || 0),
-            isPfApplicable: resSalary.pf_applicable,
-            isMessDeduction: resSalary.mess_deduction_applicable,
-            is_active: resSalary.status !== undefined ? resSalary.status : resSalary.is_active
+            otherDeductions: Number(resSalary.otherDeductions || 0)
           };
 
           this.viewSalaryForm.patchValue({ 
@@ -247,8 +243,7 @@ export class SalaryStructureComponent implements OnInit {
       next: (response: any) => {
         if (response.status === 200 && response.data) {
           const salary = response.data;
-          
-          let designId = salary.designation_id || salary.designation;
+          let designId = salary.designationId || salary.designation;
           if (isNaN(Number(designId))) {
             const found = this.designations.find(d => d.name === designId);
             if (found) {
@@ -258,12 +253,12 @@ export class SalaryStructureComponent implements OnInit {
 
           this.updateSalaryForm.patchValue({
             designationId: designId,
-            basicSalary: Number(salary.basic_salary),
-            shiftAllowance: Number(salary.shift_allowance),
+            basicSalary: Number(salary.basicSalary),
+            shiftAllowance: Number(salary.shiftAllowance),
             incentives: Number(salary.incentives || 0),
-            otherDeductions: Number(salary.other_deduction || 0),
-            isPfApplicable: salary.pf_applicable,
-            isMessDeduction: salary.mess_deduction_applicable,
+            otherDeductions: Number(salary.otherDeductions || 0),
+            isPfApplicable: salary.isPfApplicable,
+            isMessDeduction: salary.isMessDeduction,
           });
         }
       },
@@ -415,21 +410,14 @@ export class SalaryStructureComponent implements OnInit {
       next: (response: any) => {
         if (response.status === 200) {
           this.salaryList = response.data.map((item: any) => {
-            let designationIdVal = item.designation_id;
+            let designationIdVal = item.designationId;
             if (!designationIdVal && item.designation) {
               const foundDesignation = this.designations.find(d => d.name === item.designation);
               designationIdVal = foundDesignation ? foundDesignation.id : item.designation;
             }
             return {
-              id: item.id,
-              designationId: designationIdVal,
-              basicSalary: item.basic_salary,
-              shiftAllowance: item.shift_allowance,
-              incentives: item.incentives,
-              otherDeductions: item.other_deduction,
-              isPfApplicable: item.pf_applicable,
-              isMessDeduction: item.mess_deduction_applicable,
-              is_active: item.status !== undefined ? item.status : item.is_active
+              ...item,
+              designationId: designationIdVal
             };
           });
           this.totalRecords = response.pagination?.total || response.data.length;

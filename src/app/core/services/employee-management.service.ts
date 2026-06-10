@@ -1,4 +1,4 @@
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService } from './api.service';
@@ -14,74 +14,53 @@ export class EmployeeManagementService {
     private jwtService: JwtService
   ) {}
 
-  createEmployee(requestbody: any): Observable<any> {
+  private getHeaders(): HttpHeaders {
     const token = this.jwtService.getToken();
-    let headers = new HttpHeaders({
+    return new HttpHeaders({
       Authorization: `Bearer ${token}`
     });
-    return this.apiservice.post(`v1/admin/employees`, requestbody, headers);
+  }
+
+  createEmployee(requestbody: any): Observable<any> {
+    return this.apiservice.post(`v1/admin/employees`, requestbody, this.getHeaders());
   }
 
   updateEmployee(id: any, requestbody: any): Observable<any> {
-    const token = this.jwtService.getToken();
-    let headers = new HttpHeaders({
-      Authorization: `Bearer ${token}`
-    });
-    return this.apiservice.post(`v1/admin/employees/${id}`, requestbody, headers);
+    return this.apiservice.post(`v1/admin/employees/${id}`, requestbody, this.getHeaders());
   }
 
   getEmployees(tableSize: any, page: any, search?: string, departmentId?: any, siteId?: any, designationId?: any): Observable<any> {
-    const token = this.jwtService.getToken();
-    const headers = new HttpHeaders({
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    });
+    let params = new HttpParams();
 
-    let url = '';
     if (tableSize !== 'all') {
-      url = `v1/admin/employees?limit=${tableSize}&page=${page}`;
-    } else {
-      url = `v1/admin/employees`;
+      params = params.set('limit', String(tableSize)).set('page', String(page));
     }
 
-    if (search && search.length > 0) {
-      url += (url.includes('?') ? '&' : '?') + `search=${search}`;
+    if (search && search.trim().length > 0) {
+      params = params.set('search', search.trim());
     }
     if (departmentId) {
-      url += (url.includes('?') ? '&' : '?') + `department_id=${departmentId}`;
+      params = params.set('department_id', String(departmentId));
     }
     if (siteId) {
-      url += (url.includes('?') ? '&' : '?') + `site_id=${siteId}`;
+      params = params.set('site_id', String(siteId));
     }
     if (designationId) {
-      url += (url.includes('?') ? '&' : '?') + `designation_id=${designationId}`;
+      params = params.set('designation_id', String(designationId));
     }
 
-    return this.apiservice.get(url, headers);
+    return this.apiservice.get(`v1/admin/employees`, this.getHeaders(), params);
   }
 
   getEmployeeById(id: any): Observable<any> {
-    const token = this.jwtService.getToken();
-    const headers = new HttpHeaders({
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    });
-    return this.apiservice.get(`v1/admin/employees/${id}`, headers);
+    return this.apiservice.get(`v1/admin/employees/${id}`, this.getHeaders());
   }
 
   updateEmployeeStatus(id: any, body: any): Observable<any> {
-    const token = this.jwtService.getToken();
-    let headers = new HttpHeaders({
-      Authorization: `Bearer ${token}`
-    });
-    return this.apiservice.post(`v1/admin/employees/${id}/status`, body, headers);
+    return this.apiservice.post(`v1/admin/employees/${id}/status`, body, this.getHeaders());
   }
 
   bulkUploadEmployees(requestbody: any): Observable<any> {
-    const token = this.jwtService.getToken();
-    let headers = new HttpHeaders({
-      Authorization: `Bearer ${token}`
-    });
-    return this.apiservice.post(`v1/admin/employees/bulk-upload`, requestbody, headers);
+    return this.apiservice.post(`v1/admin/employees/bulk-upload`, requestbody, this.getHeaders());
   }
 }

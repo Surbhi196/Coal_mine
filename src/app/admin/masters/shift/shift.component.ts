@@ -283,20 +283,12 @@ export class ShiftComponent implements OnInit {
     this.shiftService.getShiftById(shift.id).subscribe({
       next: (response: any) => {
         if (response.status === 200) {
-          const resShift = response.data;
-          this.selectedShift = {
-            ...resShift,
-            shiftName: resShift.name,
-            startTime: resShift.start_time,
-            endTime: resShift.end_time,
-            minWorkingHours: resShift.minimum_working_hours,
-            is_active: resShift.status !== undefined ? resShift.status : resShift.is_active
-          };
+          this.selectedShift = response.data;
           this.viewShiftForm.patchValue({ 
-            shiftName: resShift.name,
-            startTime: resShift.start_time,
-            endTime: resShift.end_time,
-            minWorkingHours: resShift.minimum_working_hours
+            shiftName: response.data.shiftName,
+            startTime: response.data.startTime,
+            endTime: response.data.endTime,
+            minWorkingHours: response.data.minWorkingHours
           });
         }
       },
@@ -311,15 +303,15 @@ export class ShiftComponent implements OnInit {
       next: (response: any) => {
         if (response.status === 200) {
           const shift = response.data;
-          this.originalStartTime = shift.start_time || '';
-          this.originalEndTime = shift.end_time || '';
+          this.originalStartTime = shift.startTime || '';
+          this.originalEndTime = shift.endTime || '';
           this.originalIsNightShift = shift.is_night_shift == 1;
           
           this.updateShiftForm.patchValue({
-            shiftName: shift.name,
-            startTime: shift.start_time,
-            endTime: shift.end_time,
-            minWorkingHours: shift.minimum_working_hours,
+            shiftName: shift.shiftName,
+            startTime: shift.startTime,
+            endTime: shift.endTime,
+            minWorkingHours: shift.minWorkingHours,
             isNightShift: shift.is_night_shift == 1
           }, { emitEvent: false });
           this.updateShiftForm.get('startTime')?.updateValueAndValidity();
@@ -433,15 +425,7 @@ export class ShiftComponent implements OnInit {
       .subscribe({
         next: (response: any) => {
           if (response.status === 200) {
-            this.shiftList = response.data.map((item: any) => ({
-              ...item,
-              shiftName: item.name,
-              startTime: item.start_time,
-              endTime: item.end_time,
-              minWorkingHours: item.minimum_working_hours,
-              is_night_shift: item.is_night_shift !== undefined ? item.is_night_shift : 0,
-              is_active: item.status !== undefined ? item.status : item.is_active
-            }));
+            this.shiftList = response.data;
             this.totalRecords = response.pagination?.total || response.data.length;
           } else {
             console.error('Failed to fetch shifts:', response.message);

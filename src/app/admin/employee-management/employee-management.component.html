@@ -250,8 +250,10 @@
             <input type="text" maxlength="10" class="form-control form-input-custom" formControlName="mobile"
               placeholder="10-digit number"
               [ngClass]="{'is-invalid': employeeForm.get('mobile')?.invalid && employeeForm.get('mobile')?.touched}" />
-            <div class="invalid-feedback" *ngIf="employeeForm.get('mobile')?.errors?.['required']">Mobile Number is required.</div>
-            <div class="invalid-feedback" *ngIf="employeeForm.get('mobile')?.errors?.['pattern']">Mobile Number must be exactly 10 digits.</div>
+            <div class="invalid-feedback" *ngIf="employeeForm.get('mobile')?.errors?.['required']">Mobile Number is
+              required.</div>
+            <div class="invalid-feedback" *ngIf="employeeForm.get('mobile')?.errors?.['pattern']">Mobile Number must be
+              exactly 10 digits.</div>
           </div>
           <div class="col-md-6">
             <label class="form-label form-lable-custom">Emergency Contact</label>
@@ -268,7 +270,8 @@
           </div>
         </div>
 
-        <h5 class="mb-3 text-primary border-bottom pb-2"><i class="fa-solid fa-briefcase me-2"></i>Employment Details</h5>
+        <h5 class="mb-3 text-primary border-bottom pb-2"><i class="fa-solid fa-briefcase me-2"></i>Employment Details
+        </h5>
         <div class="row g-3">
           <div class="col-md-6">
             <label class="form-label form-lable-custom">Joining Date *</label>
@@ -308,16 +311,20 @@
           <div class="col-md-12 mt-3">
             <label class="form-label form-lable-custom d-block mb-2">Workforce Group *</label>
             <div class="btn-group" role="group" aria-label="Workforce Group">
-              <input type="radio" class="btn-check" formControlName="relay" id="relay1" value="Relay 1" autocomplete="off">
+              <input type="radio" class="btn-check" formControlName="relay" id="relay1" value="Relay 1"
+                autocomplete="off">
               <label class="btn btn-outline-primary px-4" for="relay1">Relay 1</label>
-            
-              <input type="radio" class="btn-check" formControlName="relay" id="relay2" value="Relay 2" autocomplete="off">
+
+              <input type="radio" class="btn-check" formControlName="relay" id="relay2" value="Relay 2"
+                autocomplete="off">
               <label class="btn btn-outline-primary px-4" for="relay2">Relay 2</label>
-            
-              <input type="radio" class="btn-check" formControlName="relay" id="relay3" value="Relay 3" autocomplete="off">
+
+              <input type="radio" class="btn-check" formControlName="relay" id="relay3" value="Relay 3"
+                autocomplete="off">
               <label class="btn btn-outline-primary px-4" for="relay3">Relay 3</label>
-            
-              <input type="radio" class="btn-check" formControlName="relay" id="relayGeneral" value="General" autocomplete="off">
+
+              <input type="radio" class="btn-check" formControlName="relay" id="relayGeneral" value="General"
+                autocomplete="off">
               <label class="btn btn-outline-primary px-4" for="relayGeneral">General (Fixed Shift)</label>
             </div>
             <div class="text-danger mt-1 fs-8"
@@ -491,7 +498,6 @@
             </div>
           </div>
 
-<!-- 
           <div class="grid-section-title">Payroll Details</div>
           <div class="row g-3 mb-4">
             <div class="col-md-6 col-lg-4">
@@ -577,6 +583,7 @@
             </div>
           </div>
 
+          <!-- SECTION 4: Bank Details -->
           <div class="grid-section-title">Bank Details</div>
           <div class="row g-3">
             <div class="col-md-6 col-lg-4">
@@ -607,7 +614,6 @@
               </div>
             </div>
           </div>
--->
 
         </div>
       </div>

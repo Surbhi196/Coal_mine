@@ -5,13 +5,15 @@ import {
   transition,
   animate,
 } from '@angular/animations';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { NgxPaginationModule } from 'ngx-pagination';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { NotificationService } from 'src/app/core/services/notificationnew.service';
 import { SiteService } from 'src/app/core/services/site.service';
 import { HolidayService } from 'src/app/core/services/holiday.service';
@@ -51,7 +53,9 @@ import { HolidayService } from 'src/app/core/services/holiday.service';
     ]),
   ],
 })
-export class HolidayComponent implements OnInit {
+export class HolidayComponent implements OnInit, OnDestroy {
+  private destroy$ = new Subject<void>();
+  
   showreset: boolean = false; 
   searchbarform!: FormGroup;
   createHolidayForm!: FormGroup;
@@ -84,8 +88,6 @@ export class HolidayComponent implements OnInit {
   ];
 
   sites: any[] = [];
-
-
 
   constructor(
     private formBuilder: FormBuilder,
@@ -124,17 +126,24 @@ export class HolidayComponent implements OnInit {
     this.GetHolidayFun();
   }
 
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
   loadSites() {
-    this.siteService.getSites('all', 1, '').subscribe({
-      next: (response: any) => {
-        if (response.status === 200) {
-          this.sites = response.data;
+    this.siteService.getSites('all', 1, '')
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response: any) => {
+          if (response.status === 200) {
+            this.sites = response.data;
+          }
+        },
+        error: (error: any) => {
+          console.error('Error fetching sites:', error);
         }
-      },
-      error: (error: any) => {
-        console.error('Error fetching sites:', error);
-      }
-    });
+      });
   }
 
   onTableSizeChange(event: any): void {
@@ -184,24 +193,26 @@ export class HolidayComponent implements OnInit {
     this.currentHolidayId = holiday.id;
     this.selectedHoliday = null;
 
-    this.holidayService.getHolidayById(holiday.id).subscribe({
-      next: (response: any) => {
-        if (response.status === 200 && response.data) {
-          const resHoliday = response.data;
-          this.selectedHoliday = {
-            id: resHoliday.id,
-            holidayName: resHoliday.holiday_name,
-            date: resHoliday.holiday_date,
-            site: resHoliday.site,
-            holidayType: resHoliday.holiday_type,
-            is_active: resHoliday.status !== undefined ? resHoliday.status : resHoliday.is_active
-          };
+    this.holidayService.getHolidayById(holiday.id)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response: any) => {
+          if (response.status === 200 && response.data) {
+            const resHoliday = response.data;
+            this.selectedHoliday = {
+              id: resHoliday.id,
+              holidayName: resHoliday.holiday_name,
+              date: resHoliday.holiday_date,
+              site: resHoliday.site,
+              holidayType: resHoliday.holiday_type,
+              is_active: resHoliday.status !== undefined ? resHoliday.status : resHoliday.is_active
+            };
+          }
+        },
+        error: (error: any) => {
+          console.error('Error fetching holiday details:', error);
         }
-      },
-      error: (error: any) => {
-        console.error('Error fetching holiday details:', error);
-      }
-    });
+      });
   }
 
   formatDateForInput(dateStr: string): string {
@@ -215,29 +226,31 @@ export class HolidayComponent implements OnInit {
   }
 
   GetupdateHolidaybyid(holidayId: any) {
-    this.holidayService.getHolidayById(holidayId).subscribe({
-      next: (response: any) => {
-        if (response.status === 200 && response.data) {
-          const holiday = response.data;
-          
-          let siteIdVal = holiday.site;
-          const foundSite = this.sites.find(s => s.name === holiday.site);
-          if (foundSite) {
-            siteIdVal = foundSite.id;
-          }
+    this.holidayService.getHolidayById(holidayId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response: any) => {
+          if (response.status === 200 && response.data) {
+            const holiday = response.data;
+            
+            let siteIdVal = holiday.site;
+            const foundSite = this.sites.find(s => s.name === holiday.site);
+            if (foundSite) {
+              siteIdVal = foundSite.id;
+            }
 
-          this.updateHolidayForm.patchValue({
-            holidayName: holiday.holiday_name,
-            date: this.formatDateForInput(holiday.holiday_date),
-            site: siteIdVal,
-            holidayType: holiday.holiday_type,
-          });
+            this.updateHolidayForm.patchValue({
+              holidayName: holiday.holiday_name,
+              date: this.formatDateForInput(holiday.holiday_date),
+              site: siteIdVal,
+              holidayType: holiday.holiday_type,
+            });
+          }
+        },
+        error: (error: any) => {
+          console.error('Error fetching holiday for edit:', error);
         }
-      },
-      error: (error: any) => {
-        console.error('Error fetching holiday for edit:', error);
-      }
-    });
+      });
   }
 
   createHoliday() {
@@ -250,51 +263,31 @@ export class HolidayComponent implements OnInit {
       formData.append('holiday_date', holidayData.date);
       formData.append('holiday_type', holidayData.holidayType);
 
-      this.holidayService.createHoliday(formData).subscribe({
-        next: (response: any) => {
-          if (response.status === 200 || response.status === 201) {
-            this.closeModal();
-            this.notificationService.show(
-              response.message || 'Holiday created successfully',
-              'success',
-              3000,
-            );
-            
-            this.GetHolidayFun();
-          } else {
-            this.notificationService.show(
-              response.message || 'Something went wrong',
-              'error',
-              3000,
-            );
-          }
-        },
-        error: (error: any) => {
-          console.error('Create Holiday failed:', error);
-          let errorMsg = 'Something went wrong';
-          if (error.error) {
-            if (error.error.errors) {
-              const errorKeys = Object.keys(error.error.errors);
-              if (errorKeys.length > 0) {
-                const firstKey = errorKeys[0];
-                const messages = error.error.errors[firstKey];
-                if (Array.isArray(messages) && messages.length > 0) {
-                  errorMsg = messages[0];
-                } else if (typeof messages === 'string') {
-                  errorMsg = messages;
-                }
-              }
-            } else if (error.error.message) {
-              errorMsg = error.error.message;
+      this.holidayService.createHoliday(formData)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: (response: any) => {
+            if (response.status === 200 || response.status === 201) {
+              this.closeModal();
+              this.notificationService.show(
+                response.message || 'Holiday created successfully',
+                'success',
+                3000,
+              );
+              this.GetHolidayFun();
+            } else {
+              this.notificationService.show(
+                response.message || 'Something went wrong',
+                'error',
+                3000,
+              );
             }
-          } else if (error.message) {
-            errorMsg = error.message;
-          } else if (typeof error === 'string') {
-            errorMsg = error.includes('Message:') ? error.split('Message:')[1].trim() : error;
+          },
+          error: (error: any) => {
+            console.error('Create Holiday failed:', error);
+            this.handleApiError(error);
           }
-          this.notificationService.show(errorMsg, 'error', 3000);
-        }
-      });
+        });
     } else {
       this.createHolidayForm.markAllAsTouched();
     }
@@ -311,51 +304,31 @@ export class HolidayComponent implements OnInit {
       formData.append('holiday_date', holidayData.date);
       formData.append('holiday_type', holidayData.holidayType);
 
-      this.holidayService.updateHoliday(this.currentHolidayId, formData).subscribe({
-        next: (response: any) => {
-          if (response.status === 200 || response.status === 201) {
-            this.closeModal();
-            this.notificationService.show(
-              response.message || 'Holiday updated successfully',
-              'success',
-              3000,
-            );
-            
-            this.GetHolidayFun();
-          } else {
-            this.notificationService.show(
-              response.message || 'Something went wrong',
-              'error',
-              3000,
-            );
-          }
-        },
-        error: (error: any) => {
-          console.error('Update Holiday failed:', error);
-          let errorMsg = 'Something went wrong';
-          if (error.error) {
-            if (error.error.errors) {
-              const errorKeys = Object.keys(error.error.errors);
-              if (errorKeys.length > 0) {
-                const firstKey = errorKeys[0];
-                const messages = error.error.errors[firstKey];
-                if (Array.isArray(messages) && messages.length > 0) {
-                  errorMsg = messages[0];
-                } else if (typeof messages === 'string') {
-                  errorMsg = messages;
-                }
-              }
-            } else if (error.error.message) {
-              errorMsg = error.error.message;
+      this.holidayService.updateHoliday(this.currentHolidayId, formData)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: (response: any) => {
+            if (response.status === 200 || response.status === 201) {
+              this.closeModal();
+              this.notificationService.show(
+                response.message || 'Holiday updated successfully',
+                'success',
+                3000,
+              );
+              this.GetHolidayFun();
+            } else {
+              this.notificationService.show(
+                response.message || 'Something went wrong',
+                'error',
+                3000,
+              );
             }
-          } else if (error.message) {
-            errorMsg = error.message;
-          } else if (typeof error === 'string') {
-            errorMsg = error.includes('Message:') ? error.split('Message:')[1].trim() : error;
+          },
+          error: (error: any) => {
+            console.error('Update Holiday failed:', error);
+            this.handleApiError(error);
           }
-          this.notificationService.show(errorMsg, 'error', 3000);
-        }
-      });
+        });
     } else {
       this.updateHolidayForm.markAllAsTouched();
     }
@@ -364,28 +337,30 @@ export class HolidayComponent implements OnInit {
   GetHolidayFun() {
     const searchText = this.searchbarform.get('searchbar')?.value || '';
 
-    this.holidayService.getHolidays(this.tableSize, this.page, searchText).subscribe({
-      next: (response: any) => {
-        if (response.status === 200) {
-          this.holidayList = response.data.map((item: any) => {
-            return {
-              id: item.id,
-              holidayName: item.holiday_name,
-              date: item.holiday_date,
-              site: item.site,
-              holidayType: item.holiday_type,
-              is_active: item.status !== undefined ? item.status : item.is_active
-            };
-          });
-          this.totalRecords = response.pagination?.total || response.data.length;
-        } else {
-          console.error('Failed to fetch holidays:', response.message);
+    this.holidayService.getHolidays(this.tableSize, this.page, searchText)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response: any) => {
+          if (response.status === 200) {
+            this.holidayList = response.data.map((item: any) => {
+              return {
+                id: item.id,
+                holidayName: item.holiday_name,
+                date: item.holiday_date,
+                site: item.site,
+                holidayType: item.holiday_type,
+                is_active: item.status !== undefined ? item.status : item.is_active
+              };
+            });
+            this.totalRecords = response.pagination?.total || response.data.length;
+          } else {
+            console.error('Failed to fetch holidays:', response.message);
+          }
+        },
+        error: (error: any) => {
+          console.error('Error fetching holidays:', error);
         }
-      },
-      error: (error: any) => {
-        console.error('Error fetching holidays:', error);
-      }
-    });
+      });
   }
 
   async Status(id: string, status: any) {
@@ -393,33 +368,59 @@ export class HolidayComponent implements OnInit {
     formData.append('_method', 'PATCH');
     formData.append('status', status.toString());
 
-    this.holidayService.updateHolidayStatus(id, formData).subscribe({
-      next: (response: any) => {
-        if (response.status === 200 || response.status === 201) {
-          this.notificationService.show(
-            response.message || `Holiday status updated successfully`,
-            'success',
-            3000
-          );
-          this.GetHolidayFun();
-        } else {
-          this.notificationService.show(
-            response.message || 'Something went wrong',
-            'error',
-            3000
-          );
+    this.holidayService.updateHolidayStatus(id, formData)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response: any) => {
+          if (response.status === 200 || response.status === 201) {
+            this.notificationService.show(
+              response.message || `Holiday status updated successfully`,
+              'success',
+              3000
+            );
+            this.GetHolidayFun();
+          } else {
+            this.notificationService.show(
+              response.message || 'Something went wrong',
+              'error',
+              3000
+            );
+          }
+        },
+        error: (error: any) => {
+          console.error('Error updating status:', error);
+          this.handleApiError(error);
         }
-      },
-      error: (error: any) => {
-        console.error('Error updating status:', error);
-        let errorMsg = 'Something went wrong';
-        if (error.error && error.error.message) {
-          errorMsg = error.error.message;
-        } else if (error.message) {
-          errorMsg = error.message;
+      });
+  }
+
+  private handleApiError(error: any, defaultMessage: string = 'Something went wrong'): void {
+    let errorMsg = defaultMessage;
+    
+    if (error instanceof Error) {
+      errorMsg = error.message;
+    } else if (error?.error) {
+      if (error.error.errors) {
+        const errorKeys = Object.keys(error.error.errors);
+        if (errorKeys.length > 0) {
+          const firstKey = errorKeys[0];
+          const messages = error.error.errors[firstKey];
+          if (Array.isArray(messages) && messages.length > 0) {
+            errorMsg = messages[0];
+          } else if (typeof messages === 'string') {
+            errorMsg = messages;
+          }
         }
-        this.notificationService.show(errorMsg, 'error', 3000);
+      } else if (error.error.message) {
+        errorMsg = error.error.message;
       }
-    });
+    } else if (error?.message) {
+      errorMsg = error.message;
+    } else if (typeof error === 'string') {
+      errorMsg = error.includes('Message:') ? error.split('Message:')[1].trim() : error;
+    }
+    
+    this.notificationService.show(errorMsg, 'error', 3000);
   }
 }
+

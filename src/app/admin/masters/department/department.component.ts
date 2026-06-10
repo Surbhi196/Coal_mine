@@ -174,12 +174,8 @@ export class DepartmentComponent {
     this.departmentService.getDepartmentById(user.id).subscribe({
       next: (response: any) => {
         if (response.status === 200) {
-          const dept = response.data;
-          this.selectedDepartment = {
-            ...dept,
-            is_active: dept.status !== undefined ? dept.status : dept.is_active
-          };
-          this.viewDepartmentForm.patchValue({ Name: dept.name });
+          this.selectedDepartment = response.data;
+          this.viewDepartmentForm.patchValue({ Name: response.data.name });
         }
       },
       error: (error: any) => {
@@ -308,10 +304,7 @@ export class DepartmentComponent {
       .subscribe({
         next: (response: any) => {
           if (response.status === 200) {
-            this.departmentList = response.data.map((item: any) => ({
-              ...item,
-              is_active: item.status !== undefined ? item.status : item.is_active
-            }));
+            this.departmentList = response.data;
             this.totalRecords = response.pagination?.total || response.data.length;
           } else {
             console.error('Failed to fetch departments:', response.message);

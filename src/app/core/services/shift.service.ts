@@ -1,4 +1,4 @@
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable, of, throwError } from 'rxjs';
 import { map, switchMap } from 'rxjs/operators';
@@ -10,150 +10,122 @@ import { JwtService } from './jwt.service';
 })
 export class ShiftService {
   constructor(
-    private http: HttpClient,
     private apiservice: ApiService,
     private jwtService: JwtService
   ) { }
 
-  createShift(requestbody: any): Observable<any> {
+  private getHeaders(): HttpHeaders {
     const token = this.jwtService.getToken();
-    let headers = new HttpHeaders({
-      Authorization: `Bearer ${token}`
-    });
-    if (!(requestbody instanceof FormData)) {
-      headers = headers.set('Content-Type', 'application/json');
-    }
-    return this.apiservice.post(`v1/admin/shift`, requestbody, headers);
+    return new HttpHeaders({ Authorization: `Bearer ${token}` });
+  }
+
+  createShift(requestbody: any): Observable<any> {
+    return this.apiservice.post(`v1/admin/shift`, requestbody, this.getHeaders());
   }
 
   getShifts(tableSize: any, page: any, search: any): Observable<any> {
-    const token = this.jwtService.getToken();
-    const headers = new HttpHeaders({
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    });
-
-    let url = '';
+    let params = new HttpParams();
+    
     if (tableSize !== 'all') {
-      url = `v1/admin/shift?limit=${tableSize}&page=${page}`;
-    } else {
-      url = `v1/admin/shift`;
+      params = params.set('limit', String(tableSize)).set('page', String(page));
     }
 
-    if (search && search.length > 0) {
-      url += (url.includes('?') ? '&' : '?') + `search=${search}`;
+    if (search && search.trim().length > 0) {
+      params = params.set('search', search.trim());
     }
 
-    return this.apiservice.get(url, headers);
+    return this.apiservice.get(`v1/admin/shift`, this.getHeaders(), params).pipe(
+      map((response: any) => {
+        if (response.status === 200 && response.data) {
+          response.data = response.data.map((item: any) => ({
+            ...item,
+            shiftName: item.name,
+            startTime: item.start_time,
+            endTime: item.end_time,
+            minWorkingHours: item.minimum_working_hours,
+            is_night_shift: item.is_night_shift !== undefined ? item.is_night_shift : 0,
+            is_active: item.status !== undefined ? item.status : item.is_active
+          }));
+        }
+        return response;
+      })
+    );
   }
 
   getShiftRotation(fromDate: string, toDate: string, shiftId?: string | number): Observable<any> {
-    const token = this.jwtService.getToken();
-    const headers = new HttpHeaders({
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    });
-    let url = `v1/admin/shift-rotation?from_date=${fromDate}&to_date=${toDate}`;
+    let params = new HttpParams()
+      .set('from_date', fromDate)
+      .set('to_date', toDate);
+
     if (shiftId) {
-      url += `&shift_id=${shiftId}`;
+      params = params.set('shift_id', String(shiftId));
     }
-    return this.apiservice.get(url, headers);
+    return this.apiservice.get(`v1/admin/shift-rotation`, this.getHeaders(), params);
   }
 
   getShiftById(id: any): Observable<any> {
-    const token = this.jwtService.getToken();
-    const headers = new HttpHeaders({
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    });
-    return this.apiservice.get(`v1/admin/shift/${id}`, headers);
+    return this.apiservice.get(`v1/admin/shift/${id}`, this.getHeaders()).pipe(
+      map((response: any) => {
+        if (response.status === 200 && response.data) {
+          response.data = {
+            ...response.data,
+            shiftName: response.data.name,
+            startTime: response.data.start_time,
+            endTime: response.data.end_time,
+            minWorkingHours: response.data.minimum_working_hours,
+            is_active: response.data.status !== undefined ? response.data.status : response.data.is_active
+          };
+        }
+        return response;
+      })
+    );
   }
 
   getMonthlyRosterDetails(employeeId: string, monthStr: string): Observable<any> {
-    const token = this.jwtService.getToken();
-    const headers = new HttpHeaders({
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    });
-    let url = `v1/admin/shift-rotation/${employeeId}`;
+    let params = new HttpParams();
     if (monthStr) {
-      url += `?month=${monthStr}`;
+      params = params.set('month', monthStr);
     }
-    return this.apiservice.get(url, headers);
+    return this.apiservice.get(`v1/admin/shift-rotation/${employeeId}`, this.getHeaders(), params);
   }
 
   updateShift(id: any, body: any): Observable<any> {
-    const token = this.jwtService.getToken();
-    let headers = new HttpHeaders({
-      Authorization: `Bearer ${token}`
-    });
-    if (!(body instanceof FormData)) {
-      headers = headers.set('Content-Type', 'application/json');
-    }
-    return this.apiservice.post(`v1/admin/shift/${id}`, body, headers);
+    return this.apiservice.post(`v1/admin/shift/${id}`, body, this.getHeaders());
   }
 
   updateShiftStatus(id: any, body: any): Observable<any> {
-    const token = this.jwtService.getToken();
-    let headers = new HttpHeaders({
-      Authorization: `Bearer ${token}`
-    });
-    if (!(body instanceof FormData)) {
-      headers = headers.set('Content-Type', 'application/json');
-    }
-    return this.apiservice.post(`v1/admin/shift/${id}/status`, body, headers);
+    return this.apiservice.post(`v1/admin/shift/${id}/status`, body, this.getHeaders());
   }
 
   assignBulkShift(payload: { employee_ids: string[], shift_code: string }): Observable<any> {
-    const token = this.jwtService.getToken();
-    const headers = new HttpHeaders({
-      Authorization: `Bearer ${token}`
-    });
-
     const formData = new FormData();
     payload.employee_ids.forEach((id: any) => {
       formData.append('employee_ids[]', String(id));
     });
     formData.append('shift_id', String(payload.shift_code));
 
-    return this.apiservice.post('v1/admin/employee-shift-assignments', formData, headers);
+    return this.apiservice.post('v1/admin/employee-shift-assignments', formData, this.getHeaders());
   }
 
   rotateShiftBulk(payload: { employee_ids: string[], target_shift_id: string }): Observable<any> {
-    const token = this.jwtService.getToken();
-    const headers = new HttpHeaders({
-      Authorization: `Bearer ${token}`
-    });
-
     const formData = new FormData();
     payload.employee_ids.forEach((id: any) => {
       formData.append('employee_ids[]', String(id));
     });
     formData.append('target_shift_id', String(payload.target_shift_id));
 
-    return this.apiservice.post('v1/admin/shift-rotation', formData, headers);
+    return this.apiservice.post('v1/admin/shift-rotation', formData, this.getHeaders());
   }
 
   bulkUploadShiftAssignments(file: File): Observable<any> {
-    const token = this.jwtService.getToken();
-    const headers = new HttpHeaders({
-      Authorization: `Bearer ${token}`
-    });
-
     const formData = new FormData();
     formData.append('file', file, file.name);
 
-    return this.apiservice.post('v1/admin/employee-shift-assignments/bulk-upload', formData, headers);
+    return this.apiservice.post('v1/admin/employee-shift-assignments/bulk-upload', formData, this.getHeaders());
   }
 
   getShiftGroups(): Observable<any> {
-    const token = this.jwtService.getToken();
-    const headers = new HttpHeaders({
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    });
-
-    return this.apiservice.get('v1/admin/employees', headers).pipe(
+    return this.apiservice.get('v1/admin/employees', this.getHeaders()).pipe(
       map((res: any) => {
         if (res.status === 200 && res.data) {
           const groups: { [shiftCode: string]: string[] } = {
@@ -181,11 +153,6 @@ export class ShiftService {
 
   rotateBulkGroup(payload: { source_group: string, target_shift: string }): Observable<any> {
     const { source_group, target_shift } = payload;
-    const token = this.jwtService.getToken();
-    const headers = new HttpHeaders({
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    });
 
     // 1. Fetch shifts to find the target shift ID
     return this.getShifts('all', 1, '').pipe(
@@ -201,7 +168,7 @@ export class ShiftService {
         const targetShiftId = targetShiftObj.id;
 
         // 2. Fetch employees to find who is currently on the source_group shift
-        return this.apiservice.get('v1/admin/employees', headers).pipe(
+        return this.apiservice.get('v1/admin/employees', this.getHeaders()).pipe(
           switchMap((employeesRes: any) => {
             const employees = employeesRes.data || [];
             const empIds = employees

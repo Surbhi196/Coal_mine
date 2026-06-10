@@ -69,8 +69,14 @@
               </td>
               <td>
                 <div class="d-flex align-items-center gap-2">
+                  <button class="btn-action edit-btn text-primary" (click)="openEditProductModal(item)" data-tooltip="Edit Product">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                  </button>
                   <button class="btn-action view-btn" (click)="openViewProductModal(item)" data-tooltip="View Details">
                     <i class="fa-solid fa-eye"></i>
+                  </button>
+                  <button class="btn-action view-btn" (click)="openHistoryModal(item)" data-tooltip="View History">
+                    <i class="fa-solid fa-clock-rotate-left"></i>
                   </button>
                 </div>
               </td>
@@ -94,8 +100,14 @@
             </div>
             <div>
               <div class="d-flex align-items-center gap-2">
+                <button class="btn-action edit-btn text-primary" (click)="openEditProductModal(item)" data-tooltip="Edit Product">
+                  <i class="fa-solid fa-pen-to-square"></i>
+                </button>
                 <button class="btn-action view-btn" (click)="openViewProductModal(item)" data-tooltip="View Details">
                   <i class="fa-solid fa-eye"></i>
+                </button>
+                <button class="btn-action view-btn" (click)="openHistoryModal(item)" data-tooltip="View History">
+                  <i class="fa-solid fa-clock-rotate-left"></i>
                 </button>
               </div>
             </div>
@@ -140,7 +152,7 @@
     <form [formGroup]="createInventoryForm">
       <div class="card border-0 shadow-sm">
         <div class="card-header bg-white d-flex justify-content-between align-items-center">
-          <h5 class="modal-title pt-1 mb-0 tt-color">Add New Product to Inventory</h5>
+          <h5 class="modal-title pt-1 mb-0 tt-color">{{ isEditMode ? 'Edit Product in Inventory' : 'Add New Product to Inventory' }}</h5>
           <button class="cross-btn-icon main-btn bg-transparent border-0 pb-0 pt-1" type="button" (click)="closeModal()">
             <i class="fa-solid fa-xmark"></i>
           </button>
@@ -188,7 +200,7 @@
         </div>
         <div class="modal-footer text-end">
           <button class="btn btn-secondary main-btnfs px-4 py-2 me-4 text-gray-200" type="button" (click)="closeModal()">Close</button>
-          <button class="btn btn-custom-primary px-4 py-2" type="button" (click)="createInventoryItem()">Save</button>
+          <button class="btn btn-custom-primary px-4 py-2" type="button" (click)="createInventoryItem()">{{ isEditMode ? 'Update' : 'Save' }}</button>
         </div>
       </div>
     </form>
@@ -456,5 +468,70 @@
         </button>
       </div>
     </form>
+  </div>
+</div>
+
+<!-- 6. History Modal -->
+<div *ngIf="historyModalOpen" class="your-animation-class modal-container premium-detail-modal" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+  <div class="modal-contenttop" [@fadeIn] style="max-width: 800px; width: 94%;">
+    <div class="card border-0 shadow-lg">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <div>
+          <h5 class="modal-title pt-1 mb-0">Audit & History Logs</h5>
+          <p class="modal-subtitle">Tracking records for: {{selectedItem?.productName}}</p>
+        </div>
+        <button class="cross-btn-icon border-0 p-0" type="button" (click)="closeModal()">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      
+      <div class="card-body p-4 mb-0" *ngIf="selectedItem">
+        <h5 class="fw-bold text-dark mb-3" style="font-family: 'Montserrat', sans-serif; font-size: 16px; letter-spacing: -0.3px;">
+          <i class="fa-solid fa-clock-rotate-left text-primary me-2"></i>Transaction Ledger
+        </h5>
+        
+        <div class="table-responsive border rounded-3 bg-white" style="max-height: 350px; overflow-y: auto;">
+          <table class="table table-bordered align-middle mb-0 custom-table">
+            <thead class="table-light sticky-top">
+              <tr>
+                <th class="ps-3 text-center" style="width: 60px;">Sr No.</th>
+                <th>Action</th>
+                <th class="text-center">Quantity</th>
+                <th>Done By</th>
+                <th>Remarks</th>
+                <th class="text-center" style="width: 140px;">Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let log of getProductHistory(selectedItem.productName); index as idx" class="hover-bg-light transition">
+                <td class="text-center fw-medium text-muted fs-7">{{ idx + 1 }}</td>
+                <td>
+                  <span class="badge" 
+                        [ngClass]="{'bg-success': log.action === 'Added Stock', 'bg-warning text-dark': log.action === 'Assigned'}">
+                    {{ log.action }}
+                  </span>
+                </td>
+                <td class="text-center fw-bold fs-7" [ngClass]="{'text-success': log.action === 'Added Stock', 'text-danger': log.action === 'Assigned'}">
+                  {{ log.action === 'Added Stock' ? '+' : '-' }}{{ log.quantity }}
+                </td>
+                <td class="text-muted fs-7">{{ log.doneBy }}</td>
+                <td class="text-muted fs-7">{{ log.remarks }}</td>
+                <td class="text-center fw-medium text-muted fs-7">{{ log.date | date:'dd MMM yyyy' }}</td>
+              </tr>
+              <tr *ngIf="getProductHistory(selectedItem.productName).length === 0">
+                <td colspan="6" class="text-center py-4 text-muted fs-7">
+                  <i class="fa-solid fa-clock-rotate-left d-block fs-3 mb-2 text-light"></i>
+                  No history logs found for this product.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      
+      <div class="modal-footer text-end bg-light border-top">
+        <button class="btn btn-premium-close px-4 py-2" type="button" (click)="closeModal()">Close</button>
+      </div>
+    </div>
   </div>
 </div>

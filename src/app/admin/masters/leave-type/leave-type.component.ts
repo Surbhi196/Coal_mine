@@ -165,18 +165,11 @@ export class LeaveTypeComponent implements OnInit {
     this.leaveTypeService.getLeaveTypeById(leaveType.id).subscribe({
       next: (response: any) => {
         if (response.status === 200) {
-          const resLeave = response.data;
-          this.selectedLeaveType = {
-            ...resLeave,
-            leaveName: resLeave.name,
-            isPaid: resLeave.leave_category === 'paid',
-            annualLimit: resLeave.Annual_limit,
-            is_active: resLeave.status !== undefined ? resLeave.status : resLeave.is_active
-          };
+          this.selectedLeaveType = response.data;
           this.viewLeaveTypeForm.patchValue({ 
-            leaveName: resLeave.name,
-            isPaid: resLeave.leave_category === 'paid' ? 'Paid' : 'Unpaid',
-            annualLimit: resLeave.Annual_limit,
+            leaveName: response.data.leaveName,
+            isPaid: response.data.isPaid ? 'Paid' : 'Unpaid',
+            annualLimit: response.data.annualLimit,
           });
         }
       },
@@ -192,9 +185,9 @@ export class LeaveTypeComponent implements OnInit {
         if (response.status === 200) {
           const leaveType = response.data;
           this.updateLeaveTypeForm.patchValue({
-            leaveName: leaveType.name,
-            isPaid: leaveType.leave_category === 'paid',
-            annualLimit: leaveType.Annual_limit,
+            leaveName: leaveType.leaveName,
+            isPaid: leaveType.isPaid,
+            annualLimit: leaveType.annualLimit,
           });
         }
       },
@@ -296,13 +289,7 @@ export class LeaveTypeComponent implements OnInit {
       .subscribe({
         next: (response: any) => {
           if (response.status === 200) {
-            this.leaveTypeList = response.data.map((item: any) => ({
-              ...item,
-              leaveName: item.name,
-              isPaid: item.leave_category === 'paid',
-              annualLimit: item.Annual_limit,
-              is_active: item.status !== undefined ? item.status : item.is_active
-            }));
+            this.leaveTypeList = response.data;
             this.totalRecords = response.pagination?.total || response.data.length;
           } else {
             console.error('Failed to fetch leave types:', response.message);

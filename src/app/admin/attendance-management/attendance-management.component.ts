@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MaterialModule } from 'src/app/mat/mat.module';
@@ -7,7 +7,8 @@ import { EmployeeService } from 'src/app/core/services/Employee.service';
 import { AttendanceManagementService } from 'src/app/core/services/attendance-management.service';
 import { NotificationService } from 'src/app/core/services/notificationnew.service';
 import { NgxPaginationModule } from 'ngx-pagination';
-
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 interface RawBiometricLog {
   empId: string;
   date: string;
@@ -49,7 +50,8 @@ interface AttendanceCorrectionLog {
   styleUrl: './attendance-management.component.scss',
   providers: [DatePipe]
 })
-export class AttendanceManagementComponent implements OnInit {
+export class AttendanceManagementComponent implements OnInit, OnDestroy {
+  private destroy$ = new Subject<void>();
   isDragging = false;
   uploadedLogs: RawBiometricLog[] = [];
   attendanceRecords: DailyAttendance[] = [];
@@ -136,7 +138,7 @@ export class AttendanceManagementComponent implements OnInit {
       formData.append('attendance_ids[]', id.toString());
     });
     
-    this.attendanceService.updateBulkAttendanceStatus(formData).subscribe({
+    this.attendanceService.updateBulkAttendanceStatus(formData).pipe(takeUntil(this.destroy$)).subscribe({
       next: (res: any) => {
         if (res.status === 200 || res.success || res.status === 'success') {
           this.notificationService.show(`Successfully marked ${this.selectedRecordIds.size} employees as ${status}.`, 'success', 3000);
@@ -158,7 +160,7 @@ export class AttendanceManagementComponent implements OnInit {
     formData.append('attendance_status', status.toLowerCase().replace(' ', '_'));
     formData.append('attendance_ids[]', record.id.toString());
     
-    this.attendanceService.updateBulkAttendanceStatus(formData).subscribe({
+    this.attendanceService.updateBulkAttendanceStatus(formData).pipe(takeUntil(this.destroy$)).subscribe({
       next: (res: any) => {
         if (res.status === 200 || res.success || res.status === 'success') {
           this.notificationService.show(`Successfully marked ${record.empName} as ${status}.`, 'success', 3000);
@@ -188,6 +190,11 @@ export class AttendanceManagementComponent implements OnInit {
     this.loadAttendance();
   }
 
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
   initForms() {
     this.searchbarform = this.fb.group({
       searchbar: ['']
@@ -211,7 +218,7 @@ export class AttendanceManagementComponent implements OnInit {
     const toDate = this.filterToDate || '';
 
     this.attendanceService.getAttendance(limit, page, search, fromDate, toDate, status)
-      .subscribe({
+      .pipe(takeUntil(this.destroy$)).subscribe({
         next: (response: any) => {
           if (response.status === 200) {
             this.attendanceRecords = (response.data || []).map((record: any) => ({
@@ -336,7 +343,7 @@ export class AttendanceManagementComponent implements OnInit {
       return;
     }
 
-    this.attendanceService.bulkUploadAttendance(file).subscribe({
+    this.attendanceService.bulkUploadAttendance(file).pipe(takeUntil(this.destroy$)).subscribe({
       next: (response: any) => {
         if (response.status === 200) {
           this.notificationService.show(response.message || 'Attendance uploaded successfully.', 'success', 3000);
@@ -371,7 +378,7 @@ export class AttendanceManagementComponent implements OnInit {
   // --- Manual Correction Logic ---
 
   openCorrectionModal(record: DailyAttendance) {
-    this.attendanceService.getAttendanceById(record.id).subscribe({
+    this.attendanceService.getAttendanceById(record.id).pipe(takeUntil(this.destroy$)).subscribe({
       next: (res: any) => {
         if (res.status === 200 || res.success || res.status === 'success') {
           const data = res.data;
@@ -447,7 +454,7 @@ export class AttendanceManagementComponent implements OnInit {
     formData.append('attendance_status', newStatus.toLowerCase());
     if (reason) formData.append('remarks', reason);
 
-    this.attendanceService.updateAttendance(this.selectedRecord.id, formData).subscribe({
+    this.attendanceService.updateAttendance(this.selectedRecord.id, formData).pipe(takeUntil(this.destroy$)).subscribe({
       next: (response: any) => {
         if (response.status === 200 || response.success || response.status === 'success') {
           this.notificationService.show(response.message || 'Attendance updated successfully.', 'success', 3000);

@@ -5,7 +5,7 @@ import {
   transition,
   animate,
 } from '@angular/animations';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { MatMenuModule } from '@angular/material/menu';
@@ -19,7 +19,8 @@ import { DesignationService } from 'src/app/core/services/designation.service';
 import { SiteService } from 'src/app/core/services/site.service';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { ShiftService } from 'src/app/core/services/shift.service';
-import { forkJoin } from 'rxjs';
+import { forkJoin, Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 @Component({
   selector: 'app-employee-management',
@@ -66,7 +67,8 @@ import { forkJoin } from 'rxjs';
     ]),
   ],
 })
-export class EmployeeManagementComponent implements OnInit {
+export class EmployeeManagementComponent implements OnInit, OnDestroy {
+  private destroy$ = new Subject<void>();
   showreset: boolean = false;
   searchbarform!: FormGroup;
   filterForm!: FormGroup;
@@ -191,6 +193,11 @@ export class EmployeeManagementComponent implements OnInit {
     // this.loadAllEmployees();
   }
 
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
   onDateClick(event: any) {
     if (event.target && typeof event.target.showPicker === 'function') {
       event.target.showPicker();
@@ -225,7 +232,7 @@ export class EmployeeManagementComponent implements OnInit {
       departments: this.departmentService.getDepartments('all', 1, ''),
       designations: this.designationService.getDesignations('all', 1, ''),
       sites: this.siteService.getSites('all', 1, '')
-    }).subscribe({
+    }).pipe(takeUntil(this.destroy$)).subscribe({
       next: (results: any) => {
         if (results.departments?.status === 200) {
           this.departmentsList = (results.departments.data || []).filter(
@@ -313,7 +320,7 @@ export class EmployeeManagementComponent implements OnInit {
     const formData = new FormData();
     formData.append('file', this.selectedUploadFile, this.selectedUploadFile.name);
 
-    this.employeeManagementService.bulkUploadEmployees(formData).subscribe({
+    this.employeeManagementService.bulkUploadEmployees(formData).pipe(takeUntil(this.destroy$)).subscribe({
       next: (res: any) => {
         if (res.status === 200 || res.status === 201) {
           this.notificationService.show(res.message || 'File uploaded successfully', 'success', 3000);
@@ -385,7 +392,7 @@ export class EmployeeManagementComponent implements OnInit {
     }
 
     const file = this.selectedBulkAssignFile;
-    this.shiftService.bulkUploadShiftAssignments(file).subscribe({
+    this.shiftService.bulkUploadShiftAssignments(file).pipe(takeUntil(this.destroy$)).subscribe({
       next: (res: any) => {
         if (res.status === 200 || res.status === 201) {
           this.notificationService.show(res.message || 'Bulk shift assignments applied successfully', 'success', 3000);
@@ -519,7 +526,7 @@ export class EmployeeManagementComponent implements OnInit {
   openviewModal(employee: any): void {
     this.viewEmployeeOpen = true;
     this.selectedEmployee = null; // Clear old selection first to avoid flash of old data
-    this.employeeManagementService.getEmployeeById(employee.id).subscribe({
+    this.employeeManagementService.getEmployeeById(employee.id).pipe(takeUntil(this.destroy$)).subscribe({
       next: (response: any) => {
         if (response.status === 200 && response.data) {
           const emp = Array.isArray(response.data) ? response.data[0] : response.data;
@@ -564,7 +571,7 @@ export class EmployeeManagementComponent implements OnInit {
     this.isEditMode = true;
     this.currentEmployeeId = employee.id;
 
-    this.employeeManagementService.getEmployeeById(employee.id).subscribe({
+    this.employeeManagementService.getEmployeeById(employee.id).pipe(takeUntil(this.destroy$)).subscribe({
       next: (response: any) => {
         if (response.status === 200 && response.data) {
           const emp = Array.isArray(response.data) ? response.data[0] : response.data;
@@ -663,7 +670,7 @@ export class EmployeeManagementComponent implements OnInit {
 
       if (this.isEditMode) {
         formData.append('_method', 'PUT');
-        this.employeeManagementService.updateEmployee(this.currentEmployeeId, formData).subscribe({
+        this.employeeManagementService.updateEmployee(this.currentEmployeeId, formData).pipe(takeUntil(this.destroy$)).subscribe({
           next: (response: any) => {
             if (response.status === 200 || response.status === 201) {
               this.notificationService.show(response.message || 'Employee updated successfully', 'success', 3000);
@@ -680,7 +687,7 @@ export class EmployeeManagementComponent implements OnInit {
           }
         });
       } else {
-        this.employeeManagementService.createEmployee(formData).subscribe({
+        this.employeeManagementService.createEmployee(formData).pipe(takeUntil(this.destroy$)).subscribe({
           next: (response: any) => {
             if (response.status === 200 || response.status === 201) {
               this.notificationService.show(response.message || 'Employee added successfully', 'success', 3000);
@@ -710,7 +717,7 @@ export class EmployeeManagementComponent implements OnInit {
     const designationFilter = this.filterForm.get('designationFilter')?.value || '';
 
     this.employeeManagementService.getEmployees(this.tableSize, this.page, searchText, deptFilter, siteFilter, designationFilter)
-      .subscribe({
+      .pipe(takeUntil(this.destroy$)).subscribe({
         next: (response: any) => {
           if (response.status === 200) {
             this.employeeList = (response.data || []).map((emp: any) => ({
@@ -735,7 +742,7 @@ export class EmployeeManagementComponent implements OnInit {
     formData.append('status', status.toString());
     formData.append('_method', 'PATCH');
 
-    this.employeeManagementService.updateEmployeeStatus(id, formData).subscribe({
+    this.employeeManagementService.updateEmployeeStatus(id, formData).pipe(takeUntil(this.destroy$)).subscribe({
       next: (response: any) => {
         if (response.status === 200 || response.status === 201) {
           this.notificationService.show(
@@ -805,7 +812,7 @@ export class EmployeeManagementComponent implements OnInit {
   }
 
   loadShiftGroups() {
-    this.shiftService.getShiftGroups().subscribe({
+    this.shiftService.getShiftGroups().pipe(takeUntil(this.destroy$)).subscribe({
       next: (res: any) => {
         if (res.status === 200 && res.data) {
           this.shiftGroups = res.data;
@@ -876,7 +883,7 @@ export class EmployeeManagementComponent implements OnInit {
   }
 
   loadShifts(employeeCurrentShiftName?: string) {
-    this.shiftService.getShifts('all', 1, '').subscribe({
+    this.shiftService.getShifts('all', 1, '').pipe(takeUntil(this.destroy$)).subscribe({
       next: (res: any) => {
         if (res.status === 200 && res.data && res.data.length > 0) {
           this.allShiftsList = res.data.map((s: any) => ({
@@ -919,7 +926,7 @@ export class EmployeeManagementComponent implements OnInit {
   }
 
   loadAllEmployees() {
-    this.employeeManagementService.getEmployees('all', 1).subscribe({
+    this.employeeManagementService.getEmployees('all', 1).pipe(takeUntil(this.destroy$)).subscribe({
       next: (res: any) => {
         if (res.status === 200 && res.data && res.data.length > 0) {
           this.allEmployeesList = res.data.filter((emp: any) => {
@@ -957,7 +964,7 @@ export class EmployeeManagementComponent implements OnInit {
       shift_code: String(shiftCode)
     };
 
-    this.shiftService.assignBulkShift(payload).subscribe({
+    this.shiftService.assignBulkShift(payload).pipe(takeUntil(this.destroy$)).subscribe({
       next: (res: any) => {
         if (res.status === 200 || res.status === 201) {
           this.notificationService.show(res.message || 'Shift assigned successfully', 'success', 3000);

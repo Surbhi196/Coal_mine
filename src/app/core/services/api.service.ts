@@ -82,13 +82,14 @@ export class ApiService {
   //     .pipe(map((response: any) => response["routesModel"]));
 
   // }
-  get(path: string, header: any): Observable<any> {
+  get(path: string, header: any, params?: HttpParams): Observable<any> {
+    const options: any = { headers: header };
+    if (params) {
+      options.params = params;
+    }
     return this.http
-      .get(`${environment.api_url}${path}`, { headers: header })
+      .get(`${environment.api_url}${path}`, options)
       .pipe(catchError(this.formatErrors));
-    // }else{
-    //   return window.alert("Connection Offline");
-    // }
   }
 
   put(path: string, body: any, header: any): Observable<any> {

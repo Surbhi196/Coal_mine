@@ -67,6 +67,8 @@ export class InventoryComponent implements OnInit {
   createInventoryOpen = false;
   bulkUploadOpen = false;
   viewInventoryOpen = false;
+  historyModalOpen = false;
+  isEditMode = false;
 
   // Forms mapping
   createInventoryForm!: FormGroup;
@@ -89,6 +91,13 @@ export class InventoryComponent implements OnInit {
   assignments: any[] = [
     { id: 1, productName: 'SAND', category: 'PUMP HOUSE+IRP', subCategory: 'TRANCHER MATERIALS', quantity: 500, employeeName: 'Ramesh Kumar', employeeId: 'EMP001', site: 'East Mine', department: 'Excavation', issueDate: '2026-05-27' },
     { id: 2, productName: 'WIRE BRUSH', category: 'MISC', subCategory: 'TRANCHER MATERIALS', quantity: 1, employeeName: 'Sanjay Sharma', employeeId: 'EMP002', site: 'East Mine', department: 'Safety', issueDate: '2026-05-26' }
+  ];
+
+  historyLogs: any[] = [
+    { productName: 'SAND', action: 'Added Stock', quantity: 1000, date: '2026-05-15', doneBy: 'Admin', remarks: 'Vendor Delivery' },
+    { productName: 'SAND', action: 'Assigned', quantity: 500, date: '2026-05-27', doneBy: 'Ramesh Kumar', remarks: 'Site Work' },
+    { productName: 'WIRE BRUSH', action: 'Added Stock', quantity: 10, date: '2026-05-10', doneBy: 'Admin', remarks: 'Initial setup' },
+    { productName: 'WIRE BRUSH', action: 'Assigned', quantity: 1, date: '2026-05-26', doneBy: 'Sanjay Sharma', remarks: 'Maintenance' }
   ];
 
   assignProductOpen = false;
@@ -130,7 +139,6 @@ export class InventoryComponent implements OnInit {
       file: [null, Validators.required]
     });
 
-    // View Details includes: product name, employee name, category, total stock
     this.viewInventoryForm = this.formBuilder.group({
       productName: [''],
       employeeName: [''],
@@ -212,12 +220,30 @@ export class InventoryComponent implements OnInit {
   }
 
   openAddProductModal() {
+    this.isEditMode = false;
+    this.selectedItem = null;
     this.createInventoryForm.reset({
       productName: '',
       category: '',
       subCategory: '',
       quantity: ''
     });
+    this.createInventoryForm.get('quantity')?.setValidators([Validators.required, Validators.min(1)]);
+    this.createInventoryForm.get('quantity')?.updateValueAndValidity();
+    this.createInventoryOpen = true;
+  }
+
+  openEditProductModal(item: InventoryItem) {
+    this.isEditMode = true;
+    this.selectedItem = item;
+    this.createInventoryForm.reset({
+      productName: item.productName,
+      category: item.category,
+      subCategory: item.subCategory,
+      quantity: item.totalStock
+    });
+    this.createInventoryForm.get('quantity')?.setValidators([Validators.required, Validators.min(0)]);
+    this.createInventoryForm.get('quantity')?.updateValueAndValidity();
     this.createInventoryOpen = true;
   }
 
@@ -238,12 +264,19 @@ export class InventoryComponent implements OnInit {
     this.viewInventoryOpen = true;
   }
 
+  openHistoryModal(item: InventoryItem) {
+    this.selectedItem = item;
+    this.historyModalOpen = true;
+  }
+
   closeModal() {
     this.createInventoryOpen = false;
     this.bulkUploadOpen = false;
     this.viewInventoryOpen = false;
     this.assignProductOpen = false;
+    this.historyModalOpen = false;
     this.selectedItem = null;
+    this.isEditMode = false;
   }
 
   createInventoryItem() {
@@ -257,27 +290,75 @@ export class InventoryComponent implements OnInit {
     const subCategory = this.createInventoryForm.get('subCategory')?.value;
     const quantity = Number(this.createInventoryForm.get('quantity')?.value);
 
-    // If item already exists in inventory, sum up totalStock, else create next
-    const existing = this.inventoryItems.find(item => item.productName.toUpperCase() === productName.toUpperCase());
+    if (this.isEditMode && this.selectedItem) {
+      const itemIndex = this.inventoryItems.findIndex(i => i.id === this.selectedItem!.id);
+      if (itemIndex > -1) {
+        // If product name changes, update history and assignments to keep them linked properly
+        if (this.inventoryItems[itemIndex].productName !== productName) {
+          this.historyLogs.forEach(h => {
+            if (h.productName === this.inventoryItems[itemIndex].productName) {
+              h.productName = productName;
+            }
+          });
+          this.assignments.forEach(a => {
+            if (a.productName === this.inventoryItems[itemIndex].productName) {
+              a.productName = productName;
+            }
+          });
+        }
+        
+        // Handle quantity difference
+        if (quantity !== this.inventoryItems[itemIndex].totalStock) {
+          const diff = quantity - this.inventoryItems[itemIndex].totalStock;
+          this.historyLogs.unshift({
+            productName: productName,
+            action: diff > 0 ? 'Added Stock' : 'Stock Adjusted',
+            quantity: Math.abs(diff),
+            date: new Date().toISOString().substring(0, 10),
+            doneBy: 'Current User',
+            remarks: 'Updated via Edit Form'
+          });
+        }
 
-    if (existing) {
-      existing.totalStock += quantity;
-      existing.employeeName = 'Ramesh Kumar'; // Modified by current logged supervisor
+        this.inventoryItems[itemIndex].productName = productName;
+        this.inventoryItems[itemIndex].category = category || 'Misc';
+        this.inventoryItems[itemIndex].subCategory = subCategory || '—';
+        this.inventoryItems[itemIndex].totalStock = quantity;
+      }
+      this.notificationService.show('Product updated successfully.', 'success', 3000);
     } else {
-      const nextId = this.inventoryItems.length > 0 ? Math.max(...this.inventoryItems.map(item => item.id)) + 1 : 1;
-      const newItem: InventoryItem = {
-        id: nextId,
+      // If item already exists in inventory, sum up totalStock, else create next
+      const existing = this.inventoryItems.find(item => item.productName.toUpperCase() === productName.toUpperCase());
+
+      if (existing) {
+        existing.totalStock += quantity;
+        existing.employeeName = 'Ramesh Kumar'; // Modified by current logged supervisor
+      } else {
+        const nextId = this.inventoryItems.length > 0 ? Math.max(...this.inventoryItems.map(item => item.id)) + 1 : 1;
+        const newItem: InventoryItem = {
+          id: nextId,
+          productName: productName,
+          category: category || 'Misc',
+          subCategory: subCategory || '—',
+          totalStock: quantity,
+          employeeName: 'Ramesh Kumar'
+        };
+        this.inventoryItems.unshift(newItem);
+      }
+
+      this.historyLogs.unshift({
         productName: productName,
-        category: category || 'Misc',
-        subCategory: subCategory || '—',
-        totalStock: quantity,
-        employeeName: 'Ramesh Kumar'
-      };
-      this.inventoryItems.unshift(newItem);
+        action: 'Added Stock',
+        quantity: quantity,
+        date: new Date().toISOString().substring(0, 10),
+        doneBy: 'Current User',
+        remarks: 'Initial Product Creation'
+      });
+      
+      this.notificationService.show('Product added to inventory successfully.', 'success', 3000);
     }
 
     this.refreshFilteredData();
-    this.notificationService.show('Product added to inventory successfully.', 'success', 3000);
     this.closeModal();
   }
 
@@ -400,6 +481,15 @@ export class InventoryComponent implements OnInit {
     };
     this.assignments.unshift(newAssignment);
 
+    this.historyLogs.unshift({
+      productName: productName,
+      action: 'Assigned',
+      quantity: quantity,
+      date: issueDate,
+      doneBy: employeeName,
+      remarks: `Assigned to ${employeeName} at ${site}`
+    });
+
     this.refreshFilteredData();
     this.notificationService.show(`Successfully assigned ${quantity} unit(s) of ${productName} to ${employeeName}.`, 'success', 3000);
     this.closeModal();
@@ -407,5 +497,9 @@ export class InventoryComponent implements OnInit {
 
   getProductAssignments(productName: string): any[] {
     return this.assignments.filter(a => a.productName === productName);
+  }
+
+  getProductHistory(productName: string): any[] {
+    return this.historyLogs.filter(h => h.productName === productName);
   }
 }
