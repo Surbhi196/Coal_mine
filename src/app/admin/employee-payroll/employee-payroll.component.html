@@ -1,0 +1,380 @@
+<div class="container mb-4">
+  <div class="d-flex justify-content-between align-items-center flex-wrap">
+    <h1 class="text-primary table-heading-detail">Employee Payroll Management</h1>
+  </div>
+
+  <div class="card border-0 my-4 px-4 py-4">
+
+    <!-- Top Controls: Show Entries & Advanced Filters -->
+    <div class="row align-items-center mb-3 g-2">
+      <div class="col-md-2 d-flex align-items-center">
+        <span class="me-1 show-entery-text">Show</span>
+        <select class="form-control form-select show-entries-select mx-1" (change)="onTableSizeChange($event)">
+          <option *ngFor="let size of tableSizes" [value]="size">{{ size }}</option>
+        </select>
+        <span class="ms-1 show-entery-text">entries</span>
+      </div>
+
+      <div class="col-md-10 d-flex justify-content-end align-items-center gap-2 flex-wrap">
+        <form [formGroup]="filterForm" class="d-flex gap-2">
+          <select class="form-control form-select" formControlName="deptFilter" (change)="searchfun()">
+            <option value="">All Departments</option>
+            <option *ngFor="let dept of departmentsList" [value]="dept.id">{{ dept.name }}</option>
+          </select>
+        </form>
+
+        <form [formGroup]="searchbarform" class="d-flex align-items-center ms-2">
+          <div class="position-relative">
+            <input type="text" class="form-control search-user" placeholder="Search Name/ID..." autocomplete="off"
+              formControlName="searchbar" />
+          </div>
+          <button class="btn btn-primary search-btn ms-2" (click)="searchfun()">
+            <span><i class="fa-solid fa-magnifying-glass text-white"></i></span>
+          </button>
+          <button class="btn btn-secondary ms-2" (click)="resetsearchbar()" type="button" *ngIf="showreset">
+            <span><i class="fa-solid fa-rotate-right text-white"></i></span>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Data Table -->
+    <div class="table-responsive-sm mt-2">
+      <div class="hidden lg:block">
+        <table class="table table-bordered table-hover table-striped mb-0">
+          <thead class="table-header">
+            <tr>
+              <th *ngFor="let heading of table_heading">
+                <p class="table-heading">{{ heading }}</p>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              *ngFor="let emp of employeeList | paginate : { itemsPerPage: tableSize != 'all' ? tableSize : totalRecords, currentPage: page, totalItems: totalRecords }; index as i">
+              <td>{{ (page - 1) * (tableSize === 'all' ? totalRecords : +tableSize) + i + 1 }}</td>
+              <td>{{ emp.empId || emp.employee_code }}</td>
+              <td>
+                <span class="fw-bold">{{ emp.name }}</span>
+              </td>
+              <td>
+                <p class="mb-0 text-muted">{{ emp.department || '--' }}</p>
+              </td>
+              <td>
+                <span class="badge" [ngClass]="emp.basic_salary > 0 || emp.daily_wage > 0 ? 'bg-success' : 'bg-warning text-dark'">
+                  {{ (emp.basic_salary > 0 || emp.daily_wage > 0) ? 'Configured' : 'Pending' }}
+                </span>
+              </td>
+              <td>
+                <button class="btn-action edit-btn me-2" (click)="openPayrollModal(emp)" data-tooltip="Add/Edit Payroll">
+                  <i class="fa-solid fa-file-invoice-dollar"></i>
+                </button>
+                <button class="btn-action view-btn" (click)="openViewModal(emp)" data-tooltip="View Details">
+                  <i class="fa-solid fa-eye"></i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="d-md-flex justify-content-between bottom-0 end-0 py-2 align-items-center mt-3">
+        <span class="showalltext">Showing {{ tableSize * (page - 1) > 0 ? tableSize * (page - 1) + 1 : 1 }} to {{
+          tableSize * page <= totalRecords ? tableSize * page : totalRecords }} of {{ totalRecords !=undefined ?
+            totalRecords : "" }} entries</span>
+            <pagination-controls previousLabel="Prev" nextLabel="Next" [responsive]="true"
+              (pageChange)="onTableDataChange($event)"></pagination-controls>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Payroll Modal -->
+<div *ngIf="payrollModalOpen" class="modal-overlay" [@fadeIn]>
+  <div class="modal-dialog-large bg-white rounded-3 shadow-lg d-flex flex-column" style="max-width: 800px;">
+
+    <!-- Header -->
+    <div class="modal-header-custom px-4 py-3 d-flex justify-content-between align-items-center border-bottom">
+      <h4 class="mb-0 text-primary fw-bold">{{ isEditMode ? 'Edit' : 'Add' }} Payroll for {{ selectedEmployeeData?.name }}</h4>
+      <button class="btn bg-transparent border-0 p-0" (click)="closeModal()"><i
+          class="fa-solid fa-xmark fs-4 text-muted"></i></button>
+    </div>
+
+    <form [formGroup]="payrollForm" class="d-flex flex-column flex-grow-1 overflow-hidden">
+
+      <div class="modal-body-custom px-4 py-4 overflow-auto flex-grow-1">
+
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label form-lable-custom">Monthly Salary (₹) *</label>
+            <input type="number" class="form-control form-input-custom" formControlName="basicSalary"
+              placeholder="Enter Monthly Salary"
+              [ngClass]="{'is-invalid': payrollForm.get('basicSalary')?.invalid && payrollForm.get('basicSalary')?.touched}" />
+            <div class="invalid-feedback">Monthly Salary is required.</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label form-lable-custom">Rest Days *</label>
+            <input type="number" class="form-control form-input-custom" formControlName="restDays"
+              placeholder="e.g., 4"
+              [ngClass]="{'is-invalid': payrollForm.get('restDays')?.invalid && payrollForm.get('restDays')?.touched}" />
+            <div class="invalid-feedback">Rest Days is required.</div>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label form-lable-custom">Bank Name *</label>
+            <input type="text" class="form-control form-input-custom" formControlName="bankName"
+              placeholder="Enter Bank Name"
+              [ngClass]="{'is-invalid': payrollForm.get('bankName')?.invalid && payrollForm.get('bankName')?.touched}" />
+            <div class="invalid-feedback">Bank Name is required.</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label form-lable-custom">Account Number *</label>
+            <input type="text" class="form-control form-input-custom" formControlName="accountNumber"
+              placeholder="Enter Account Number"
+              [ngClass]="{'is-invalid': payrollForm.get('accountNumber')?.invalid && payrollForm.get('accountNumber')?.touched}" />
+            <div class="invalid-feedback">Account Number is required.</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label form-lable-custom">IFSC Code *</label>
+            <input type="text" class="form-control form-input-custom" formControlName="ifscCode"
+              placeholder="Enter IFSC Code"
+              [ngClass]="{'is-invalid': payrollForm.get('ifscCode')?.invalid && payrollForm.get('ifscCode')?.touched}" />
+            <div class="invalid-feedback">IFSC Code is required.</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label form-lable-custom">PF Applicable *</label>
+            <div class="btn-group w-100" role="group">
+              <input type="radio" class="btn-check" formControlName="isPfApplicable" value="Yes" id="pfYes" autocomplete="off">
+              <label class="btn btn-outline-primary" for="pfYes">Yes</label>
+
+              <input type="radio" class="btn-check" formControlName="isPfApplicable" value="No" id="pfNo" autocomplete="off">
+              <label class="btn btn-outline-secondary" for="pfNo">No</label>
+            </div>
+          </div>
+          
+          <div class="col-md-6" *ngIf="payrollForm.get('isPfApplicable')?.value === 'Yes'" [@fadeIn]>
+            <label class="form-label form-lable-custom">PF Amount (₹) *</label>
+            <input type="number" class="form-control form-input-custom" formControlName="pfAmount"
+              placeholder="Enter PF Amount"
+              [ngClass]="{'is-invalid': payrollForm.get('pfAmount')?.invalid && payrollForm.get('pfAmount')?.touched}" />
+            <div class="invalid-feedback">PF Amount is required.</div>
+          </div>
+          <div class="col-md-6" *ngIf="payrollForm.get('isPfApplicable')?.value === 'Yes'" [@fadeIn]>
+            <label class="form-label form-lable-custom">PF Number *</label>
+            <input type="text" class="form-control form-input-custom" formControlName="pfNumber"
+              placeholder="Enter PF Number"
+              [ngClass]="{'is-invalid': payrollForm.get('pfNumber')?.invalid && payrollForm.get('pfNumber')?.touched}" />
+            <div class="invalid-feedback">PF Number is required.</div>
+          </div>
+
+
+          <div class="col-md-6">
+            <label class="form-label form-lable-custom">Mess Deduction Applicable *</label>
+            <div class="btn-group w-100" role="group">
+              <input type="radio" class="btn-check" formControlName="isMessApplicable" value="Yes" id="messYes" autocomplete="off">
+              <label class="btn btn-outline-primary" for="messYes">Yes</label>
+
+              <input type="radio" class="btn-check" formControlName="isMessApplicable" value="No" id="messNo" autocomplete="off">
+              <label class="btn btn-outline-secondary" for="messNo">No</label>
+            </div>
+          </div>
+
+          <div class="col-md-6" *ngIf="payrollForm.get('isMessApplicable')?.value === 'Yes'" [@fadeIn]>
+            <label class="form-label form-lable-custom">Mess Deduction Amount (₹) *</label>
+            <input type="number" class="form-control form-input-custom" formControlName="messDeductionAmount"
+              placeholder="Enter Mess Amount"
+              [ngClass]="{'is-invalid': payrollForm.get('messDeductionAmount')?.invalid && payrollForm.get('messDeductionAmount')?.touched}" />
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label form-lable-custom">Others Deduction Applicable *</label>
+            <div class="btn-group w-100" role="group">
+              <input type="radio" class="btn-check" formControlName="isOthersDeductionApplicable" value="Yes" id="othersYes" autocomplete="off">
+              <label class="btn btn-outline-primary" for="othersYes">Yes</label>
+
+              <input type="radio" class="btn-check" formControlName="isOthersDeductionApplicable" value="No" id="othersNo" autocomplete="off">
+              <label class="btn btn-outline-secondary" for="othersNo">No</label>
+            </div>
+          </div>
+
+          <div class="col-md-6" *ngIf="payrollForm.get('isOthersDeductionApplicable')?.value === 'Yes'" [@fadeIn]>
+            <label class="form-label form-lable-custom">Others Deduction Amount (₹) *</label>
+            <input type="number" class="form-control form-input-custom" formControlName="othersDeductionAmount"
+              placeholder="Enter Others Amount"
+              [ngClass]="{'is-invalid': payrollForm.get('othersDeductionAmount')?.invalid && payrollForm.get('othersDeductionAmount')?.touched}" />
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Footer Buttons -->
+      <div class="px-4 py-3 border-top bg-light d-flex justify-content-end align-items-center gap-2">
+        <button class="btn btn-secondary px-4 py-2" type="button" (click)="closeModal()">
+          Cancel
+        </button>
+        <button class="btn btn-success px-4 py-2" type="button" (click)="savePayrollDetails()">
+          <i class="fa-solid fa-circle-check me-2"></i>{{ isEditMode ? 'Update' : 'Save' }} Details
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+<!-- View Details Modal -->
+<div *ngIf="viewModalOpen" class="your-animation-class modal-container premium-detail-modal"
+  aria-labelledby="modal-title" role="dialog" aria-modal="true">
+  <div class="modal-contenttop modal-content-50" [@fadeIn]>
+    <div class="card">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <div>
+          <h5 class="modal-title pt-1 mb-0">Payroll Details</h5>
+          <p class="modal-subtitle">Full overview of official employee payroll record</p>
+        </div>
+        <button class="cross-btn-icon border-0 p-0" type="button" (click)="closeViewModal()">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="card-body mb-0">
+        <!-- Premium Summary Banner -->
+        <div class="emp-summary-banner">
+          <div class="banner-content">
+            <div class="banner-label">Employee Name</div>
+            <div class="banner-value">{{ selectedEmployeeData?.name }}</div>
+            <div class="banner-subtitle">
+              <span class="pulse-indicator" [ngClass]="{'deactive': selectedEmployeeData?.is_active !== 1}"></span>
+              Status:
+              <span class="status-badge-pill" [ngClass]="selectedEmployeeData?.is_active === 1 ? 'active' : 'deactive'">
+                {{ selectedEmployeeData?.is_active === 1 ? 'Active' : 'Inactive' }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Scrollable Details Wrapper to prevent modal from growing too tall -->
+        <div class="view-details-scroll overflow-auto pe-1" style="max-height: 48vh;">
+          <div class="grid-section-title mt-2">Payroll Details</div>
+          <div class="row g-3 mb-4">
+        <div class="col-md-6 col-lg-4">
+          <div class="glass-info-card">
+            <div class="card-icon-wrapper code"><i class="fa-solid fa-indian-rupee-sign"></i></div>
+            <div class="card-info-content">
+              <span class="info-label">Monthly Salary</span>
+              <span class="info-value text-dark fs-7">₹{{ selectedEmployeeData?.salary_type === 'monthly' ? (selectedEmployeeData?.basic_salary | number) : (selectedEmployeeData?.daily_wage | number) }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-4">
+          <div class="glass-info-card">
+            <div class="card-icon-wrapper site"><i class="fa-solid fa-bed"></i></div>
+            <div class="card-info-content">
+              <span class="info-label">Rest Days</span>
+              <span class="info-value text-dark fs-7">{{ selectedEmployeeData?.rest_day || '--' }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-4">
+          <div class="glass-info-card">
+            <div class="card-icon-wrapper code"><i class="fa-solid fa-piggy-bank"></i></div>
+            <div class="card-info-content">
+              <span class="info-label">PF Applicable</span>
+              <span class="info-value text-dark fs-7">{{ selectedEmployeeData?.pf_applicable == 1 ? 'Yes' : 'No' }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-4" *ngIf="selectedEmployeeData?.pf_applicable == 1">
+          <div class="glass-info-card">
+            <div class="card-icon-wrapper code"><i class="fa-solid fa-indian-rupee-sign"></i></div>
+            <div class="card-info-content">
+              <span class="info-label">PF Amount</span>
+              <span class="info-value text-dark fs-7">₹{{ selectedEmployeeData?.pf_amount | number }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-4" *ngIf="selectedEmployeeData?.pf_applicable == 1">
+          <div class="glass-info-card">
+            <div class="card-icon-wrapper code"><i class="fa-solid fa-hashtag"></i></div>
+            <div class="card-info-content">
+              <span class="info-label">PF Number</span>
+              <span class="info-value text-dark fs-7">{{ selectedEmployeeData?.pf_number || '--' }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-4">
+          <div class="glass-info-card">
+            <div class="card-icon-wrapper code"><i class="fa-solid fa-building-columns"></i></div>
+            <div class="card-info-content">
+              <span class="info-label">Bank Name</span>
+              <span class="info-value text-dark fs-7">{{ selectedEmployeeData?.bank_name || '--' }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-4">
+          <div class="glass-info-card">
+            <div class="card-icon-wrapper code"><i class="fa-solid fa-hashtag"></i></div>
+            <div class="card-info-content">
+              <span class="info-label">Account Number</span>
+              <span class="info-value text-dark fs-7">{{ selectedEmployeeData?.bank_account_number || '--' }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-4">
+          <div class="glass-info-card">
+            <div class="card-icon-wrapper code"><i class="fa-solid fa-barcode"></i></div>
+            <div class="card-info-content">
+              <span class="info-label">IFSC Code</span>
+              <span class="info-value text-dark fs-7">{{ selectedEmployeeData?.ifsc_code || '--' }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-4">
+          <div class="glass-info-card">
+            <div class="card-icon-wrapper code"><i class="fa-solid fa-utensils"></i></div>
+            <div class="card-info-content">
+              <span class="info-label">Mess Deduction</span>
+              <span class="info-value text-dark fs-7">{{ selectedEmployeeData?.mess_deduction_applicable == 1 ? 'Yes' : 'No' }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-4" *ngIf="selectedEmployeeData?.mess_deduction_applicable == 1">
+          <div class="glass-info-card">
+            <div class="card-icon-wrapper code"><i class="fa-solid fa-indian-rupee-sign"></i></div>
+            <div class="card-info-content">
+              <span class="info-label">Mess Deduction Amount</span>
+              <span class="info-value text-dark fs-7">₹{{ selectedEmployeeData?.mess_deduction | number }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-4">
+          <div class="glass-info-card">
+            <div class="card-icon-wrapper code"><i class="fa-solid fa-calculator"></i></div>
+            <div class="card-info-content">
+              <span class="info-label">Others Deduction</span>
+              <span class="info-value text-dark fs-7">{{ selectedEmployeeData?.other_deduction_appliacble == 1 ? 'Yes' : 'No' }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-4" *ngIf="selectedEmployeeData?.other_deduction_appliacble == 1">
+          <div class="glass-info-card">
+            <div class="card-icon-wrapper code"><i class="fa-solid fa-indian-rupee-sign"></i></div>
+            <div class="card-info-content">
+              <span class="info-label">Others Deduction Amount</span>
+              <span class="info-value text-dark fs-7">₹{{ selectedEmployeeData?.other_deduction | number }}</span>
+            </div>
+          </div>
+        </div>
+
+          </div>
+
+        </div>
+      </div>
+      <div class="modal-footer text-end">
+        <button class="btn btn-premium-close px-4 py-2" type="button" (click)="closeViewModal()">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+

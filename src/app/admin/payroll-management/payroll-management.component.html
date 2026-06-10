@@ -75,19 +75,29 @@
 
   <!-- Salary Review Grid Card -->
   <div class="card border-0 my-4 px-4 py-4">
-    <!-- Show entries control -->
-    <div class="d-flex align-items-center mb-4">
-      <span class="me-1 show-entery-text">Show</span>
-      <select class="form-control form-select show-entries-select" [(ngModel)]="showEntries" style="width: auto;">
-        <option [ngValue]="5">5</option>
-        <option [ngValue]="10">10</option>
-        <option [ngValue]="15">15</option>
-        <option [ngValue]="20">20</option>
-        <option [ngValue]="25">25</option>
-        <option [ngValue]="50">50</option>
-        <option [ngValue]="100">100</option>
-      </select>
-      <span class="ms-1 show-entery-text">entries</span>
+    <!-- Show entries control and Action Buttons -->
+    <div class="d-flex align-items-center justify-content-between mb-4">
+      <div class="d-flex align-items-center">
+        <span class="me-1 show-entery-text">Show</span>
+        <select class="form-control form-select show-entries-select" [(ngModel)]="showEntries" style="width: auto;">
+          <option [ngValue]="5">5</option>
+          <option [ngValue]="10">10</option>
+          <option [ngValue]="15">15</option>
+          <option [ngValue]="20">20</option>
+          <option [ngValue]="25">25</option>
+          <option [ngValue]="50">50</option>
+          <option [ngValue]="100">100</option>
+        </select>
+        <span class="ms-1 show-entery-text">entries</span>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-outline-danger px-4 hover-up" (click)="openPenaltyModal()">
+          <i class="fa-solid fa-gavel me-2"></i>Add Penalty
+        </button>
+        <button class="btn btn-danger px-4 hover-up" (click)="openBulkPenaltyModal()">
+          <i class="fa-solid fa-layer-group me-2"></i>Add Bulk Penalty
+        </button>
+      </div>
     </div>
 
     <div class="table-responsive-sm mt-2">
@@ -109,10 +119,16 @@
                 <p class="table-heading text-center">Absent</p>
               </th>
               <th>
-                <p class="table-heading text-center">Leave</p>
+                <p class="table-heading text-center">Paid Leave</p>
               </th>
               <th>
-                <p class="table-heading text-center">Net Salary</p>
+                <p class="table-heading text-center">Unpaid Leave</p>
+              </th>
+              <th>
+                <p class="table-heading text-center">Penalty (₹)</p>
+              </th>
+              <th>
+                <p class="table-heading text-center">Monthly Salary</p>
               </th>
               <th>
                 <p class="table-heading text-center">Action</p>
@@ -141,7 +157,7 @@
               <td class="text-center">
                 <span
                   class="badge bg-danger-subtle text-danger border border-danger-subtle px-2.5 py-1.5 fs-8 fw-semibold">
-                  {{ rec.absentCount + rec.unpaidLeaveCount }} Days
+                  {{ rec.absentCount }} Days
                 </span>
               </td>
               <td class="text-center">
@@ -150,15 +166,30 @@
                 </span>
               </td>
               <td class="text-center">
+                <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2.5 py-1.5 fs-8 fw-semibold">
+                  {{ rec.unpaidLeaveCount }} Days
+                </span>
+              </td>
+              <td class="text-center">
+                <button *ngIf="rec.penaltyTotalAmount > 0" class="btn btn-sm btn-outline-danger px-2 py-1 fs-9 hover-up"
+                  (click)="openViewPenaltyModal(rec)" data-tooltip="View Penalty Details">
+                  <span class="fw-bold">₹{{ rec.penaltyTotalAmount.toLocaleString() }}</span>
+                  <i class="fa-solid fa-circle-info ms-1"></i>
+                </button>
+                <span *ngIf="!rec.penaltyTotalAmount || rec.penaltyTotalAmount === 0" class="text-muted fs-8">-</span>
+              </td>
+              <td class="text-center">
                 <div class="fs-6 fw-bold text-primary">₹{{ rec.netSalary.toLocaleString() }}</div>
               </td>
               <td class="text-center">
                 <div class="d-flex align-items-center justify-content-center gap-2">
-                  <!-- Action for Draft Mode: Edit adjustments -->
+                  <!-- Action for Draft Mode: Edit adjustments (Commented out) -->
+                  <!--
                   <button *ngIf="payrollState === 'Draft'" class="btn-action edit-btn" (click)="openEditModal(rec)"
                     title="Edit Adjustments">
                     <i class="fa-solid fa-pen-to-square"></i>
                   </button>
+                  -->
                   <button *ngIf="payrollState === 'Draft' && isManualRecord(rec.empId)"
                     class="btn-action deactivate-btn" (click)="deleteManualRecord(rec.empId)"
                     title="Delete manual record">
@@ -198,11 +229,13 @@
             </div>
             <div>
               <div class="d-flex align-items-center gap-1">
-                <!-- Action for Draft Mode: Edit adjustments -->
+                <!-- Action for Draft Mode: Edit adjustments (Commented out) -->
+                <!--
                 <button *ngIf="payrollState === 'Draft'" class="btn-action edit-btn" (click)="openEditModal(rec)"
                   title="Edit Adjustments">
                   <i class="fa-solid fa-pen-to-square"></i>
                 </button>
+                -->
                 <button *ngIf="payrollState === 'Draft' && isManualRecord(rec.empId)" class="btn-action deactivate-btn"
                   (click)="deleteManualRecord(rec.empId)" title="Delete manual record">
                   <i class="fa-solid fa-trash"></i>
@@ -229,17 +262,32 @@
           <div class="mb-2">
             <strong>Absent Days:</strong>
             <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2.5 py-1 fs-9 fw-semibold">
-              {{ rec.absentCount + rec.unpaidLeaveCount }} Days
+              {{ rec.absentCount }} Days
             </span>
           </div>
           <div class="mb-2">
-            <strong>Leave Days:</strong>
+            <strong>Paid Leave:</strong>
             <span class="badge bg-info-subtle text-info border border-info-subtle px-2.5 py-1 fs-9 fw-semibold">
               {{ rec.leaveCount }} Days
             </span>
           </div>
+          <div class="mb-2">
+            <strong>Unpaid Leave:</strong>
+            <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2.5 py-1 fs-9 fw-semibold">
+              {{ rec.unpaidLeaveCount }} Days
+            </span>
+          </div>
+          <div class="mb-2 d-flex justify-content-between align-items-center">
+            <strong>Penalty (₹):</strong>
+            <button *ngIf="rec.penaltyTotalAmount > 0" class="btn btn-sm btn-outline-danger px-2 py-1 fs-9 hover-up"
+              (click)="openViewPenaltyModal(rec)">
+              <span class="fw-bold">₹{{ rec.penaltyTotalAmount.toLocaleString() }}</span>
+              <i class="fa-solid fa-circle-info ms-1"></i>
+            </button>
+            <span *ngIf="!rec.penaltyTotalAmount || rec.penaltyTotalAmount === 0" class="text-muted fs-8">-</span>
+          </div>
           <div>
-            <strong>Net Salary:</strong>
+            <strong>Monthly Salary:</strong>
             <span class="fs-6 fw-bold text-primary">₹{{ rec.netSalary.toLocaleString() }}</span>
           </div>
         </div>
@@ -260,7 +308,8 @@
   </div>
 </div>
 
-<!-- Edit Adjustments Modal -->
+<!-- Edit Adjustments Modal (Commented Out) -->
+<!--
 <div *ngIf="showEditModal" class="modal-overlay no-print"
   style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.4); z-index: 9999; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(4px);">
   <div class="modal-dialog-large bg-white rounded-3 shadow-lg d-flex flex-column h-auto-modal"
@@ -276,7 +325,6 @@
 
     <div class="modal-body p-4">
       <form [formGroup]="editForm" (ngSubmit)="submitAdjustments()">
-        <!-- Employee Info -->
         <div class="mb-3">
           <label class="form-label form-lable-custom mb-1 text-muted fs-8 fw-bold text-uppercase">Employee ID &
             Name</label>
@@ -285,7 +333,6 @@
           </div>
         </div>
 
-        <!-- Incentives -->
         <div class="mb-3">
           <label class="form-label form-lable-custom">Incentive Allowances (Rs.)</label>
           <div class="input-group">
@@ -301,7 +348,6 @@
           </div>
         </div>
 
-        <!-- PF Deduction -->
         <div class="mb-3">
           <label class="form-label form-lable-custom">Provident Fund (PF) Deduction (Rs.)</label>
           <div class="input-group">
@@ -317,7 +363,6 @@
           </div>
         </div>
 
-        <!-- Mess Deduction -->
         <div class="mb-3">
           <label class="form-label form-lable-custom">Mess Deduction (Rs.)</label>
           <div class="input-group">
@@ -333,7 +378,6 @@
           </div>
         </div>
 
-        <!-- Others Deduction -->
         <div class="mb-4">
           <label class="form-label form-lable-custom">Others Deduction (Rs.)</label>
           <div class="input-group">
@@ -349,7 +393,6 @@
           </div>
         </div>
 
-        <!-- Footer Buttons -->
         <div class="d-flex justify-content-end gap-2 pt-2 border-top">
           <button type="button" class="btn btn-secondary px-4 py-2" (click)="closeEditModal()">Cancel</button>
           <button type="submit" class="btn btn-custom-primary px-4 py-2" [disabled]="editForm.invalid">
@@ -360,6 +403,7 @@
     </div>
   </div>
 </div>
+-->
 
 <!-- Printable Payslip Modal / Printable Section -->
 <div *ngIf="showPayslipModal && selectedPayslipRecord" class="modal-overlay print-only-modal">
@@ -453,7 +497,7 @@
               </thead>
               <tbody style="font-size: 0.85rem; color: #334155;">
                 <tr class="border-bottom border-light">
-                  <td class="ps-0 py-2.5 text-start">Basic Salary</td>
+                  <td class="ps-0 py-2.5 text-start">Monthly Salary</td>
                   <td class="pe-0 py-2.5 text-end fw-semibold">₹{{ selectedPayslipRecord.basicSalary.toLocaleString() }}
                   </td>
                 </tr>
@@ -480,7 +524,7 @@
               </thead>
               <tbody style="font-size: 0.85rem; color: #334155;">
                 <tr class="border-bottom border-light">
-                  <td class="ps-0 py-2.5 text-start">EPF Provident Fund (12%)</td>
+                  <td class="ps-0 py-2.5 text-start">EPF Provident Fund</td>
                   <td class="pe-0 py-2.5 text-end fw-semibold">₹{{ selectedPayslipRecord.pfDeduction.toLocaleString() }}
                   </td>
                 </tr>
@@ -490,8 +534,13 @@
                     }}</td>
                 </tr>
                 <tr class="border-bottom border-light">
-                  <td class="ps-0 py-2.5 text-start">Unpaid Leave / Absents</td>
+                  <td class="ps-0 py-2.5 text-start">Unpaid Leave</td>
                   <td class="pe-0 py-2.5 text-end fw-semibold">₹{{ selectedPayslipRecord.leaveDeduction.toLocaleString()
+                    }}</td>
+                </tr>
+                <tr class="border-bottom border-light">
+                  <td class="ps-0 py-2.5 text-start">Penalties</td>
+                  <td class="pe-0 py-2.5 text-end fw-semibold">₹{{ selectedPayslipRecord.penaltyTotalAmount.toLocaleString()
                     }}</td>
                 </tr>
                 <tr class="border-bottom border-light">
@@ -678,6 +727,171 @@
           </button>
         </div>
       </form>
+    </div>
+  </div>
+</div>
+
+<!-- Add Single Penalty Modal -->
+<div *ngIf="penaltyModalOpen" class="modal-overlay" [@fadeIn]>
+  <div class="modal-dialog-large bg-white rounded-3 shadow-lg d-flex flex-column" style="max-width: 650px;">
+    
+    <div class="modal-header-custom px-4 py-3 d-flex justify-content-between align-items-center border-bottom bg-danger text-white">
+      <h4 class="mb-0 fw-bold text-white"><i class="fa-solid fa-gavel me-2"></i>Add Penalty</h4>
+      <button class="btn bg-transparent border-0 p-0" (click)="closePenaltyModal()">
+        <i class="fa-solid fa-xmark fs-4 text-white"></i>
+      </button>
+    </div>
+
+    <form [formGroup]="penaltyForm" class="d-flex flex-column flex-grow-1">
+      <div class="modal-body-custom px-4 py-4">
+        
+        <div class="mb-3">
+          <label class="form-label form-lable-custom">Select Employee *</label>
+          <ng-select
+            [items]="employees"
+            bindLabel="name"
+            bindValue="id"
+            placeholder="-- Search & Select Employee --"
+            formControlName="employeeId"
+            class="custom-ng-select"
+            appendTo="body"
+            [ngClass]="{'is-invalid': penaltyForm.get('employeeId')?.invalid && penaltyForm.get('employeeId')?.touched}">
+          </ng-select>
+          <div class="invalid-feedback" *ngIf="penaltyForm.get('employeeId')?.invalid && penaltyForm.get('employeeId')?.touched">
+            Employee selection is required.
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label form-lable-custom">Penalty Month *</label>
+          <input type="month" class="form-control form-input-custom" formControlName="penaltyMonth"
+            [ngClass]="{'is-invalid': penaltyForm.get('penaltyMonth')?.invalid && penaltyForm.get('penaltyMonth')?.touched}" />
+          <div class="invalid-feedback">Month is required.</div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label form-lable-custom">Reason *</label>
+          <textarea class="form-control form-input-custom" formControlName="reason" rows="3"
+            placeholder="e.g., Uninformed leave, equipment damage"
+            [ngClass]="{'is-invalid': penaltyForm.get('reason')?.invalid && penaltyForm.get('reason')?.touched}"></textarea>
+          <div class="invalid-feedback">Reason is required.</div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label form-lable-custom">Amount (₹) *</label>
+          <input type="number" class="form-control form-input-custom" formControlName="amount"
+            placeholder="Enter Amount"
+            [ngClass]="{'is-invalid': penaltyForm.get('amount')?.invalid && penaltyForm.get('amount')?.touched}" />
+          <div class="invalid-feedback">Penalty Amount must be greater than 0.</div>
+        </div>
+      </div>
+
+      <div class="px-4 py-3 border-top bg-light d-flex justify-content-end align-items-center gap-2">
+        <button class="btn btn-secondary px-4 py-2" type="button" (click)="closePenaltyModal()">Cancel</button>
+        <button class="btn btn-danger px-4 py-2" type="button" (click)="savePenalty()">
+          <i class="fa-solid fa-circle-exclamation me-2"></i>Apply Penalty
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Add Bulk Penalty Modal -->
+<div *ngIf="bulkPenaltyModalOpen" class="modal-overlay" [@fadeIn]>
+  <div class="modal-dialog-large bg-white rounded-3 shadow-lg d-flex flex-column" style="max-width: 650px;">
+    <div class="modal-header-custom px-4 py-3 d-flex justify-content-between align-items-center border-bottom bg-danger text-white">
+      <h4 class="mb-0 fw-bold text-white"><i class="fa-solid fa-layer-group me-2"></i>Add Bulk Penalty</h4>
+      <button class="btn bg-transparent border-0 p-0" (click)="closeBulkPenaltyModal()">
+        <i class="fa-solid fa-xmark fs-4 text-white"></i>
+      </button>
+    </div>
+    <div class="modal-body-custom px-4 py-4 text-center">
+      <i class="fa-solid fa-file-csv fs-1 text-muted mb-3"></i>
+      <h5>Upload CSV File</h5>
+      <p class="text-muted">Download the template, fill in employee details and penalty amounts, and upload.</p>
+      
+      <div class="mb-4">
+        <input type="file" class="form-control form-input-custom" accept=".csv" />
+      </div>
+
+      <a href="#" class="text-primary text-decoration-none"><i class="fa-solid fa-download me-1"></i>Download Template</a>
+    </div>
+    <div class="px-4 py-3 border-top bg-light d-flex justify-content-end align-items-center gap-2">
+      <button class="btn btn-secondary px-4 py-2" (click)="closeBulkPenaltyModal()">Cancel</button>
+      <button class="btn btn-danger px-4 py-2"><i class="fa-solid fa-upload me-2"></i>Upload & Apply</button>
+    </div>
+  </div>
+</div>
+
+<!-- View Penalty Details Modal -->
+<div *ngIf="viewPenaltyModalOpen" class="modal-overlay" [@fadeIn]>
+  <div class="modal-dialog-large bg-white rounded-3 shadow-lg d-flex flex-column" style="max-width: 650px;">
+    
+    <!-- Header -->
+    <div class="modal-header-custom px-4 py-3 d-flex justify-content-between align-items-center border-bottom">
+      <h4 class="mb-0 fw-bold text-primary">
+        <i class="fa-solid fa-circle-exclamation me-2"></i>Penalty Details
+      </h4>
+      <button class="btn bg-transparent border-0 p-0 hover-up" (click)="closeViewPenaltyModal()">
+        <i class="fa-solid fa-xmark fs-4 text-dark"></i>
+      </button>
+    </div>
+
+    <!-- Body -->
+    <div class="modal-body-custom px-4 py-4 overflow-auto bg-light" style="max-height: 500px;">
+      
+      <div class="d-flex align-items-center justify-content-between mb-3 bg-white p-3 rounded border shadow-sm">
+        <div>
+          <div class="fs-8 text-muted fw-bold text-uppercase mb-1">Employee Details</div>
+          <div class="fs-6 fw-bold text-dark">{{ selectedPenaltyEmployee?.empName }} <span class="text-muted fs-7">({{ selectedPenaltyEmployee?.empId }})</span></div>
+        </div>
+        <div class="text-end">
+          <div class="fs-8 text-muted fw-bold text-uppercase mb-1">Total Penalty</div>
+          <div class="fs-5 fw-bold text-danger">₹{{ selectedPenaltyEmployee?.penaltyTotalAmount?.toLocaleString() }}</div>
+        </div>
+      </div>
+
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="fw-bold text-dark mb-0">Penalty History ({{ currentMonth | date:'MMM yyyy' }})</h6>
+      </div>
+      
+      <!-- Penalty Table -->
+      <div class="bg-white rounded border overflow-hidden">
+        <table class="table table-bordered table-hover custom-table mb-0">
+          <thead>
+            <tr>
+              <th width="25%">Date</th>
+              <th width="55%">Reason</th>
+              <th width="20%" class="text-end">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let pen of selectedPenaltyEmployee?.penalties">
+              <td class="align-middle">
+                <span class="fs-8 fw-semibold text-dark">{{ pen.date | date:'dd MMM yyyy' }}</span>
+              </td>
+              <td class="align-middle text-wrap">
+                <span class="fs-8">{{ pen.reason }}</span>
+              </td>
+              <td class="align-middle text-end text-danger fw-bold">
+                ₹{{ pen.amount?.toLocaleString() }}
+              </td>
+            </tr>
+            <tr *ngIf="!selectedPenaltyEmployee?.penalties || selectedPenaltyEmployee?.penalties.length === 0">
+              <td colspan="3" class="text-center py-4 text-muted">
+                <i class="fa-solid fa-check-circle fs-3 text-success opacity-50 mb-2 d-block"></i>
+                No penalties found for this month.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="px-4 py-3 border-top bg-white d-flex justify-content-end align-items-center">
+      <button class="btn btn-secondary px-4 py-2 hover-up" (click)="closeViewPenaltyModal()">Close</button>
     </div>
   </div>
 </div>

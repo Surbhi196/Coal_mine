@@ -186,6 +186,17 @@ $border-color: #e2e8f0;
   overflow: hidden; /* No scrollbars on overlay */
 }
 
+.modal-dialog-large {
+  width: 90%;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+  overflow: hidden;
+}
+
 // Custom Payslip Styling matching Coal Gold Mine premium guidelines
 .payslip-modal-container {
   border-radius: 12px !important;

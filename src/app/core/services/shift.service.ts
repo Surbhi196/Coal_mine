@@ -47,6 +47,19 @@ export class ShiftService {
     return this.apiservice.get(url, headers);
   }
 
+  getShiftRotation(fromDate: string, toDate: string, shiftId?: string | number): Observable<any> {
+    const token = this.jwtService.getToken();
+    const headers = new HttpHeaders({
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    });
+    let url = `v1/admin/shift-rotation?from_date=${fromDate}&to_date=${toDate}`;
+    if (shiftId) {
+      url += `&shift_id=${shiftId}`;
+    }
+    return this.apiservice.get(url, headers);
+  }
+
   getShiftById(id: any): Observable<any> {
     const token = this.jwtService.getToken();
     const headers = new HttpHeaders({
@@ -54,6 +67,19 @@ export class ShiftService {
       'Content-Type': 'application/json',
     });
     return this.apiservice.get(`v1/admin/shift/${id}`, headers);
+  }
+
+  getMonthlyRosterDetails(employeeId: string, monthStr: string): Observable<any> {
+    const token = this.jwtService.getToken();
+    const headers = new HttpHeaders({
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    });
+    let url = `v1/admin/shift-rotation/${employeeId}`;
+    if (monthStr) {
+      url += `?month=${monthStr}`;
+    }
+    return this.apiservice.get(url, headers);
   }
 
   updateShift(id: any, body: any): Observable<any> {
@@ -91,6 +117,21 @@ export class ShiftService {
     formData.append('shift_id', String(payload.shift_code));
 
     return this.apiservice.post('v1/admin/employee-shift-assignments', formData, headers);
+  }
+
+  rotateShiftBulk(payload: { employee_ids: string[], target_shift_id: string }): Observable<any> {
+    const token = this.jwtService.getToken();
+    const headers = new HttpHeaders({
+      Authorization: `Bearer ${token}`
+    });
+
+    const formData = new FormData();
+    payload.employee_ids.forEach((id: any) => {
+      formData.append('employee_ids[]', String(id));
+    });
+    formData.append('target_shift_id', String(payload.target_shift_id));
+
+    return this.apiservice.post('v1/admin/shift-rotation', formData, headers);
   }
 
   bulkUploadShiftAssignments(file: File): Observable<any> {

@@ -42,10 +42,25 @@
             title="Previous Week">
             <i class="fa-solid fa-chevron-left"></i>
           </button>
-          <select class="form-select week-filter-dropdown" [(ngModel)]="selectedWeekMondayStr"
-            (change)="onWeekFilterChange(selectedWeekMondayStr)">
-            <option *ngFor="let wk of weeksList" [value]="wk.value">{{ wk.label }}</option>
-          </select>
+          <!-- Week Range Display with Hidden Datepicker Trigger -->
+          <div class="d-flex align-items-center gap-0 week-range-picker-wrapper">
+            <!-- Hidden datepicker input, only opens via toggle -->
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="week-picker-hidden-field">
+              <input matInput [matDatepicker]="weekPicker" [ngModel]="currentDate" (dateChange)="onDateSelected($event.value)" readonly>
+              <mat-datepicker #weekPicker></mat-datepicker>
+            </mat-form-field>
+
+            <!-- Week Range Badge + Calendar Icon -->
+            <div class="week-range-badge d-flex align-items-center gap-2 px-3 py-2 bg-white border rounded-3 shadow-sm">
+              <button type="button" class="btn p-0 border-0 text-primary" (click)="weekPicker.open()" title="Pick a week">
+                <i class="fa-regular fa-calendar fs-6"></i>
+              </button>
+              <div class="d-flex flex-column" style="line-height: 1.2;">
+                <span class="text-muted fw-medium" style="font-size: 10px; letter-spacing: 0.5px; text-transform: uppercase;">Week</span>
+                <span class="fw-bold text-dark" style="font-size: 13px; white-space: nowrap;">{{ getWeekRangeLabel() }}</span>
+              </div>
+            </div>
+          </div>
           <button class="btn btn-outline-secondary btn-icon rounded-circle" (click)="navigateWeek(1)" title="Next Week">
             <i class="fa-solid fa-chevron-right"></i>
           </button>
@@ -54,23 +69,19 @@
         <!-- Inline Capsule Shift Tabs -->
         <div class="d-flex gap-2 p-1 bg-light rounded-pill roster-tabs-wrapper"
           style="width: fit-content; border: 1px solid #e2e8f0;">
-          <button class="btn rounded-pill px-3 py-1.5 tab-btn text-nowrap transition-all fw-semibold fs-8" [ngClass]="{
-                    'btn-primary shadow-sm text-white': activeTab === 'Shift A',
-                    'btn-light-text text-muted bg-transparent border-0': activeTab !== 'Shift A'
-                  }" (click)="activeTab = 'Shift A'">
-            <i class="fa-solid fa-sun me-1.5 text-warning animate-spin-hover"></i>Shift A
-          </button>
-          <button class="btn rounded-pill px-3 py-1.5 tab-btn text-nowrap transition-all fw-semibold fs-8" [ngClass]="{
-                    'btn-primary shadow-sm text-white': activeTab === 'Shift B',
-                    'btn-light-text text-muted bg-transparent border-0': activeTab !== 'Shift B'
-                  }" (click)="activeTab = 'Shift B'">
-            <i class="fa-solid fa-cloud-sun me-1.5 text-info"></i>Shift B
-          </button>
-          <button class="btn rounded-pill px-3 py-1.5 tab-btn text-nowrap transition-all fw-semibold fs-8" [ngClass]="{
-                    'btn-primary shadow-sm text-white': activeTab === 'Shift C',
-                    'btn-light-text text-muted bg-transparent border-0': activeTab !== 'Shift C'
-                  }" (click)="activeTab = 'Shift C'">
-            <i class="fa-solid fa-moon me-1.5 text-purple"></i>Shift C
+          <button *ngFor="let shift of allShiftsList" 
+                  class="btn rounded-pill px-3 py-1.5 tab-btn text-nowrap transition-all fw-semibold fs-8" 
+                  [ngClass]="{
+                    'btn-primary shadow-sm text-white': activeTabId === shift.id,
+                    'btn-light-text text-muted bg-transparent border-0': activeTabId !== shift.id
+                  }" 
+                  (click)="onTabChange(shift)">
+            <i class="fa-solid me-1.5" [ngClass]="{
+              'fa-sun text-warning animate-spin-hover': shift.name === 'Shift A',
+              'fa-cloud-sun text-info': shift.name === 'Shift B',
+              'fa-moon text-purple': shift.name === 'Shift C',
+              'fa-clock text-secondary': shift.name !== 'Shift A' && shift.name !== 'Shift B' && shift.name !== 'Shift C'
+            }"></i>{{ shift.name }}
           </button>
         </div>
       </div>
@@ -85,6 +96,22 @@
 
     <!-- Employee Roster Table View -->
     <div class="card-body p-4 pt-2">
+      <div class="d-md-flex justify-content-between align-items-center my-3">
+        <div class="d-flex align-items-center mb-md-0 mb-2">
+          <span class="me-1 show-entery-text">Show</span>
+          <select class="form-control form-select show-entries-select" [(ngModel)]="showEntries" style="width: auto;">
+            <option [ngValue]="5">5</option>
+            <option [ngValue]="10">10</option>
+            <option [ngValue]="15">15</option>
+            <option [ngValue]="20">20</option>
+            <option [ngValue]="25">25</option>
+            <option [ngValue]="50">50</option>
+            <option [ngValue]="100">100</option>
+          </select>
+          <span class="ms-1 show-entery-text">entries</span>
+        </div>
+      </div>
+
       <div class="table-responsive-sm mt-2">
         <table class="table table-bordered table-hover table-striped mb-0">
           <thead class="table-header">
@@ -93,14 +120,15 @@
               <th><p class="table-heading">Employee Name</p></th>
               <th><p class="table-heading">Site</p></th>
               <th><p class="table-heading">Department</p></th>
+              <th><p class="table-heading">Relay</p></th>
               <th style="width: 150px;"><p class="table-heading">Active Shift</p></th>
               <th style="width: 180px;"><p class="table-heading">Action</p></th>
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let emp of getEmployeesForActiveShift(activeTab); index as i">
+            <tr *ngFor="let emp of getEmployeesForActiveShift(activeTab) | paginate: { id: 'shift-pagination', itemsPerPage: showEntries, currentPage: pShift }; index as i">
               <td>
-                {{ i + 1 }}
+                {{ (pShift - 1) * showEntries + i + 1 }}
               </td>
               <td>
                 <p>{{ emp.name }}</p>
@@ -110,6 +138,9 @@
               </td>
               <td>
                 <p>{{ emp.department }}</p>
+              </td>
+              <td>
+                <p>{{ emp.relay || 'N/A' }}</p>
               </td>
               <td>
                 <p>{{ activeTab }}</p>
@@ -135,12 +166,21 @@
               </td>
             </tr>
             <tr *ngIf="getEmployeesForActiveShift(activeTab).length === 0">
-              <td colspan="6" class="text-center py-4 text-muted">
+              <td colspan="7" class="text-center py-4 text-muted">
                 No employees allocated to {{ activeTab }} in this week.
               </td>
             </tr>
           </tbody>
         </table>
+        <div class="d-md-flex justify-content-between bottom-0 end-0 py-2 align-items-center"
+          *ngIf="getEmployeesForActiveShift(activeTab).length > 0">
+          <span class="showalltext">Showing
+            {{ showEntries * (pShift - 1) > 0 ? showEntries * (pShift - 1) + 1 : 1 }} to
+            {{ showEntries * pShift <= getEmployeesForActiveShift(activeTab).length ? showEntries * pShift : getEmployeesForActiveShift(activeTab).length }}
+              of {{ getEmployeesForActiveShift(activeTab).length }} entries</span>
+              <pagination-controls id="shift-pagination" previousLabel="Prev" nextLabel="Next" [responsive]="true"
+                (pageChange)="pShift = $event" target="_top"></pagination-controls>
+        </div>
       </div>
     </div>
   </div>
@@ -325,73 +365,56 @@
         </div>
 
         <!-- Quick Summary Totals -->
-        <div class="d-flex align-items-center gap-2 flex-wrap" *ngIf="selectedEmployeeForDetails">
+        <div class="d-flex align-items-center gap-2 flex-wrap" *ngIf="monthlyDetailsData">
           <span class="fs-8 text-muted fw-semibold me-1">Monthly Summary:</span>
-          <span class="badge bg-light-primary text-primary border border-primary-light px-2.5 py-1.5 fs-8 rounded-pill fw-semibold">
-            Shift A: {{ getMonthlyBreakdown(selectedEmployeeForDetails.id).shiftACount }} days
-          </span>
-          <span class="badge bg-light-success text-success border border-success-light px-2.5 py-1.5 fs-8 rounded-pill fw-semibold">
-            Shift B: {{ getMonthlyBreakdown(selectedEmployeeForDetails.id).shiftBCount }} days
-          </span>
-          <span class="badge bg-light-orange text-orange border border-orange-light px-2.5 py-1.5 fs-8 rounded-pill fw-semibold">
-            Shift C: {{ getMonthlyBreakdown(selectedEmployeeForDetails.id).shiftCCount }} days
-          </span>
-          <span class="badge bg-light text-muted border px-2.5 py-1.5 fs-8 rounded-pill fw-semibold">
-            Off: {{ getMonthlyBreakdown(selectedEmployeeForDetails.id).offCount }} days
-          </span>
+          <ng-container *ngFor="let summary of monthlyDetailsData.monthly_summary">
+            <span class="badge px-2.5 py-1.5 fs-8 rounded-pill fw-semibold"
+                  [ngClass]="{
+                    'bg-light-primary text-primary border border-primary-light': summary.label === 'Shift A',
+                    'bg-light-success text-success border border-success-light': summary.label === 'Shift B',
+                    'bg-light-orange text-orange border border-orange-light': summary.label === 'Shift C',
+                    'bg-light text-muted border': summary.label === 'Off' || summary.label === 'Leave' || summary.label === 'Holiday'
+                  }">
+              {{ summary.label }}: {{ summary.days }} days
+            </span>
+          </ng-container>
         </div>
       </div>
 
       <!-- Weekly grouped cards container -->
       <div class="grid-section-title" style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #64748b; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">Roster Calendar Timeline</div>
-      <div class="d-flex flex-column gap-3">
-        <!-- Loop over each week grouped list -->
-        <div *ngFor="let wk of getWeeksWithDays()" class="card border-0 shadow-sm rounded-3 overflow-hidden" style="border: 1px solid #e2e8f0 !important;">
+      <div class="d-flex flex-column gap-3" *ngIf="monthlyDetailsData">
+        <!-- Loop over each week from API -->
+        <div *ngFor="let wk of monthlyDetailsData.timeline_weeks" class="card border-0 shadow-sm rounded-3 overflow-hidden" style="border: 1px solid #e2e8f0 !important;">
           <div class="card-header bg-white border-bottom py-3 px-4 d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%) !important;">
             <h6 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2" style="font-family: 'Montserrat', sans-serif; font-size: 14px;">
               <i class="fa-regular fa-calendar text-primary fs-6"></i>
-              {{ wk.name }} <span class="text-muted font-normal fs-8">(Days: {{ wk.label }})</span>
+              {{ wk.week_name }} <span class="text-muted font-normal fs-8">({{ wk.days_range }})</span>
             </h6>
-            <span class="badge bg-light text-muted font-semibold border px-2.5 py-1 fs-9 rounded-pill">
-              {{ wk.days.length }} Days Listed
-            </span>
           </div>
 
           <div class="card-body p-0" style="background: #ffffff;">
             <!-- Weekly timeline list block -->
             <div class="list-group list-group-flush">
-              <div *ngFor="let day of wk.days" 
-                class="list-group-item d-flex align-items-center justify-content-between py-3 px-4 transition-all border-0 border-bottom-1"
+              <div class="list-group-item d-flex align-items-center justify-content-between py-3 px-4 transition-all border-0 border-bottom-1"
                 style="border-bottom: 1px solid #f1f5f9; background: #ffffff;">
                 
-                <!-- 1. Left Section: Date & Weekday -->
-                <div class="d-flex align-items-center gap-3" style="min-width: 180px;">
-                  <div class="icon-circle bg-light text-primary rounded-circle p-2 d-flex align-items-center justify-content-center fw-bold shadow-xs" style="width: 36px; height: 36px; font-size: 13px; background: #f1f5f9; color: #2c7da0;">
-                    {{ day.dayNum }}
-                  </div>
-                  <div>
-                    <span class="d-block fw-bold text-dark fs-7" style="font-family: 'Montserrat', sans-serif;">{{ day.dayNum | number:'2.0-0' }} {{ getSelectedMonthLabel().split(' ')[0] }}</span>
-                    <span class="text-muted fs-8 font-medium">{{ day.dayName }}</span>
-                  </div>
-                </div>
-
-                <!-- 2. Middle Section: Assigned Shift Badge & Timings -->
-                <div class="d-flex align-items-center gap-4 flex-grow-1 px-3 justify-content-end">
-                  <!-- Shift Code badge with clean visual colors -->
+                <div class="d-flex align-items-center gap-4 flex-grow-1 px-3 justify-content-start">
+                  <!-- Shift Code badge -->
                   <div>
                     <span class="badge rounded-pill font-bold px-3 py-1.5 fs-8 text-white shadow-xs d-inline-block text-center" style="min-width: 85px; font-weight: 700;" [ngClass]="{
-                            'bg-primary': day.shiftCode === 'Shift A',
-                            'bg-success': day.shiftCode === 'Shift B',
-                            'bg-orange': day.shiftCode === 'Shift C',
-                            'bg-secondary': day.shiftCode === 'Off' || day.shiftCode === 'Leave' || day.shiftCode === 'Holiday'
+                            'bg-primary': wk.shift_name === 'Shift A',
+                            'bg-success': wk.shift_name === 'Shift B',
+                            'bg-orange': wk.shift_name === 'Shift C',
+                            'bg-secondary': !wk.shift_name || wk.shift_name === 'Off' || wk.shift_name === 'Leave' || wk.shift_name === 'Holiday'
                           }">
-                      {{ day.shiftCode }}
+                      {{ wk.shift_name || 'Off / Unassigned' }}
                     </span>
                   </div>
                   <!-- Exact Timing Duration -->
-                  <div class="d-flex align-items-center gap-2 text-muted fs-8" style="min-width: 140px;">
+                  <div *ngIf="wk.label" class="d-flex align-items-center gap-2 text-muted fs-8" style="min-width: 140px;">
                     <i class="fa-regular fa-clock fs-8"></i>
-                    <span class="fw-semibold text-dark">{{ day.timeLabel }}</span>
+                    <span class="fw-semibold text-dark">{{ wk.label }}</span>
                   </div>
                 </div>
 
@@ -431,18 +454,6 @@
       <div class="modal-body-custom p-4 flex-grow-1" style="overflow: visible;">
         <div class="row g-3">
           
-          <!-- Current Shift Selection -->
-          <div class="col-md-12">
-            <label class="form-label form-lable-custom">Filter by Current Shift <span class="text-danger">*</span></label>
-            <select class="form-select form-input-custom" formControlName="currentShift"
-              [ngClass]="{'is-invalid': bulkRotateForm.get('currentShift')?.invalid && bulkRotateForm.get('currentShift')?.touched}">
-              <option value="">Select Current Shift</option>
-              <option value="Shift A">Shift A (Morning) ({{ (shiftGroups['Shift A'] || []).length }} employees)</option>
-              <option value="Shift B">Shift B (Afternoon) ({{ (shiftGroups['Shift B'] || []).length }} employees)</option>
-              <option value="Shift C">Shift C (Night) ({{ (shiftGroups['Shift C'] || []).length }} employees)</option>
-            </select>
-            <div class="invalid-feedback">Please select the current shift.</div>
-          </div>
 
           <!-- Select Employees List -->
           <div class="col-md-12">
@@ -497,13 +508,6 @@
             </div>
           </div>
 
-          <!-- No Employees Warning -->
-          <div class="col-md-12" *ngIf="bulkRotateForm.get('currentShift')?.value && filteredEmployeesForRotation.length === 0">
-            <div class="alert alert-warning py-2 fs-8 mb-0 d-flex align-items-center gap-2">
-              <i class="fa-solid fa-circle-info"></i>
-              <span>No employees are currently assigned to this shift group.</span>
-            </div>
-          </div>
 
           <!-- Target Shift Selection -->
           <div class="col-md-12">

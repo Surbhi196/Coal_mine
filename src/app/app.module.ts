@@ -25,6 +25,7 @@ import { EmployeeService } from './core/services/Employee.service';
 import { NgxPaginationModule } from 'ngx-pagination';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { NavbarComponent } from './website/navbar/navbar.component';
+import { EmployeePayrollComponent } from './admin/employee-payroll/employee-payroll.component';
 
 
 
@@ -41,6 +42,7 @@ import { NavbarComponent } from './website/navbar/navbar.component';
     SpinnerComponent,
     HomeComponent,
     NavbarComponent,
+    EmployeePayrollComponent,
   ],
   imports: [
     BrowserModule,

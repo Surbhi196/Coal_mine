@@ -20,6 +20,7 @@ import { LeaveTypeComponent } from './admin/masters/leave-type/leave-type.compon
 import { SalaryStructureComponent } from './admin/masters/salary-structure/salary-structure.component';
 import { HolidayComponent } from './admin/masters/holiday/holiday.component';
 import { EmployeeManagementComponent } from './admin/employee-management/employee-management.component';
+import { EmployeePayrollComponent } from './admin/employee-payroll/employee-payroll.component';
 import { ShiftManagementComponent } from './admin/shift-management/shift-management.component';
 import { AttendanceManagementComponent } from './admin/attendance-management/attendance-management.component';
 import { LeaveManagementComponent } from './admin/leave-management/leave-management.component';
@@ -87,6 +88,11 @@ const routes: Routes = [
       {
         path: 'employee-management',
         component: EmployeeManagementComponent,
+        canActivate: [AuthGuard],
+      },
+      {
+        path: 'employee-payroll',
+        component: EmployeePayrollComponent,
         canActivate: [AuthGuard],
       },
       {

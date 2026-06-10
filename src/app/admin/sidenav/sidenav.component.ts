@@ -131,6 +131,12 @@ export class SidenavComponent {
         },
         {
           index: 4,
+          icon: 'account_balance_wallet',
+          label: 'Employee Payroll',
+          route: '/admin/employee-payroll',
+        },
+        {
+          index: 4,
           icon: 'calendar_month',
           label: 'Shift Rotation',
           route: '/admin/shift-management',

@@ -3,6 +3,7 @@ import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MaterialModule } from 'src/app/mat/mat.module';
 import { NgxPaginationModule } from 'ngx-pagination';
+import { NgSelectModule } from '@ng-select/ng-select';
 import { EmployeeService } from 'src/app/core/services/Employee.service';
 import { NotificationService } from 'src/app/core/services/notificationnew.service';
 
@@ -25,6 +26,8 @@ interface PayrollRecord {
   leaveDeduction: number;
   othersDeduction: number;
   incentives: number;
+  penalties: any[];
+  penaltyTotalAmount: number;
   totalEarnings: number;
   totalDeductions: number;
   netSalary: number;
@@ -39,7 +42,8 @@ interface PayrollRecord {
     FormsModule,
     ReactiveFormsModule,
     MaterialModule,
-    NgxPaginationModule
+    NgxPaginationModule,
+    NgSelectModule
   ],
   templateUrl: './payroll-management.component.html',
   styleUrl: './payroll-management.component.scss',
@@ -79,6 +83,13 @@ export class PayrollManagementComponent implements OnInit {
   showAddModal: boolean = false;
   addForm!: FormGroup;
   
+  // Penalty Modals
+  penaltyModalOpen: boolean = false;
+  bulkPenaltyModalOpen: boolean = false;
+  penaltyForm!: FormGroup;
+  viewPenaltyModalOpen: boolean = false;
+  selectedPenaltyEmployee: any = null;
+  
   // Dropdown options
   mockSites: string[] = ['East Mine', 'West Mine', 'North Sector'];
   departments: string[] = ['Mining', 'HR', 'Safety', 'Operations', 'Finance'];
@@ -115,6 +126,13 @@ export class PayrollManagementComponent implements OnInit {
       presentCount: [26, [Validators.required, Validators.min(0)]],
       halfDayCount: [0, [Validators.required, Validators.min(0)]],
       absentCount: [0, [Validators.required, Validators.min(0)]]
+    });
+
+    this.penaltyForm = this.fb.group({
+      employeeId: ['', Validators.required],
+      penaltyMonth: ['', Validators.required],
+      reason: ['', Validators.required],
+      amount: [null, [Validators.required, Validators.min(1)]]
     });
   }
 
@@ -275,8 +293,21 @@ export class PayrollManagementComponent implements OnInit {
       const leaveDeduction = dailyRate * ((absentCount + unpaidLeaveCount) + 0.5 * (halfDayCount + exceptionCount));
 
       const shiftAllowance = emp.shiftAllowance || 1500;
+      // Mock Penalties Logic
+      let penalties: any[] = [];
+      let penaltyTotalAmount = 0;
+      
+      // Force assign penalty to the first employee so it's always visible for testing
+      if (empId === this.employees[0]?.id) {
+        penalties = [
+          { date: new Date(year, month - 1, 12), reason: 'Uninformed absence from shift', amount: 500 }
+        ];
+        penaltyTotalAmount = 500;
+      }
+
       const totalEarnings = emp.basicSalary + shiftAllowance + incentives;
-      const totalDeductions = pfDeduction + messDeduction + leaveDeduction + othersDeduction;
+      // Subtract penalty from net salary via deductions
+      const totalDeductions = pfDeduction + messDeduction + leaveDeduction + othersDeduction + penaltyTotalAmount;
       const netSalary = Math.max(0, totalEarnings - totalDeductions);
 
       return {
@@ -298,6 +329,8 @@ export class PayrollManagementComponent implements OnInit {
         leaveDeduction: Math.round(leaveDeduction * 100) / 100,
         othersDeduction,
         incentives,
+        penalties,
+        penaltyTotalAmount,
         totalEarnings: Math.round(totalEarnings),
         totalDeductions: Math.round(totalDeductions),
         netSalary: Math.round(netSalary),
@@ -350,6 +383,8 @@ export class PayrollManagementComponent implements OnInit {
         leaveDeduction: Math.round(leaveDeduction * 100) / 100,
         othersDeduction,
         incentives,
+        penalties: [],
+        penaltyTotalAmount: 0,
         totalEarnings: Math.round(totalEarnings),
         totalDeductions: Math.round(totalDeductions),
         netSalary: Math.round(netSalary),
@@ -688,5 +723,46 @@ This is a computer-generated payslip and does not require an authorized signatur
     if (remaining > 0) res += convert(remaining);
 
     return res.trim();
+  }
+
+  // Penalty Modals Logic
+  openPenaltyModal(): void {
+    const today = new Date();
+    const defaultMonth = this.datePipe.transform(today, 'yyyy-MM') || '';
+    this.penaltyForm.reset({
+      penaltyMonth: defaultMonth
+    });
+    this.penaltyModalOpen = true;
+  }
+
+  closePenaltyModal(): void {
+    this.penaltyModalOpen = false;
+  }
+
+  savePenalty(): void {
+    if (this.penaltyForm.valid) {
+      this.notificationService.show('Penalty added successfully!', 'success', 3000);
+      this.closePenaltyModal();
+    } else {
+      this.penaltyForm.markAllAsTouched();
+    }
+  }
+
+  openBulkPenaltyModal(): void {
+    this.bulkPenaltyModalOpen = true;
+  }
+
+  closeBulkPenaltyModal(): void {
+    this.bulkPenaltyModalOpen = false;
+  }
+
+  openViewPenaltyModal(rec: PayrollRecord): void {
+    this.selectedPenaltyEmployee = rec;
+    this.viewPenaltyModalOpen = true;
+  }
+
+  closeViewPenaltyModal(): void {
+    this.viewPenaltyModalOpen = false;
+    this.selectedPenaltyEmployee = null;
   }
 }

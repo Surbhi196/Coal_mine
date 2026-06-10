@@ -10,6 +10,12 @@ import { NotificationService } from 'src/app/core/services/notificationnew.servi
 import { ShiftService } from 'src/app/core/services/shift.service';
 import { EmployeeManagementService } from 'src/app/core/services/employee-management.service';
 import { NgSelectModule } from '@ng-select/ng-select';
+import { NgxPaginationModule } from 'ngx-pagination';
+
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatNativeDateModule } from '@angular/material/core';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 
 @Component({
   selector: 'app-shift-management',
@@ -21,7 +27,12 @@ import { NgSelectModule } from '@ng-select/ng-select';
     MatMenuModule,
     MatIconModule,
     MatButtonModule,
-    NgSelectModule
+    NgSelectModule,
+    MatDatepickerModule,
+    MatNativeDateModule,
+    MatFormFieldModule,
+    MatInputModule,
+    NgxPaginationModule
   ],
   templateUrl: './shift-management.component.html',
   styleUrl: './shift-management.component.scss',
@@ -69,9 +80,14 @@ export class ShiftManagementComponent implements OnInit {
 
   // Tab and Week/Month filtering state
   activeTab: string = 'Shift A';
+  activeTabId: any = null;
   weeksList: any[] = [];
   selectedWeekMondayStr: string = '';
   selectedMonth: string = '2026-05';
+  
+  pShift: number = 1;
+  showEntries: number = 10;
+
   monthsList = [
     { label: 'May 2026', value: '2026-05' },
     { label: 'June 2026', value: '2026-06' },
@@ -92,6 +108,7 @@ export class ShiftManagementComponent implements OnInit {
 
   // List of employees loaded from the live API response
   employees: any[] = [];
+  weeklyShiftEmployees: any[] = [];
 
   // Shift Assignments Roster: { [empId]: { [dateStr]: shiftCode } }
   shiftAssignments: { [empId: string]: { [dateStr: string]: string } } = {};
@@ -120,12 +137,45 @@ export class ShiftManagementComponent implements OnInit {
       next: (res: any) => {
         if (res.status === 200 && res.data) {
           this.allShiftsList = res.data;
+          const defaultShift = this.allShiftsList.find((s: any) => s.name === this.activeTab);
+          if (defaultShift) {
+             this.activeTabId = defaultShift.id;
+          } else if (this.allShiftsList.length > 0) {
+             this.activeTabId = this.allShiftsList[0].id;
+             this.activeTab = this.allShiftsList[0].name;
+          }
+          this.loadWeeklyShiftRotations();
         }
       },
       error: (err) => console.error('Error fetching shifts list', err)
     });
 
     this.rotationLogs = [];
+  }
+
+  loadWeeklyShiftRotations() {
+    if (!this.activeWeekDays || this.activeWeekDays.length === 0) return;
+
+    const fromDate = this.activeWeekDays[0].dateStr;
+    const toDate = this.activeWeekDays[6].dateStr;
+
+    this.shiftService.getShiftRotation(fromDate, toDate, this.activeTabId).subscribe({
+      next: (res: any) => {
+        if (res.status === 200 && res.data) {
+          this.weeklyShiftEmployees = res.data.map((emp: any) => ({
+            ...emp,
+            location: emp.site || emp.location || 'N/A',
+            relay: emp.relay || 'N/A'
+          }));
+        } else {
+          this.weeklyShiftEmployees = [];
+        }
+      },
+      error: (err) => {
+        console.error('Error fetching shift rotation:', err);
+        this.weeklyShiftEmployees = [];
+      }
+    });
   }
 
   loadLiveEmployees() {
@@ -234,6 +284,9 @@ export class ShiftManagementComponent implements OnInit {
     this.generateActiveWeekDays(this.currentDate);
     this.initRosterForWeek(this.currentDate);
     this.selectedWeekMondayStr = this.formatDateStr(this.currentDate);
+    if (this.activeTabId) {
+      this.loadWeeklyShiftRotations();
+    }
   }
 
   getWeekRangeLabel(): string {
@@ -254,7 +307,7 @@ export class ShiftManagementComponent implements OnInit {
       wMonday.setDate(todayMonday.getDate() + i * 7);
       const wSunday = new Date(wMonday);
       wSunday.setDate(wMonday.getDate() + 6);
-      
+
       const label = `${wMonday.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })} - ${wSunday.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}`;
       const value = this.formatDateStr(wMonday);
       this.weeksList.push({ label, value });
@@ -262,26 +315,39 @@ export class ShiftManagementComponent implements OnInit {
   }
 
   // Triggers when supervisor selects a week from the dropdown filter
-  onWeekFilterChange(mondayStr: string) {
-    if (!mondayStr) return;
-    const parts = mondayStr.split('-');
+  onWeekFilterChange(dateStr: string) {
+    if (!dateStr) return;
+    const parts = dateStr.split('-');
     const selectedDate = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
-    this.currentDate = selectedDate;
+    this.currentDate = this.getMonday(selectedDate);
+    this.selectedWeekMondayStr = this.formatDateStr(this.currentDate);
     this.generateActiveWeekDays(this.currentDate);
     this.initRosterForWeek(this.currentDate);
+    if (this.activeTabId) {
+      this.loadWeeklyShiftRotations();
+    }
+  }
+
+  onDateSelected(date: Date) {
+    if (!date) return;
+    this.currentDate = this.getMonday(date);
+    this.selectedWeekMondayStr = this.formatDateStr(this.currentDate);
+    this.generateActiveWeekDays(this.currentDate);
+    this.initRosterForWeek(this.currentDate);
+    if (this.activeTabId) {
+      this.loadWeeklyShiftRotations();
+    }
+  }
+
+  onTabChange(shift: any) {
+    this.activeTabId = shift.id;
+    this.activeTab = shift.name;
+    this.loadWeeklyShiftRotations();
   }
 
   // Retrieves employees actively assigned to a specific shift for the current week
   getEmployeesForActiveShift(shiftCode: string): any[] {
-    const checkDateStr = this.activeWeekDays[2]?.dateStr || this.formatDateStr(new Date());
-    const list: any[] = [];
-    this.employees.forEach(emp => {
-      const assigned = this.shiftAssignments[emp.id]?.[checkDateStr] || 'Off';
-      if (assigned === shiftCode) {
-        list.push(emp);
-      }
-    });
-    return list;
+    return this.weeklyShiftEmployees.filter(emp => emp.shift === shiftCode);
   }
 
   // Calculates the monthly breakdown of shift assignments for an employee with advanced categories
@@ -292,7 +358,7 @@ export class ShiftManagementComponent implements OnInit {
     let offCount = 0;
     let leaveCount = 0;
     let overrideCount = 0;
-    
+
     const days = this.getDaysInMonthListForMetrics(empId);
     days.forEach(day => {
       if (day.shiftCode === 'Shift A') shiftACount++;
@@ -300,10 +366,10 @@ export class ShiftManagementComponent implements OnInit {
       else if (day.shiftCode === 'Shift C') shiftCCount++;
       else if (day.shiftCode === 'Leave') leaveCount++;
       else offCount++;
-      
+
       if (day.isManualOverride) overrideCount++;
     });
-    
+
     return { shiftACount, shiftBCount, shiftCCount, offCount, leaveCount, overrideCount };
   }
 
@@ -311,10 +377,10 @@ export class ShiftManagementComponent implements OnInit {
   getNextShift(empId: string): { shiftCode: string, dateStr: string, timeLabel: string } | null {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     const empAssignments = this.shiftAssignments[empId];
     if (!empAssignments) return null;
-    
+
     const dates = Object.keys(empAssignments).sort();
     for (const dateStr of dates) {
       const d = new Date(dateStr);
@@ -330,7 +396,7 @@ export class ShiftManagementComponent implements OnInit {
         }
       }
     }
-    
+
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     const fallbackShift = empId === '1' || empId === '3' ? 'Shift A' : empId === '2' || empId === '5' ? 'Shift B' : 'Shift C';
@@ -342,16 +408,34 @@ export class ShiftManagementComponent implements OnInit {
     };
   }
 
+  monthlyDetailsData: any = null;
+
   // Open the monthly details calendar modal
   openDetailsModal(emp: any) {
     this.selectedEmployeeForDetails = emp;
+    this.fetchMonthlyDetails(emp.id, this.selectedMonth);
     this.isDetailsModalOpen = true;
+  }
+
+  fetchMonthlyDetails(empId: string, monthStr: string) {
+    this.monthlyDetailsData = null;
+    this.shiftService.getMonthlyRosterDetails(empId, monthStr).subscribe({
+      next: (res: any) => {
+        if (res.status === 200 && res.data) {
+          this.monthlyDetailsData = res.data;
+        }
+      },
+      error: (err) => {
+        console.error('Error fetching monthly details:', err);
+      }
+    });
   }
 
   // Close the monthly details calendar modal
   closeDetailsModal() {
     this.isDetailsModalOpen = false;
     this.selectedEmployeeForDetails = null;
+    this.monthlyDetailsData = null;
   }
 
   // Generates complete days list for the selected month to render the calendar grid with advanced features
@@ -360,22 +444,22 @@ export class ShiftManagementComponent implements OnInit {
     const parts = this.selectedMonth.split('-');
     const year = Number(parts[0]);
     const month = Number(parts[1]); // 1-indexed
-    
+
     const numDays = new Date(year, month, 0).getDate();
     const list: any[] = [];
-    
+
     for (let i = 1; i <= numDays; i++) {
       const date = new Date(year, month - 1, i);
       const dateStr = this.formatDateStr(date);
       const dayName = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][date.getDay()];
-      
+
       let assignedShift = 'Off';
       let isManualOverride = false;
       let attendanceStatus: 'Present' | 'Absent' | 'Missing Punch' | 'Late Mark' | 'Half Day' | null = null;
-      
+
       if (this.selectedEmployeeForDetails) {
         const empId = this.selectedEmployeeForDetails.id;
-        
+
         if (i === 1) {
           assignedShift = 'Holiday';
         } else if (i === 10 || i === 11) {
@@ -397,13 +481,13 @@ export class ShiftManagementComponent implements OnInit {
             }
           }
         }
-        
+
         if (assignedShift !== 'Off' && assignedShift !== 'Leave' && assignedShift !== 'Holiday') {
           if (i % 7 === 0) {
             isManualOverride = true;
           }
         }
-        
+
         if (assignedShift !== 'Off' && assignedShift !== 'Leave' && assignedShift !== 'Holiday') {
           if (i === 4 || i === 16) {
             attendanceStatus = 'Missing Punch';
@@ -418,14 +502,14 @@ export class ShiftManagementComponent implements OnInit {
           }
         }
       }
-      
+
       let timeLabel = 'Rest Day';
       if (assignedShift === 'Shift A') timeLabel = '06:00 AM – 02:00 PM';
       else if (assignedShift === 'Shift B') timeLabel = '02:00 PM – 10:00 PM';
       else if (assignedShift === 'Shift C') timeLabel = '10:00 PM – 06:00 AM';
       else if (assignedShift === 'Leave') timeLabel = 'Approved Leave';
       else if (assignedShift === 'Holiday') timeLabel = 'Public Holiday';
-      
+
       list.push({
         dayNum: i,
         dayName,
@@ -438,7 +522,7 @@ export class ShiftManagementComponent implements OnInit {
         isConflict: false
       });
     }
-    
+
     for (let i = 0; i < list.length; i++) {
       if (list[i].shiftCode === 'Shift C') {
         let nightCount = 1;
@@ -456,12 +540,12 @@ export class ShiftManagementComponent implements OnInit {
           list[i].isFatigue = true;
         }
       }
-      
+
       if (list[i].dayNum === 18) {
         list[i].isConflict = true;
       }
     }
-    
+
     return list;
   }
 
@@ -497,7 +581,7 @@ export class ShiftManagementComponent implements OnInit {
   getEmployeeAuditLogs(empId: string): any[] {
     const emp = this.employees.find(e => e.id === empId);
     if (!emp) return [];
-    
+
     return [
       {
         timestamp: new Date('2026-05-24T09:30:00'),
@@ -539,7 +623,7 @@ export class ShiftManagementComponent implements OnInit {
     const parts = this.selectedMonth.split('-');
     let year = Number(parts[0]);
     let month = Number(parts[1]);
-    
+
     month += offset;
     if (month > 12) {
       month = 1;
@@ -548,9 +632,13 @@ export class ShiftManagementComponent implements OnInit {
       month = 12;
       year -= 1;
     }
-    
+
     const mStr = String(month).padStart(2, '0');
     this.selectedMonth = `${year}-${mStr}`;
+    
+    if (this.selectedEmployeeForDetails) {
+      this.fetchMonthlyDetails(this.selectedEmployeeForDetails.id, this.selectedMonth);
+    }
   }
 
   // Safely converts 'YYYY-MM' strings into 'Month YYYY' for robust template rendering without DatePipe crashes
@@ -567,30 +655,30 @@ export class ShiftManagementComponent implements OnInit {
     const parts = this.selectedMonth.split('-');
     const year = Number(parts[0]);
     const month = Number(parts[1]); // 1-indexed
-    
+
     const numDays = new Date(year, month, 0).getDate();
     const journey: any[] = [];
-    
+
     const weekRanges = [
       { start: 1, end: 7, name: 'Week 1' },
       { start: 8, end: 14, name: 'Week 2' },
       { start: 15, end: 21, name: 'Week 3' },
       { start: 22, end: numDays, name: 'Week 4' }
     ];
-    
+
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const monthLabel = monthNames[month - 1];
-    
+
     weekRanges.forEach(w => {
       let shiftACount = 0;
       let shiftBCount = 0;
       let shiftCCount = 0;
       let hasOverride = false;
-      
+
       for (let d = w.start; d <= w.end; d++) {
         const date = new Date(year, month - 1, d);
         const dateStr = this.formatDateStr(date);
-        
+
         let assigned = this.shiftAssignments[empId]?.[dateStr] || '';
         if (!assigned) {
           const dayOfWeek = date.getDay();
@@ -606,16 +694,16 @@ export class ShiftManagementComponent implements OnInit {
             }
           }
         }
-        
+
         if (assigned === 'Shift A') shiftACount++;
         else if (assigned === 'Shift B') shiftBCount++;
         else if (assigned === 'Shift C') shiftCCount++;
-        
+
         if (d % 7 === 0 && assigned !== 'Off' && assigned !== 'Leave' && assigned !== 'Holiday') {
           hasOverride = true;
         }
       }
-      
+
       let predominantShift = 'Off';
       if (shiftACount > shiftBCount && shiftACount > shiftCCount) predominantShift = 'Shift A';
       else if (shiftBCount > shiftACount && shiftBCount > shiftCCount) predominantShift = 'Shift B';
@@ -625,18 +713,18 @@ export class ShiftManagementComponent implements OnInit {
         else if (empId === '2' || empId === '5') predominantShift = 'Shift B';
         else predominantShift = 'Shift C';
       }
-      
+
       let timeLabel = 'Rest Days Block';
       if (predominantShift === 'Shift A') timeLabel = '06:00 AM - 02:00 PM';
       else if (predominantShift === 'Shift B') timeLabel = '02:00 PM - 10:00 PM';
       else if (predominantShift === 'Shift C') timeLabel = '10:00 PM - 06:00 AM';
-      
+
       if (empId === '1' && w.name === 'Week 3') {
         predominantShift = 'Shift B';
         timeLabel = '02:00 PM - 10:00 PM';
         hasOverride = true;
       }
-      
+
       const pad = (n: number) => String(n).padStart(2, '0');
       journey.push({
         weekName: w.name,
@@ -646,7 +734,7 @@ export class ShiftManagementComponent implements OnInit {
         hasOverride
       });
     });
-    
+
     return journey;
   }
 
@@ -770,8 +858,8 @@ export class ShiftManagementComponent implements OnInit {
         return;
       }
 
-      const targetShiftObj = this.allShiftsList.find(s => 
-        s.name.toLowerCase() === newShift.toLowerCase() || 
+      const targetShiftObj = this.allShiftsList.find(s =>
+        s.name.toLowerCase() === newShift.toLowerCase() ||
         String(s.id) === String(newShift)
       );
 
@@ -964,13 +1052,8 @@ export class ShiftManagementComponent implements OnInit {
 
   initBulkRotateForm() {
     this.bulkRotateForm = this.formBuilder.group({
-      currentShift: ['', Validators.required],
       employeeIds: [[], Validators.required],
       targetShift: ['', Validators.required]
-    });
-
-    this.bulkRotateForm.get('currentShift')?.valueChanges.subscribe(val => {
-      this.updateFilteredEmployees(val);
     });
 
     this.bulkRotateForm.get('employeeIds')?.valueChanges.subscribe(val => {
@@ -996,7 +1079,7 @@ export class ShiftManagementComponent implements OnInit {
 
   areAllRotateEmployeesSelected(): boolean {
     if (this.filteredEmployeesForRotation.length === 0) return false;
-    return this.filteredEmployeesForRotation.every(emp => 
+    return this.filteredEmployeesForRotation.every(emp =>
       this.selectedEmployeeIdsForRotation.some(selId => String(selId) === String(emp.id))
     );
   }
@@ -1041,7 +1124,6 @@ export class ShiftManagementComponent implements OnInit {
 
   openBulkRotationModal() {
     this.bulkRotateForm.reset({
-      currentShift: '',
       employeeIds: [],
       targetShift: ''
     });
@@ -1069,8 +1151,8 @@ export class ShiftManagementComponent implements OnInit {
       return;
     }
 
-    const targetShiftObj = this.allShiftsList.find(s => 
-      s.name.toLowerCase() === targetShift.toLowerCase() || 
+    const targetShiftObj = this.allShiftsList.find(s =>
+      s.name.toLowerCase() === targetShift.toLowerCase() ||
       String(s.id) === String(targetShift)
     );
 
@@ -1081,15 +1163,15 @@ export class ShiftManagementComponent implements OnInit {
 
     const payload = {
       employee_ids: employeeIds.map((id: any) => String(id)),
-      shift_code: String(targetShiftObj.id)
+      target_shift_id: String(targetShiftObj.id)
     };
 
-    this.shiftService.assignBulkShift(payload).subscribe({
+    this.shiftService.rotateShiftBulk(payload).subscribe({
       next: (res: any) => {
         if (res.status === 200 || res.status === 201) {
           this.notificationService.show(res.message || `Successfully rotated shift for ${employeeIds.length} employee(s) to ${targetShift}.`, 'success', 3000);
-          this.loadLiveEmployees();
-          
+          this.loadWeeklyShiftRotations();
+
           this.rotationLogs.unshift({
             id: Math.floor(1000 + Math.random() * 9000).toString(),
             timestamp: new Date(),

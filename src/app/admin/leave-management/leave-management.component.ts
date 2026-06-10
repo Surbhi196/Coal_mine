@@ -11,7 +11,7 @@ interface LeaveRequest {
   empName: string;
   startDate: string;
   endDate: string;
-  leaveType: 'Casual Leave' | 'Sick Leave' | 'Paid Leave' | 'Unpaid Leave';
+  leaveType: 'Paid Leave' | 'Unpaid Leave';
   reason: string;
   status: 'Pending Supervisor' | 'Pending PM' | 'Pending HR' | 'Approved' | 'Rejected';
   appliedDate: string;
@@ -42,18 +42,18 @@ export class LeaveManagementComponent implements OnInit {
   employees: any[] = [];
   leaveRequests: LeaveRequest[] = [];
   leaveBalances: LeaveBalance[] = [];
-  leaveTypes: ('Casual Leave' | 'Sick Leave' | 'Paid Leave' | 'Unpaid Leave')[] = [
-    'Casual Leave', 'Sick Leave', 'Paid Leave', 'Unpaid Leave'
+  leaveTypes: ('Paid Leave' | 'Unpaid Leave')[] = [
+    'Paid Leave', 'Unpaid Leave'
   ];
 
   leaveApplyForm: FormGroup;
   pInbox: number = 1;
   pHistory: number = 1;
   pBalances: number = 1;
-  
+
   showEntries: number = 10;
   searchText: string = '';
-  
+
   viewLeaveOpen: boolean = false;
   selectedLeave: LeaveRequest | null = null;
 
@@ -129,7 +129,7 @@ export class LeaveManagementComponent implements OnInit {
           empName: this.employees[0]?.name || 'John Doe',
           startDate: this.getOffsetDate(-10),
           endDate: this.getOffsetDate(-9),
-          leaveType: 'Casual Leave',
+          leaveType: 'Paid Leave',
           reason: 'Personal urgent work',
           status: 'Approved',
           appliedDate: this.getOffsetDate(-15),
@@ -141,7 +141,7 @@ export class LeaveManagementComponent implements OnInit {
           empName: this.employees[1]?.name || 'Jane Smith',
           startDate: this.getOffsetDate(-5),
           endDate: this.getOffsetDate(-5),
-          leaveType: 'Sick Leave',
+          leaveType: 'Unpaid Leave',
           reason: 'Fever and cold',
           status: 'Approved',
           appliedDate: this.getOffsetDate(-6),
@@ -190,7 +190,7 @@ export class LeaveManagementComponent implements OnInit {
     }
 
     const { empId, startDate, endDate, leaveType, reason } = this.leaveApplyForm.value;
-    
+
     // Validate Dates
     const start = new Date(startDate);
     const end = new Date(endDate);
@@ -254,7 +254,7 @@ export class LeaveManagementComponent implements OnInit {
     });
     if (!this.searchText) return list;
     const txt = this.searchText.toLowerCase();
-    return list.filter(req => 
+    return list.filter(req =>
       req.empName.toLowerCase().includes(txt) ||
       req.empId.toLowerCase().includes(txt) ||
       req.leaveType.toLowerCase().includes(txt) ||
@@ -266,7 +266,7 @@ export class LeaveManagementComponent implements OnInit {
     const list = this.leaveRequests.filter(req => req.status === 'Approved' || req.status === 'Rejected');
     if (!this.searchText) return list;
     const txt = this.searchText.toLowerCase();
-    return list.filter(req => 
+    return list.filter(req =>
       req.empName.toLowerCase().includes(txt) ||
       req.empId.toLowerCase().includes(txt) ||
       req.leaveType.toLowerCase().includes(txt) ||
@@ -287,7 +287,7 @@ export class LeaveManagementComponent implements OnInit {
     } else if (this.simulatedRole === 'HR' && req.status === 'Pending HR') {
       nextStatus = 'Approved';
       notifyMsg = 'Request fully approved. Attendance synced and balances updated.';
-      
+
       // Update balances
       const days = this.getLeaveDays(req.startDate, req.endDate);
       const balance = this.leaveBalances.find(b => b.empId === req.empId);
@@ -302,7 +302,7 @@ export class LeaveManagementComponent implements OnInit {
 
     req.status = nextStatus;
     req.comments = `Approved by ${this.simulatedRole}`;
-    
+
     this.saveToStorage();
     this.notificationService.show(notifyMsg, 'success', 3000);
   }
@@ -310,7 +310,7 @@ export class LeaveManagementComponent implements OnInit {
   rejectRequest(req: LeaveRequest) {
     req.status = 'Rejected';
     req.comments = `Rejected by ${this.simulatedRole}`;
-    
+
     this.saveToStorage();
     this.notificationService.show(`Request rejected by ${this.simulatedRole}.`, 'info', 3000);
   }
@@ -328,7 +328,7 @@ export class LeaveManagementComponent implements OnInit {
   syncLeaveToAttendance(req: LeaveRequest) {
     const start = new Date(req.startDate);
     const end = new Date(req.endDate);
-    
+
     // Load attendance records
     let attendanceRecords: any[] = [];
     const stored = localStorage.getItem('attendance_records');
@@ -339,7 +339,7 @@ export class LeaveManagementComponent implements OnInit {
     const d = new Date(start);
     while (d <= end) {
       const dateStr = this.datePipe.transform(d, 'yyyy-MM-dd') || '';
-      
+
       const existingIndex = attendanceRecords.findIndex(r => r.empId === req.empId && r.date === dateStr);
       const record = {
         id: existingIndex >= 0 ? attendanceRecords[existingIndex].id : Math.floor(Math.random() * 100000).toString(),
@@ -358,7 +358,7 @@ export class LeaveManagementComponent implements OnInit {
       } else {
         attendanceRecords.unshift(record);
       }
-      
+
       d.setDate(d.getDate() + 1);
     }
 

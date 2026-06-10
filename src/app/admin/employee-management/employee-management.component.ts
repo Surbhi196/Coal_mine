@@ -19,6 +19,7 @@ import { DesignationService } from 'src/app/core/services/designation.service';
 import { SiteService } from 'src/app/core/services/site.service';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { ShiftService } from 'src/app/core/services/shift.service';
+import { forkJoin } from 'rxjs';
 
 @Component({
   selector: 'app-employee-management',
@@ -83,7 +84,7 @@ export class EmployeeManagementComponent implements OnInit {
   currentEmployeeId: any;
   selectedEmployee: any = null;
 
-  activeTab: 'personal' | 'employment' | 'payroll' = 'personal';
+  activeTab: 'personal' | 'employment' = 'personal';
 
   employeeList: any[] = [];
 
@@ -187,7 +188,7 @@ export class EmployeeManagementComponent implements OnInit {
     this.initEmployeeForm();
     this.GetEmployeeFun();
     this.loadShiftGroups();
-    this.loadAllEmployees();
+    // this.loadAllEmployees();
   }
 
   onDateClick(event: any) {
@@ -215,94 +216,32 @@ export class EmployeeManagementComponent implements OnInit {
       designation: ['', [Validators.required]],
       relay: ['', [Validators.required]],
 
-      // Payroll
-      restDay: ['', [Validators.required]],
-      salaryType: ['', [Validators.required]],
-      basicSalary: ['', [Validators.required, Validators.min(0)]],
-      isPfApplicable: ['No', [Validators.required]],
-      pfAmount: [''],
-      pfNumber: [''],
-      bankName: ['', [Validators.required]],
-      accountNumber: ['', [Validators.required]],
-      ifscCode: ['', [Validators.required]],
-      isMessApplicable: ['No', [Validators.required]],
-      messDeductionAmount: [''],
-      isOthersDeductionApplicable: ['No', [Validators.required]],
-      othersDeductionAmount: [''],
-    });
-
-    // Dynamic validator for PF Number & Amount based on PF Applicability
-    this.employeeForm.get('isPfApplicable')?.valueChanges.subscribe(val => {
-      const pfNumCtrl = this.employeeForm.get('pfNumber');
-      const pfAmtCtrl = this.employeeForm.get('pfAmount');
-      if (val === 'Yes') {
-        pfNumCtrl?.setValidators([Validators.required]);
-        pfAmtCtrl?.setValidators([Validators.required, Validators.min(0)]);
-      } else {
-        pfNumCtrl?.clearValidators();
-        pfAmtCtrl?.clearValidators();
-        pfNumCtrl?.setValue('');
-        pfAmtCtrl?.setValue('');
-      }
-      pfNumCtrl?.updateValueAndValidity();
-      pfAmtCtrl?.updateValueAndValidity();
-    });
-
-    // Dynamic validator for Mess Deduction Amount based on Mess Deduction Applicability
-    this.employeeForm.get('isMessApplicable')?.valueChanges.subscribe(val => {
-      const amtCtrl = this.employeeForm.get('messDeductionAmount');
-      if (val === 'Yes') {
-        amtCtrl?.setValidators([Validators.required, Validators.min(0)]);
-      } else {
-        amtCtrl?.clearValidators();
-        amtCtrl?.setValue('');
-      }
-      amtCtrl?.updateValueAndValidity();
-    });
-
-    // Dynamic validator for Others Deduction Amount based on Others Deduction Applicability
-    this.employeeForm.get('isOthersDeductionApplicable')?.valueChanges.subscribe(val => {
-      const amtCtrl = this.employeeForm.get('othersDeductionAmount');
-      if (val === 'Yes') {
-        amtCtrl?.setValidators([Validators.required, Validators.min(0)]);
-      } else {
-        amtCtrl?.clearValidators();
-        amtCtrl?.setValue('');
-      }
-      amtCtrl?.updateValueAndValidity();
     });
   }
 
   loadDropdownData() {
-    this.departmentService.getDepartments('all', 1, '').subscribe({
-      next: (res: any) => {
-        if (res.status === 200) {
-          this.departmentsList = (res.data || []).filter(
+    // forkJoin: saari 3 APIs ek saath call hoti hain, ek baar mein handle karo
+    forkJoin({
+      departments: this.departmentService.getDepartments('all', 1, ''),
+      designations: this.designationService.getDesignations('all', 1, ''),
+      sites: this.siteService.getSites('all', 1, '')
+    }).subscribe({
+      next: (results: any) => {
+        if (results.departments?.status === 200) {
+          this.departmentsList = (results.departments.data || []).filter(
             (dept: any) => dept.status == 1 || dept.is_active == 1
           );
         }
-      },
-      error: (err) => console.error('Error fetching departments', err)
-    });
-
-    this.designationService.getDesignations('all', 1, '').subscribe({
-      next: (res: any) => {
-        if (res.status === 200) {
-          this.designationsList = (res.data || []).filter(
+        if (results.designations?.status === 200) {
+          this.designationsList = (results.designations.data || []).filter(
             (desig: any) => desig.status == 1 || desig.is_active == 1
           );
         }
-      },
-      error: (err) => console.error('Error fetching designations', err)
-    });
-
-    this.siteService.getSites('all', 1, '').subscribe({
-      next: (res: any) => {
-        if (res.status === 200) {
-          this.sitesList = res.data;
+        if (results.sites?.status === 200) {
+          this.sitesList = results.sites.data || [];
         }
       },
-      error: (err) => console.error('Error fetching sites', err)
+      error: (err) => console.error('Error fetching dropdown data', err)
     });
   }
 
@@ -481,7 +420,7 @@ export class EmployeeManagementComponent implements OnInit {
   }
 
 
-  setTab(tab: 'personal' | 'employment' | 'payroll') {
+  setTab(tab: 'personal' | 'employment') {
     if (tab === 'personal') {
       this.activeTab = 'personal';
     } else if (tab === 'employment') {
@@ -490,33 +429,15 @@ export class EmployeeManagementComponent implements OnInit {
       } else {
         this.notificationService.show('Please fill all required personal details correctly.', 'error', 3000);
       }
-    } else if (tab === 'payroll') {
-      if (this.validateTab('personal') && this.validateTab('employment')) {
-        this.activeTab = 'payroll';
-      } else if (!this.validateTab('personal')) {
-        this.notificationService.show('Please fill all required personal details correctly.', 'error', 3000);
-        this.activeTab = 'personal';
-      } else {
-        this.notificationService.show('Please fill all required employment details correctly.', 'error', 3000);
-        this.activeTab = 'employment';
-      }
     }
   }
 
-  validateTab(tab: 'personal' | 'employment' | 'payroll'): boolean {
+  validateTab(tab: 'personal' | 'employment'): boolean {
     let controls: string[] = [];
     if (tab === 'personal') {
       controls = ['empId', 'name', 'fatherName', 'dob', 'gender', 'mobile', 'address'];
     } else if (tab === 'employment') {
       controls = ['joiningDate', 'empType', 'department', 'designation'];
-    } else if (tab === 'payroll') {
-      controls = ['salaryType', 'basicSalary', 'bankName', 'accountNumber', 'ifscCode'];
-      if (this.employeeForm.get('isPfApplicable')?.value === 'Yes') {
-        controls.push('pfNumber');
-      }
-      if (this.employeeForm.get('isOthersDeductionApplicable')?.value === 'Yes') {
-        controls.push('othersDeductionAmount');
-      }
     }
 
     let isValid = true;
@@ -539,20 +460,12 @@ export class EmployeeManagementComponent implements OnInit {
       } else {
         this.notificationService.show('Please fill all required personal details correctly.', 'error', 3000);
       }
-    } else if (this.activeTab === 'employment') {
-      if (this.validateTab('employment')) {
-        this.activeTab = 'payroll';
-      } else {
-        this.notificationService.show('Please fill all required employment details correctly.', 'error', 3000);
-      }
     }
   }
 
   prevTab() {
     if (this.activeTab === 'employment') {
       this.activeTab = 'personal';
-    } else if (this.activeTab === 'payroll') {
-      this.activeTab = 'employment';
     }
   }
 
@@ -659,8 +572,8 @@ export class EmployeeManagementComponent implements OnInit {
           // Find department ID and designation ID based on name or ID properties
           let deptId = '';
           if (emp.department) {
-            const deptObj = this.departmentsList.find(d => 
-              (d.name && d.name.trim().toLowerCase() === emp.department.trim().toLowerCase()) || 
+            const deptObj = this.departmentsList.find(d =>
+              (d.name && d.name.trim().toLowerCase() === emp.department.trim().toLowerCase()) ||
               d.id === emp.department_id ||
               String(d.id) === String(emp.department)
             );
@@ -671,25 +584,14 @@ export class EmployeeManagementComponent implements OnInit {
 
           let desigId = '';
           if (emp.designation) {
-            const desigObj = this.designationsList.find(d => 
-              (d.name && d.name.trim().toLowerCase() === emp.designation.trim().toLowerCase()) || 
+            const desigObj = this.designationsList.find(d =>
+              (d.name && d.name.trim().toLowerCase() === emp.designation.trim().toLowerCase()) ||
               d.id === emp.designation_id ||
               String(d.id) === String(emp.designation)
             );
             if (desigObj) desigId = desigObj.id;
           } else if (emp.designation_id) {
             desigId = emp.designation_id;
-          }
-
-          // Determine salary type
-          const salType = emp.salary_type === 'monthly' ? 'Monthly' : (emp.salary_type === 'daily_wage' ? 'Daily Wage' : '');
-
-          // Determine basicSalary field value based on salaryType
-          let basicSal = '';
-          if (salType === 'Monthly') {
-            basicSal = emp.basic_salary;
-          } else if (salType === 'Daily Wage') {
-            basicSal = emp.daily_wage;
           }
 
           const formData = {
@@ -705,20 +607,7 @@ export class EmployeeManagementComponent implements OnInit {
             empType: emp.employee_type === 'permanent' ? 'Permanent' : (emp.employee_type === 'daily_wage' ? 'Daily Wage' : ''),
             department: deptId,
             designation: desigId,
-            salaryType: salType,
-            basicSalary: basicSal,
-            relay: emp.relay || 'General',
-            restDay: emp.rest_day || '',
-            pfAmount: emp.pf_amount || '',
-            pfNumber: emp.pf_number || '',
-            bankName: emp.bank_name || '',
-            accountNumber: emp.bank_account_number || '',
-            ifscCode: emp.ifsc_code || '',
-            isPfApplicable: emp.pf_applicable == 1 ? 'Yes' : 'No',
-            isMessApplicable: emp.mess_deduction_applicable == 1 ? 'Yes' : 'No',
-            messDeductionAmount: emp.mess_deduction || '',
-            isOthersDeductionApplicable: emp.other_deduction_appliacble == 1 ? 'Yes' : 'No',
-            othersDeductionAmount: emp.other_deduction || ''
+            relay: emp.relay || 'General'
           };
 
           this.employeeForm.patchValue(formData);
@@ -755,30 +644,22 @@ export class EmployeeManagementComponent implements OnInit {
       const employeeType = empData.empType === 'Permanent' ? 'permanent' : (empData.empType === 'Daily Wage' ? 'daily_wage' : '');
       formData.append('employee_type', employeeType);
 
-      const salaryType = empData.salaryType === 'Monthly' ? 'monthly' : (empData.salaryType === 'Daily Wage' ? 'daily_wage' : '');
-      formData.append('salary_type', salaryType);
-
-      // Handle basic salary and daily wage
-      if (salaryType === 'monthly') {
-        formData.append('basic_salary', empData.basicSalary ? empData.basicSalary.toString() : '0.00');
-        formData.append('daily_wage', '0.00');
-      } else {
-        formData.append('basic_salary', '0.00');
-        formData.append('daily_wage', empData.basicSalary ? empData.basicSalary.toString() : '0.00');
-      }
-
+      // Passing blank/default values for payroll since they are now handled in employee-payroll module
+      formData.append('salary_type', '');
+      formData.append('basic_salary', '0.00');
+      formData.append('daily_wage', '0.00');
       formData.append('relay', empData.relay || '');
-      formData.append('rest_day', empData.restDay || '');
-      formData.append('pf_applicable', empData.isPfApplicable === 'Yes' ? '1' : '0');
-      formData.append('pf_amount', empData.isPfApplicable === 'Yes' ? (empData.pfAmount ? empData.pfAmount.toString() : '0.00') : '0.00');
-      formData.append('pf_number', empData.isPfApplicable === 'Yes' ? (empData.pfNumber || '') : '');
-      formData.append('bank_name', empData.bankName || '');
-      formData.append('bank_account_number', empData.accountNumber || '');
-      formData.append('ifsc_code', empData.ifscCode || '');
-      formData.append('mess_deduction_applicable', empData.isMessApplicable === 'Yes' ? '1' : '0');
-      formData.append('mess_deduction', empData.isMessApplicable === 'Yes' ? (empData.messDeductionAmount ? empData.messDeductionAmount.toString() : '0.00') : '0.00');
-      formData.append('other_deduction_appliacble', empData.isOthersDeductionApplicable === 'Yes' ? '1' : '0');
-      formData.append('other_deduction', empData.isOthersDeductionApplicable === 'Yes' ? (empData.othersDeductionAmount || '0.00') : '0.00');
+      formData.append('rest_day', '');
+      formData.append('pf_applicable', '0');
+      formData.append('pf_amount', '0.00');
+      formData.append('pf_number', '');
+      formData.append('bank_name', '');
+      formData.append('bank_account_number', '');
+      formData.append('ifsc_code', '');
+      formData.append('mess_deduction_applicable', '0');
+      formData.append('mess_deduction', '0.00');
+      formData.append('other_deduction_appliacble', '0');
+      formData.append('other_deduction', '0.00');
 
       if (this.isEditMode) {
         formData.append('_method', 'PUT');
@@ -818,20 +699,6 @@ export class EmployeeManagementComponent implements OnInit {
       }
     } else {
       this.employeeForm.markAllAsTouched();
-      // Switch to first invalid tab
-      const personalControls = ['empId', 'name', 'fatherName', 'dob', 'gender', 'mobile', 'address'];
-      const employmentControls = ['joiningDate', 'empType', 'department', 'designation'];
-
-      const isPersonalInvalid = personalControls.some(ctrl => this.employeeForm.get(ctrl)?.invalid);
-      const isEmploymentInvalid = employmentControls.some(ctrl => this.employeeForm.get(ctrl)?.invalid);
-
-      if (isPersonalInvalid) {
-        this.activeTab = 'personal';
-      } else if (isEmploymentInvalid) {
-        this.activeTab = 'employment';
-      } else {
-        this.activeTab = 'payroll';
-      }
       this.notificationService.show('Please fill all required fields correctly.', 'error', 3000);
     }
   }
@@ -983,7 +850,7 @@ export class EmployeeManagementComponent implements OnInit {
 
   areAllAssignEmployeesSelected(): boolean {
     if (!this.allEmployeesList || this.allEmployeesList.length === 0) return false;
-    return this.allEmployeesList.every(emp => 
+    return this.allEmployeesList.every(emp =>
       this.selectedEmployeeIdsForAssign.some(selId => String(selId) === String(emp.id))
     );
   }
