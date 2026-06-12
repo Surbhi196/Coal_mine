@@ -1,10 +1,14 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { trigger, state, style, transition, animate } from '@angular/animations';
 import { NotificationService } from 'src/app/core/services/notificationnew.service';
 import { CommonModule } from '@angular/common';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { NgxPaginationModule } from 'ngx-pagination';
+import { CategoryService } from 'src/app/core/services/category.service';
+import { ProductService } from 'src/app/core/services/product.service';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 interface Product {
   id: number;
@@ -32,7 +36,8 @@ interface Product {
     ])
   ]
 })
-export class ProductMasterComponent implements OnInit {
+export class ProductMasterComponent implements OnInit, OnDestroy {
+  private destroy$ = new Subject<void>();
   showreset = false;
   searchbarform!: FormGroup;
 
@@ -83,7 +88,7 @@ export class ProductMasterComponent implements OnInit {
   ];
 
   // Flat Categories list with group mapping for ng-select
-  categoriesGrouped = [
+  categoriesGrouped: any[] = [
     { name: 'Pump House', category: 'Pump House' },
     { name: 'Pump House Fitting', category: 'Pump House' },
     { name: 'Water Pump', category: 'Pump House' },
@@ -125,19 +130,8 @@ export class ProductMasterComponent implements OnInit {
     { name: 'Asphalt Mix', category: 'Road Work' }
   ];
 
-  // Mock Products list matching the requested project dataset
-  products: Product[] = [
-    { id: 1, name: '14 CUT OFF MACHINE CO 200', category: 'Combine', minStock: 5, is_active: 1 },
-    { id: 2, name: 'ADJUSTABLE PROPS', category: 'Road Work', minStock: 10, is_active: 1 },
-    { id: 3, name: 'ADMIXTURE', category: 'RMC/Road Work', minStock: 50, is_active: 1 },
-    { id: 4, name: 'AGGREGATE (10 MM)', category: 'RMC/Road Work', minStock: 100, is_active: 1 },
-    { id: 5, name: 'AGGREGATE (20 MM)', category: 'RMC/Road Work', minStock: 100, is_active: 1 },
-    { id: 6, name: 'AGITATOR MOTOR WITH GEAR BOX', category: 'IRP', minStock: 2, is_active: 1 },
-    { id: 7, name: 'AIR BLOWER', category: 'IRP', minStock: 4, is_active: 1 },
-    { id: 8, name: 'AIR BLOWER (DAMAGE)', category: 'IRP', minStock: 0, is_active: 1 },
-    { id: 9, name: 'AIR BLOWER BELT', category: 'IRP', minStock: 15, is_active: 1 },
-    { id: 10, name: 'AIR BLOWER FILTER', category: 'IRP', minStock: 20, is_active: 1 }
-  ];
+  // Mock Products list removed, will be populated via API
+  products: Product[] = [];
   filteredProducts: Product[] = [];
 
   // Modals state flags
@@ -151,16 +145,42 @@ export class ProductMasterComponent implements OnInit {
   viewProductForm!: FormGroup;
 
   selectedProduct: Product | null = null;
+  selectedProductDetails: any = null;
 
   constructor(
     private formBuilder: FormBuilder,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+    private categoryService: CategoryService,
+    private productService: ProductService
   ) {}
 
   ngOnInit(): void {
     this.initSearchForm();
     this.initForms();
+    this.fetchSubCategories();
     this.refreshFilteredData();
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  fetchSubCategories() {
+    this.categoryService.getAllSubCategories().pipe(takeUntil(this.destroy$)).subscribe({
+      next: (res: any) => {
+        if (res && res.status === 200) {
+          this.categoriesGrouped = res.data.map((sc: any) => ({
+             id: sc.id,
+             name: sc.name,
+             category: sc.category_name || 'Sub Categories'
+          }));
+        }
+      },
+      error: (err: any) => {
+        console.error('Error fetching subcategories', err);
+      }
+    });
   }
 
   initSearchForm() {
@@ -168,7 +188,7 @@ export class ProductMasterComponent implements OnInit {
       searchbar: ['']
     });
 
-    this.searchbarform.get('searchbar')?.valueChanges.subscribe(val => {
+    this.searchbarform.get('searchbar')?.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(val => {
       this.showreset = !!val;
       this.searchfun();
     });
@@ -197,23 +217,34 @@ export class ProductMasterComponent implements OnInit {
   }
 
   refreshFilteredData() {
-    this.filteredProducts = [...this.products];
-    this.totalRecords = this.filteredProducts.length;
+    const query = this.searchbarform?.get('searchbar')?.value?.trim();
+    this.productService.getProducts(this.page, this.tableSize, query).pipe(takeUntil(this.destroy$)).subscribe({
+      next: (res: any) => {
+        if (res && res.status === 200) {
+          this.filteredProducts = res.data.map((p: any) => ({
+            id: p.id,
+            name: p.name,
+            category: p.sub_category_name || p.category_name || 'Uncategorized',
+            minStock: p.min_stock,
+            is_active: p.status
+          }));
+          
+          if (res.pagination) {
+            this.totalRecords = res.pagination.total;
+          } else {
+            this.totalRecords = this.filteredProducts.length;
+          }
+        }
+      },
+      error: (err: any) => {
+        console.error('Error fetching products', err);
+      }
+    });
   }
 
   searchfun() {
-    const query = this.searchbarform.get('searchbar')?.value?.trim().toLowerCase();
-    if (!query) {
-      this.refreshFilteredData();
-      return;
-    }
-
-    this.filteredProducts = this.products.filter(p =>
-      p.name.toLowerCase().includes(query) ||
-      p.category.toLowerCase().includes(query)
-    );
-    this.totalRecords = this.filteredProducts.length;
     this.page = 1;
+    this.refreshFilteredData();
   }
 
   resetsearchbar() {
@@ -225,19 +256,35 @@ export class ProductMasterComponent implements OnInit {
   onTableSizeChange(event: any) {
     this.tableSize = event.target.value;
     this.page = 1;
+    this.refreshFilteredData();
   }
 
   onTableDataChange(pageNumber: number) {
     this.page = pageNumber;
+    this.refreshFilteredData();
   }
 
   toggleProductStatus(prod: Product) {
-    prod.is_active = prod.is_active === 1 ? 0 : 1;
-    this.notificationService.show(
-      `Product status changed to ${prod.is_active === 1 ? 'Active' : 'Inactive'} successfully.`,
-      'success',
-      3000
-    );
+    const newStatus = prod.is_active === 1 ? 0 : 1;
+    this.productService.updateProductStatus(prod.id, newStatus).pipe(takeUntil(this.destroy$)).subscribe({
+      next: (res: any) => {
+        if (res && (res.status === 200 || res.status === 'success')) {
+          prod.is_active = newStatus;
+          this.notificationService.show(
+            res.message || `Product status changed to ${newStatus === 1 ? 'Active' : 'Inactive'} successfully.`,
+            'success',
+            3000
+          );
+        } else {
+          this.notificationService.show(res?.message || 'Failed to update product status', 'error', 3000);
+        }
+      },
+      error: (err: any) => {
+        const errorMessage = err?.message || 'Failed to update product status';
+        this.notificationService.show(errorMessage, 'error', 3000);
+        console.error(err);
+      }
+    });
   }
 
   openAddProductModal() {
@@ -251,23 +298,42 @@ export class ProductMasterComponent implements OnInit {
 
   openEditProductModal(prod: Product) {
     this.selectedProduct = prod;
-    this.updateProductForm.patchValue({
-      name: prod.name,
-      category: prod.category,
-      minStock: prod.minStock
+    this.productService.getProductById(prod.id).pipe(takeUntil(this.destroy$)).subscribe({
+      next: (res: any) => {
+        if (res && res.status === 200 && res.data) {
+          const data = res.data;
+          this.updateProductForm.patchValue({
+            name: data.name,
+            category: data.sub_category_name || data.category_name,
+            minStock: data.min_stock
+          });
+          this.updateProductOpen = true;
+        } else {
+          this.notificationService.show('Failed to fetch product details', 'error', 3000);
+        }
+      },
+      error: (err: any) => {
+        this.notificationService.show('Failed to fetch product details', 'error', 3000);
+        console.error(err);
+      }
     });
-    this.updateProductOpen = true;
   }
 
   openViewProductModal(prod: Product) {
     this.selectedProduct = prod;
-    this.viewProductForm.patchValue({
-      name: prod.name,
-      category: prod.category,
-      minStock: prod.minStock,
-      status: prod.is_active === 1 ? 'Active' : 'Inactive'
-    });
+    this.selectedProductDetails = null;
     this.viewProductOpen = true;
+
+    this.productService.getProductById(prod.id).pipe(takeUntil(this.destroy$)).subscribe({
+      next: (res: any) => {
+        if (res && res.status === 200 && res.data) {
+          this.selectedProductDetails = res.data;
+        }
+      },
+      error: (err: any) => {
+        console.error('Error fetching product details:', err);
+      }
+    });
   }
 
   closeModal() {
@@ -284,28 +350,47 @@ export class ProductMasterComponent implements OnInit {
     }
 
     const name = this.createProductForm.get('name')?.value.trim();
-    const category = this.createProductForm.get('category')?.value;
+    const subCategoryName = this.createProductForm.get('category')?.value;
     const minStock = Number(this.createProductForm.get('minStock')?.value);
 
-    // Duplicate check
-    if (this.products.some(p => p.name.toUpperCase() === name.toUpperCase())) {
-      this.notificationService.show('Product Name already exists.', 'error', 3000);
+    // Find the sub_category_id from the categoriesGrouped array
+    const selectedSubCategory = this.categoriesGrouped.find(c => c.name === subCategoryName);
+    const subCategoryId = selectedSubCategory ? selectedSubCategory.id : '';
+
+    if (!subCategoryId) {
+      this.notificationService.show('Invalid Category Selection.', 'error', 3000);
       return;
     }
 
-    const nextId = this.products.length > 0 ? Math.max(...this.products.map(p => p.id)) + 1 : 1;
-    const newProduct: Product = {
-      id: nextId,
-      name: name,
-      category: category,
-      minStock: minStock,
-      is_active: 1
-    };
+    const formData = new FormData();
+    formData.append('name', name);
+    formData.append('sub_category_id', subCategoryId.toString());
+    formData.append('min_stock', minStock.toString());
 
-    this.products.unshift(newProduct);
-    this.refreshFilteredData();
-    this.notificationService.show('Product created successfully.', 'success', 3000);
-    this.closeModal();
+    this.productService.createProduct(formData).pipe(takeUntil(this.destroy$)).subscribe({
+      next: (res: any) => {
+        if (res && (res.status === 200 || res.status === 'success' || res.status === 201)) {
+          this.notificationService.show(res.message || 'Product created successfully.', 'success', 3000);
+          
+          if (res.data) {
+            this.refreshFilteredData();
+          }
+          this.closeModal();
+        } else {
+          this.notificationService.show(res?.message || 'Failed to create product', 'error', 3000);
+        }
+      },
+      error: (err: any) => {
+        if (err.status === 422) {
+          const errorMessage = err.error?.errors?.name?.[0] || err.error?.message || 'Validation failed';
+          this.notificationService.show(errorMessage, 'error', 3000);
+        } else {
+          const errorMessage = err?.message || 'Failed to create product';
+          this.notificationService.show(errorMessage, 'error', 3000);
+        }
+        console.error(err);
+      }
+    });
   }
 
   updateProduct() {
@@ -315,27 +400,48 @@ export class ProductMasterComponent implements OnInit {
     }
 
     const name = this.updateProductForm.get('name')?.value.trim();
-    const category = this.updateProductForm.get('category')?.value;
+    const subCategoryName = this.updateProductForm.get('category')?.value;
     const minStock = Number(this.updateProductForm.get('minStock')?.value);
 
     if (this.selectedProduct) {
-      // Duplicate check (excluding self)
-      const duplicate = this.products.some(p =>
-        p.name.toUpperCase() === name.toUpperCase() && p.id !== this.selectedProduct?.id
-      );
+      // Find the sub_category_id from the categoriesGrouped array
+      const selectedSubCategory = this.categoriesGrouped.find(c => c.name === subCategoryName);
+      const subCategoryId = selectedSubCategory ? selectedSubCategory.id : '';
 
-      if (duplicate) {
-        this.notificationService.show('Product Name already exists.', 'error', 3000);
+      if (!subCategoryId) {
+        this.notificationService.show('Invalid Category Selection.', 'error', 3000);
         return;
       }
 
-      this.selectedProduct.name = name;
-      this.selectedProduct.category = category;
-      this.selectedProduct.minStock = minStock;
+      const formData = new FormData();
+      formData.append('name', name);
+      formData.append('sub_category_id', subCategoryId.toString());
+      formData.append('min_stock', minStock.toString());
 
-      this.refreshFilteredData();
-      this.notificationService.show('Product updated successfully.', 'success', 3000);
-      this.closeModal();
+      this.productService.updateProduct(this.selectedProduct.id, formData).pipe(takeUntil(this.destroy$)).subscribe({
+        next: (res: any) => {
+          if (res && (res.status === 200 || res.status === 'success')) {
+            this.notificationService.show(res.message || 'Product updated successfully.', 'success', 3000);
+            
+            if (this.selectedProduct) {
+              this.refreshFilteredData();
+            }
+            this.closeModal();
+          } else {
+            this.notificationService.show(res?.message || 'Failed to update product', 'error', 3000);
+          }
+        },
+        error: (err: any) => {
+          if (err.status === 422) {
+            const errorMessage = err.error?.errors?.name?.[0] || err.error?.message || 'Validation failed';
+            this.notificationService.show(errorMessage, 'error', 3000);
+          } else {
+            const errorMessage = err?.message || 'Failed to update product';
+            this.notificationService.show(errorMessage, 'error', 3000);
+          }
+          console.error(err);
+        }
+      });
     }
   }
 }

@@ -5,8 +5,10 @@ import {
   transition,
   animate,
 } from '@angular/animations';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { CommonModule } from '@angular/common';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatIconModule } from '@angular/material/icon';
@@ -50,7 +52,9 @@ import { SiteService } from 'src/app/core/services/site.service';
     ]),
   ],
 })
-export class SiteMasterComponent implements OnInit {
+export class SiteMasterComponent implements OnInit, OnDestroy {
+  private destroy$ = new Subject<void>();
+
   showreset: boolean = false; 
   searchbarform!: FormGroup;
   createSiteForm!: FormGroup;
@@ -109,6 +113,11 @@ export class SiteMasterComponent implements OnInit {
     this.GetSiteFun();
   }
 
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
   onTableSizeChange(event: any): void {
     this.tableSize = event.target.value;
     this.page = 1;
@@ -156,7 +165,7 @@ export class SiteMasterComponent implements OnInit {
     this.currentSiteId = site.id;
     this.selectedSite = null;
 
-    this.siteService.getSiteById(site.id).subscribe({
+    this.siteService.getSiteById(site.id).pipe(takeUntil(this.destroy$)).subscribe({
       next: (response: any) => {
         if (response.status === 200) {
           this.selectedSite = response.data;
@@ -173,7 +182,7 @@ export class SiteMasterComponent implements OnInit {
   }
 
   GetupdateSitebyid(siteId: any) {
-    this.siteService.getSiteById(siteId).subscribe({
+    this.siteService.getSiteById(siteId).pipe(takeUntil(this.destroy$)).subscribe({
       next: (response: any) => {
         if (response.status === 200) {
           const site = response.data;
@@ -199,7 +208,7 @@ export class SiteMasterComponent implements OnInit {
       formData.append('name', siteName);
       formData.append('address', address);
 
-      this.siteService.createSite(formData).subscribe({
+      this.siteService.createSite(formData).pipe(takeUntil(this.destroy$)).subscribe({
         next: (response: any) => {
           if (response.status === 200 || response.status === 201) {
             this.closeModal();
@@ -240,7 +249,7 @@ export class SiteMasterComponent implements OnInit {
       formData.append('address', address);
       formData.append('_method', 'PUT');
 
-      this.siteService.updateSite(this.currentSiteId, formData).subscribe({
+      this.siteService.updateSite(this.currentSiteId, formData).pipe(takeUntil(this.destroy$)).subscribe({
         next: (response: any) => {
           if (response.status === 200 || response.status === 201) {
             this.closeModal();
@@ -275,6 +284,7 @@ export class SiteMasterComponent implements OnInit {
 
     this.siteService
       .getSites(this.tableSize, this.page, searchText)
+      .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (response: any) => {
           if (response.status === 200) {
@@ -295,7 +305,7 @@ export class SiteMasterComponent implements OnInit {
     formData.append('_method', 'PATCH');
     formData.append('status', status.toString());
 
-    this.siteService.updateSiteStatus(id, formData).subscribe({
+    this.siteService.updateSiteStatus(id, formData).pipe(takeUntil(this.destroy$)).subscribe({
       next: (response: any) => {
         if (response.status === 200 || response.status === 201) {
           this.notificationService.show(

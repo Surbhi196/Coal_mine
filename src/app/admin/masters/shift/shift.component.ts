@@ -5,8 +5,10 @@ import {
   transition,
   animate,
 } from '@angular/animations';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators, AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { CommonModule } from '@angular/common';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatIconModule } from '@angular/material/icon';
@@ -50,7 +52,9 @@ import { ShiftService } from 'src/app/core/services/shift.service';
     ]),
   ],
 })
-export class ShiftComponent implements OnInit {
+export class ShiftComponent implements OnInit, OnDestroy {
+  private destroy$ = new Subject<void>();
+
   showreset: boolean = false; 
   searchbarform!: FormGroup;
   createShiftForm!: FormGroup;
@@ -121,7 +125,7 @@ export class ShiftComponent implements OnInit {
     });
 
     // Subscribe to Create Form Night Shift Checkbox Changes
-    this.createShiftForm.get('isNightShift')?.valueChanges.subscribe((isChecked) => {
+    this.createShiftForm.get('isNightShift')?.valueChanges.pipe(takeUntil(this.destroy$)).subscribe((isChecked) => {
       if (isChecked) {
         this.createShiftForm.patchValue({
           startTime: '20:00',
@@ -138,7 +142,7 @@ export class ShiftComponent implements OnInit {
     });
 
     // Subscribe to Update Form Night Shift Checkbox Changes
-    this.updateShiftForm.get('isNightShift')?.valueChanges.subscribe((isChecked) => {
+    this.updateShiftForm.get('isNightShift')?.valueChanges.pipe(takeUntil(this.destroy$)).subscribe((isChecked) => {
       if (isChecked) {
         if (this.originalIsNightShift) {
           this.updateShiftForm.patchValue({
@@ -169,22 +173,27 @@ export class ShiftComponent implements OnInit {
     });
 
     // Subscribe to Create Form Time Changes
-    this.createShiftForm.get('startTime')?.valueChanges.subscribe(() => {
+    this.createShiftForm.get('startTime')?.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(() => {
       this.createShiftForm.get('endTime')?.updateValueAndValidity({ emitEvent: false });
     });
-    this.createShiftForm.get('endTime')?.valueChanges.subscribe(() => {
+    this.createShiftForm.get('endTime')?.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(() => {
       this.createShiftForm.get('startTime')?.updateValueAndValidity({ emitEvent: false });
     });
 
     // Subscribe to Update Form Time Changes
-    this.updateShiftForm.get('startTime')?.valueChanges.subscribe(() => {
+    this.updateShiftForm.get('startTime')?.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(() => {
       this.updateShiftForm.get('endTime')?.updateValueAndValidity({ emitEvent: false });
     });
-    this.updateShiftForm.get('endTime')?.valueChanges.subscribe(() => {
+    this.updateShiftForm.get('endTime')?.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(() => {
       this.updateShiftForm.get('startTime')?.updateValueAndValidity({ emitEvent: false });
     });
     
     this.GetShiftFun();
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   nightShiftValidator(): ValidatorFn {
@@ -280,7 +289,7 @@ export class ShiftComponent implements OnInit {
     this.currentShiftId = shift.id;
     this.selectedShift = null;
 
-    this.shiftService.getShiftById(shift.id).subscribe({
+    this.shiftService.getShiftById(shift.id).pipe(takeUntil(this.destroy$)).subscribe({
       next: (response: any) => {
         if (response.status === 200) {
           this.selectedShift = response.data;
@@ -299,7 +308,7 @@ export class ShiftComponent implements OnInit {
   }
 
   GetupdateShiftbyid(shiftId: any) {
-    this.shiftService.getShiftById(shiftId).subscribe({
+    this.shiftService.getShiftById(shiftId).pipe(takeUntil(this.destroy$)).subscribe({
       next: (response: any) => {
         if (response.status === 200) {
           const shift = response.data;
@@ -340,7 +349,7 @@ export class ShiftComponent implements OnInit {
       formData.append('minimum_working_hours', minWorkingHours.toString());
       formData.append('is_night_shift', isNightShift.toString());
 
-      this.shiftService.createShift(formData).subscribe({
+      this.shiftService.createShift(formData).pipe(takeUntil(this.destroy$)).subscribe({
         next: (response: any) => {
           if (response.status === 200 || response.status === 201) {
             this.closeModal();
@@ -387,7 +396,7 @@ export class ShiftComponent implements OnInit {
       formData.append('is_night_shift', isNightShift.toString());
       formData.append('_method', 'PUT');
 
-      this.shiftService.updateShift(this.currentShiftId, formData).subscribe({
+      this.shiftService.updateShift(this.currentShiftId, formData).pipe(takeUntil(this.destroy$)).subscribe({
         next: (response: any) => {
           if (response.status === 200 || response.status === 201) {
             this.closeModal();
@@ -422,6 +431,7 @@ export class ShiftComponent implements OnInit {
 
     this.shiftService
       .getShifts(this.tableSize, this.page, searchText)
+      .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (response: any) => {
           if (response.status === 200) {
@@ -442,7 +452,7 @@ export class ShiftComponent implements OnInit {
     formData.append('_method', 'PATCH');
     formData.append('status', status.toString());
 
-    this.shiftService.updateShiftStatus(id, formData).subscribe({
+    this.shiftService.updateShiftStatus(id, formData).pipe(takeUntil(this.destroy$)).subscribe({
       next: (response: any) => {
         if (response.status === 200 || response.status === 201) {
           this.notificationService.show(

@@ -9,6 +9,7 @@ import { NotificationService } from 'src/app/core/services/notificationnew.servi
 import { NgxPaginationModule } from 'ngx-pagination';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
+import { Router } from '@angular/router';
 interface RawBiometricLog {
   empId: string;
   date: string;
@@ -26,6 +27,19 @@ interface DailyAttendance {
   shift: string;
   status: 'Present' | 'Half Day' | 'Exception' | 'Absent' | 'Leave' | 'Rest Day';
   site: string;
+}
+
+interface MonthlyAttendanceSummary {
+  empId: string;
+  empName: string;
+  totalDays: number;
+  present: number;
+  absent: number;
+  halfDay: number;
+  restDay: number;
+  leave: number;
+  exception: number;
+  payableDays: number;
 }
 
 interface AttendanceCorrectionLog {
@@ -58,10 +72,23 @@ export class AttendanceManagementComponent implements OnInit, OnDestroy {
 
   uploadSummary = { total: 0, success: 0, errors: 0 };
 
+  summaryMetrics = {
+    total: 0,
+    present: 0,
+    absent: 0,
+    halfDay: 0,
+    leaves: 0
+  };
+
   // Master list of records
   allAttendanceRecords: DailyAttendance[] = [];
+  monthlyAttendanceRecords: MonthlyAttendanceSummary[] = [];
+  monthlyP: number = 1;
 
   // Filter properties
+  viewMode: 'daily' | 'monthly' = 'daily';
+  filterDate: string = '';
+  filterMonth: string = '';
   filterFromDate: string = '';
   filterToDate: string = '';
   filterStatus: string = '';
@@ -133,11 +160,11 @@ export class AttendanceManagementComponent implements OnInit, OnDestroy {
     const formData = new FormData();
     formData.append('_method', 'patch');
     formData.append('attendance_status', status.toLowerCase().replace(' ', '_'));
-    
+
     this.selectedRecordIds.forEach(id => {
       formData.append('attendance_ids[]', id.toString());
     });
-    
+
     this.attendanceService.updateBulkAttendanceStatus(formData).pipe(takeUntil(this.destroy$)).subscribe({
       next: (res: any) => {
         if (res.status === 200 || res.success || res.status === 'success') {
@@ -159,7 +186,7 @@ export class AttendanceManagementComponent implements OnInit, OnDestroy {
     formData.append('_method', 'patch');
     formData.append('attendance_status', status.toLowerCase().replace(' ', '_'));
     formData.append('attendance_ids[]', record.id.toString());
-    
+
     this.attendanceService.updateBulkAttendanceStatus(formData).pipe(takeUntil(this.destroy$)).subscribe({
       next: (res: any) => {
         if (res.status === 200 || res.success || res.status === 'success') {
@@ -180,10 +207,15 @@ export class AttendanceManagementComponent implements OnInit, OnDestroy {
     private employeeService: EmployeeService,
     private attendanceService: AttendanceManagementService,
     private notificationService: NotificationService,
-    private datePipe: DatePipe
+    private datePipe: DatePipe,
+    private router: Router,
   ) { }
 
   ngOnInit(): void {
+    const today = new Date();
+    this.filterDate = today.toISOString().split('T')[0];
+    const mm = (today.getMonth() + 1).toString().padStart(2, '0');
+    this.filterMonth = `${today.getFullYear()}-${mm}`;
     this.filterFromDate = '';
     this.filterToDate = '';
     this.initForms();
@@ -210,12 +242,31 @@ export class AttendanceManagementComponent implements OnInit, OnDestroy {
 
 
   loadAttendance() {
-    const limit = this.showEntries;
-    const page = this.p;
+    let limit = this.showEntries;
+    const page = this.viewMode === 'daily' ? this.p : 1; // get all pages or page 1, wait, for monthly we might need all data. Let's ask for 'all' to aggregate correctly on frontend
+    if (this.viewMode === 'monthly') {
+      limit = 'all';
+    }
     const search = this.searchbarform?.get('searchbar')?.value || '';
     const status = this.filterStatus || '';
-    const fromDate = this.filterFromDate || '';
-    const toDate = this.filterToDate || '';
+    
+    let fromDate = '';
+    let toDate = '';
+
+    if (this.viewMode === 'daily') {
+      fromDate = this.filterDate || '';
+      toDate = this.filterDate || '';
+    } else if (this.viewMode === 'monthly' && this.filterMonth) {
+      const [year, month] = this.filterMonth.split('-');
+      const firstDay = new Date(parseInt(year), parseInt(month) - 1, 1);
+      const lastDay = new Date(parseInt(year), parseInt(month), 0);
+      
+      const mm = (firstDay.getMonth() + 1).toString().padStart(2, '0');
+      const ldd = lastDay.getDate().toString().padStart(2, '0');
+      
+      fromDate = `${year}-${mm}-01`;
+      toDate = `${year}-${mm}-${ldd}`;
+    }
 
     this.attendanceService.getAttendance(limit, page, search, fromDate, toDate, status)
       .pipe(takeUntil(this.destroy$)).subscribe({
@@ -233,7 +284,15 @@ export class AttendanceManagementComponent implements OnInit, OnDestroy {
               status: this.mapStatusToFrontend(record.attendance_status),
               site: record.site || ''
             }));
-            this.totalRecords = response.pagination?.total || response.data.length;
+            
+            if (this.viewMode === 'monthly') {
+              this.aggregateMonthlyData();
+              this.totalRecords = this.monthlyAttendanceRecords.length;
+            } else {
+              this.totalRecords = response.pagination?.total || response.data.length;
+            }
+            
+            this.calculateMetrics();
           } else {
             this.notificationService.show(response.message || 'Failed to fetch attendance', 'error', 3000);
           }
@@ -243,6 +302,70 @@ export class AttendanceManagementComponent implements OnInit, OnDestroy {
           this.notificationService.show(err.message || 'Error fetching attendance', 'error', 3000);
         }
       });
+  }
+
+  calculateMetrics() {
+    this.summaryMetrics = { total: 0, present: 0, absent: 0, halfDay: 0, leaves: 0 };
+    
+    if (this.viewMode === 'daily') {
+      this.summaryMetrics.total = this.totalRecords;
+      this.attendanceRecords.forEach(record => {
+        const s = record.status;
+        if (s === 'Present') this.summaryMetrics.present++;
+        else if (s === 'Absent') this.summaryMetrics.absent++;
+        else if (s === 'Half Day') this.summaryMetrics.halfDay++;
+        else if (s === 'Leave') this.summaryMetrics.leaves++;
+      });
+    } else {
+      this.summaryMetrics.total = this.totalRecords;
+      this.monthlyAttendanceRecords.forEach(record => {
+        this.summaryMetrics.present += record.present;
+        this.summaryMetrics.absent += record.absent;
+        this.summaryMetrics.halfDay += record.halfDay;
+        this.summaryMetrics.leaves += record.leave;
+      });
+    }
+  }
+
+  aggregateMonthlyData() {
+    const summaryMap = new Map<string, MonthlyAttendanceSummary>();
+    
+    // In monthly view, attendanceRecords holds all records for the month because limit='all'
+    this.attendanceRecords.forEach(record => {
+      if (!summaryMap.has(record.empId)) {
+        summaryMap.set(record.empId, {
+          empId: record.empId,
+          empName: record.empName,
+          totalDays: 0,
+          present: 0,
+          absent: 0,
+          halfDay: 0,
+          restDay: 0,
+          leave: 0,
+          exception: 0,
+          payableDays: 0
+        });
+      }
+      
+      const summary = summaryMap.get(record.empId)!;
+      summary.totalDays += 1;
+      
+      switch(record.status) {
+        case 'Present': summary.present += 1; break;
+        case 'Absent': summary.absent += 1; break;
+        case 'Half Day': summary.halfDay += 1; break;
+        case 'Rest Day': summary.restDay += 1; break;
+        case 'Leave': summary.leave += 1; break;
+        case 'Exception': summary.exception += 1; break;
+      }
+    });
+
+    // Calculate payable days
+    Array.from(summaryMap.values()).forEach(summary => {
+      summary.payableDays = summary.present + summary.restDay + summary.leave + (summary.halfDay * 0.5);
+    });
+    
+    this.monthlyAttendanceRecords = Array.from(summaryMap.values());
   }
 
   mapStatusToFrontend(backendStatus: string): 'Present' | 'Half Day' | 'Exception' | 'Absent' | 'Leave' | 'Rest Day' {
@@ -293,12 +416,24 @@ export class AttendanceManagementComponent implements OnInit, OnDestroy {
     this.loadAttendance();
   }
 
+  setViewMode(mode: 'daily' | 'monthly') {
+    this.viewMode = mode;
+    this.p = 1;
+    this.loadAttendance();
+  }
+
   resetFilters() {
+    const today = new Date();
+    this.filterDate = today.toISOString().split('T')[0];
+    const mm = (today.getMonth() + 1).toString().padStart(2, '0');
+    this.filterMonth = `${today.getFullYear()}-${mm}`;
     this.filterFromDate = '';
     this.filterToDate = '';
     this.filterStatus = '';
     this.filterSearch = '';
     this.filterSite = '';
+    this.searchbarform.reset({ searchbar: '' });
+    this.showreset = false;
     this.p = 1;
     this.loadAttendance();
   }
@@ -494,5 +629,10 @@ export class AttendanceManagementComponent implements OnInit, OnDestroy {
       case 'Rest Day': return 'bg-primary text-white';
       default: return 'bg-light text-dark';
     }
+  }
+
+  viewRecord(record: any) {
+    const idToPass = record.empId || record.id;
+    this.router.navigate(['/admin/attendance-management/attendance-detail', idToPass]);
   }
 }

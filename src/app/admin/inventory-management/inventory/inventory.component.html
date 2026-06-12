@@ -165,7 +165,7 @@
               <select class="d-block form-control form-select form-input-custom w-100" formControlName="productName" (change)="onProductChange($event)"
                       [ngClass]="{'is-invalid': createInventoryForm.controls['productName'].errors && (createInventoryForm.controls['productName'].touched || createInventoryForm.controls['productName'].dirty)}">
                 <option value="">Select a product</option>
-                <option *ngFor="let prod of productList" [value]="prod">{{ prod }}</option>
+                <option *ngFor="let prod of productList" [value]="prod.name">{{ prod.name }}</option>
               </select>
               <div class="text-danger error-message" *ngIf="createInventoryForm.controls['productName'].errors && (createInventoryForm.controls['productName'].touched || createInventoryForm.controls['productName'].dirty)">
                 <p class="fw-light text-danger" *ngIf="createInventoryForm.controls['productName'].errors['required']">Product selection is required</p>
@@ -267,21 +267,21 @@
         <div class="dept-summary-banner">
           <div class="banner-content">
             <div class="banner-label">Product Details</div>
-            <div class="banner-value mb-2">{{ selectedItem.productName }}</div>
+            <div class="banner-value mb-2">{{ selectedProductDetails?.product_name || selectedItem.productName }}</div>
             <div class="row g-3 text-white-50 mt-1" style="font-size: 13.5px;">
               <div class="col-sm-4 text-white">
                 <span class="d-block text-uppercase fw-semibold" style="font-size: 10px; opacity: 0.8;">Category</span>
-                <span class="fw-bold">{{ selectedItem.category }}</span>
+                <span class="fw-bold">{{ selectedProductDetails?.category_name || selectedItem.category }}</span>
               </div>
               <div class="col-sm-4 text-white">
                 <span class="d-block text-uppercase fw-semibold" style="font-size: 10px; opacity: 0.8;">Sub Category</span>
-                <span class="fw-bold">{{ selectedItem.subCategory }}</span>
+                <span class="fw-bold">{{ selectedProductDetails?.sub_category_name || selectedItem.subCategory }}</span>
               </div>
               <div class="col-sm-4 text-white">
                 <span class="d-block text-uppercase fw-semibold" style="font-size: 10px; opacity: 0.8; margin-bottom: 4px;">Available Stock</span>
                 <span class="d-flex align-items-center gap-2">
                   <span class="pulse-indicator"></span>
-                  <strong class="fs-5 text-white">{{ selectedItem.totalStock }}</strong>
+                  <strong class="fs-5 text-white">{{ selectedProductDetails?.available_stock || selectedItem.totalStock }}</strong>
                 </span>
               </div>
             </div>
@@ -305,24 +305,24 @@
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let assign of getProductAssignments(selectedItem.productName); index as idx" class="hover-bg-light transition">
-                <td class="text-center fw-medium text-muted fs-7">{{ idx + 1 }}</td>
+              <tr *ngFor="let assign of (selectedProductDetails?.allocation_history || []); index as idx" class="hover-bg-light transition">
+                <td class="text-center fw-medium text-muted fs-7">{{ assign.sr_no || idx + 1 }}</td>
                 <td>
                   <div class="d-flex flex-column">
-                    <span class="fw-bold text-dark fs-7">{{ assign.employeeName }}</span>
-                    <span class="text-muted fs-8">{{ assign.employeeId }}</span>
+                    <span class="fw-bold text-dark fs-7">{{ assign.employee_name }}</span>
+                    <span class="text-muted fs-8">{{ assign.employee_code }}</span>
                   </div>
                 </td>
                 <td>
                   <div class="d-flex flex-column">
-                    <span class="fw-semibold text-dark fs-7">{{ assign.site }}</span>
-                    <span class="text-muted fs-8">{{ assign.department }}</span>
+                    <span class="fw-semibold text-dark fs-7">{{ assign.site_name || 'N/A' }}</span>
+                    <span class="text-muted fs-8">{{ assign.department_name }}</span>
                   </div>
                 </td>
-                <td class="text-center fw-bold text-primary fs-7">{{ assign.quantity }}</td>
-                <td class="text-center fw-medium text-muted fs-7">{{ assign.issueDate | date:'dd MMM yyyy' }}</td>
+                <td class="text-center fw-bold text-primary fs-7">{{ assign.quantity_assigned }}</td>
+                <td class="text-center fw-medium text-muted fs-7">{{ assign.issued_date }}</td>
               </tr>
-              <tr *ngIf="getProductAssignments(selectedItem.productName).length === 0">
+              <tr *ngIf="(selectedProductDetails?.allocation_history || []).length === 0">
                 <td colspan="5" class="text-center py-4 text-muted fs-7">
                   <i class="fa-solid fa-box-open d-block fs-3 mb-2 text-light"></i>
                   No active employee allocations found for this product.
@@ -359,9 +359,9 @@
             <select class="form-select form-input-custom w-100" formControlName="productName" (change)="onAssignProductChange($event)"
                     [ngClass]="{'is-invalid': assignForm.get('productName')?.invalid && assignForm.get('productName')?.touched}">
               <option value="">-- Choose Product --</option>
-              <!-- Show only items with active inventory stock -->
-              <option *ngFor="let item of inventoryItems" [value]="item.productName">
-                {{ item.productName }} (Avail: {{ item.totalStock }})
+              <!-- Show products from API -->
+              <option *ngFor="let item of productList" [value]="item.name">
+                {{ item.name }}
               </option>
             </select>
             <div class="text-muted fs-8 mt-1 fw-medium text-success" *ngIf="selectedProductMaxStock > 0">
@@ -400,6 +400,7 @@
         <h6 class="fw-bold text-muted text-uppercase mb-3 letter-spacing-1 fs-8">Employee Location & Allocation Details</h6>
         
         <div class="row g-3 mb-3">
+          <!-- 
           <div class="col-md-6">
             <label class="form-label form-lable-custom">Select Site <span class="text-danger">*</span></label>
             <select class="form-select form-input-custom w-100" formControlName="site"
@@ -413,16 +414,14 @@
               Site selection is required.
             </div>
           </div>
+          -->
 
           <div class="col-md-6">
             <label class="form-label form-lable-custom">Select Department <span class="text-danger">*</span></label>
             <select class="form-select form-input-custom w-100" formControlName="department"
                     [ngClass]="{'is-invalid': assignForm.get('department')?.invalid && assignForm.get('department')?.touched}">
               <option value="">-- Choose Department --</option>
-              <option value="Excavation">Excavation</option>
-              <option value="Safety">Safety</option>
-              <option value="Maintenance">Maintenance</option>
-              <option value="Operations">Operations</option>
+              <option *ngFor="let dept of departmentList" [value]="dept.id">{{ dept.name }}</option>
             </select>
             <div class="invalid-feedback" *ngIf="assignForm.get('department')?.invalid && assignForm.get('department')?.touched">
               Department selection is required.
@@ -441,7 +440,7 @@
               </option>
             </select>
             <div class="text-muted fs-8 mt-1" *ngIf="assignForm.get('employeeId')?.disabled">
-              <i class="fa-solid fa-lock me-1 text-warning"></i> Select Site and Department to unlock employees.
+              <i class="fa-solid fa-lock me-1 text-warning"></i> Select Department to unlock employees.
             </div>
             <div class="invalid-feedback" *ngIf="assignForm.get('employeeId')?.invalid && assignForm.get('employeeId')?.touched">
               Employee selection is required.
@@ -503,22 +502,22 @@
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let log of getProductHistory(selectedItem.productName); index as idx" class="hover-bg-light transition">
+              <tr *ngFor="let log of selectedProductLogs; index as idx" class="hover-bg-light transition">
                 <td class="text-center fw-medium text-muted fs-7">{{ idx + 1 }}</td>
                 <td>
-                  <span class="badge" 
-                        [ngClass]="{'bg-success': log.action === 'Added Stock', 'bg-warning text-dark': log.action === 'Assigned'}">
+                  <span class="badge text-capitalize" 
+                        [ngClass]="{'bg-success': log.type === 'in', 'bg-warning text-dark': log.type === 'out'}">
                     {{ log.action }}
                   </span>
                 </td>
-                <td class="text-center fw-bold fs-7" [ngClass]="{'text-success': log.action === 'Added Stock', 'text-danger': log.action === 'Assigned'}">
-                  {{ log.action === 'Added Stock' ? '+' : '-' }}{{ log.quantity }}
+                <td class="text-center fw-bold fs-7" [ngClass]="{'text-success': log.type === 'in', 'text-danger': log.type === 'out'}">
+                  {{ log.quantity > 0 ? '+' : '' }}{{ log.quantity }}
                 </td>
-                <td class="text-muted fs-7">{{ log.doneBy }}</td>
-                <td class="text-muted fs-7">{{ log.remarks }}</td>
-                <td class="text-center fw-medium text-muted fs-7">{{ log.date | date:'dd MMM yyyy' }}</td>
+                <td class="text-muted fs-7">{{ log.done_by }}</td>
+                <td class="text-muted fs-7">{{ log.remarks || '—' }}</td>
+                <td class="text-center fw-medium text-muted fs-7">{{ log.created_at | date:'dd MMM yyyy, hh:mm a' }}</td>
               </tr>
-              <tr *ngIf="getProductHistory(selectedItem.productName).length === 0">
+              <tr *ngIf="selectedProductLogs.length === 0">
                 <td colspan="6" class="text-center py-4 text-muted fs-7">
                   <i class="fa-solid fa-clock-rotate-left d-block fs-3 mb-2 text-light"></i>
                   No history logs found for this product.

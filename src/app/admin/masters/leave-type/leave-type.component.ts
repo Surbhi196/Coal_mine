@@ -5,8 +5,10 @@ import {
   transition,
   animate,
 } from '@angular/animations';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { CommonModule } from '@angular/common';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatIconModule } from '@angular/material/icon';
@@ -50,7 +52,9 @@ import { LeaveTypeService } from 'src/app/core/services/leave-type.service';
     ]),
   ],
 })
-export class LeaveTypeComponent implements OnInit {
+export class LeaveTypeComponent implements OnInit, OnDestroy {
+  private destroy$ = new Subject<void>();
+
   showreset: boolean = false; 
   searchbarform!: FormGroup;
   createLeaveTypeForm!: FormGroup;
@@ -115,6 +119,11 @@ export class LeaveTypeComponent implements OnInit {
     this.GetLeaveTypeFun();
   }
 
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
   onTableSizeChange(event: any): void {
     this.tableSize = event.target.value;
     this.page = 1;
@@ -162,7 +171,7 @@ export class LeaveTypeComponent implements OnInit {
     this.currentLeaveTypeId = leaveType.id;
     this.selectedLeaveType = null;
 
-    this.leaveTypeService.getLeaveTypeById(leaveType.id).subscribe({
+    this.leaveTypeService.getLeaveTypeById(leaveType.id).pipe(takeUntil(this.destroy$)).subscribe({
       next: (response: any) => {
         if (response.status === 200) {
           this.selectedLeaveType = response.data;
@@ -180,7 +189,7 @@ export class LeaveTypeComponent implements OnInit {
   }
 
   GetupdateLeaveTypebyid(leaveTypeId: any) {
-    this.leaveTypeService.getLeaveTypeById(leaveTypeId).subscribe({
+    this.leaveTypeService.getLeaveTypeById(leaveTypeId).pipe(takeUntil(this.destroy$)).subscribe({
       next: (response: any) => {
         if (response.status === 200) {
           const leaveType = response.data;
@@ -208,7 +217,7 @@ export class LeaveTypeComponent implements OnInit {
       formData.append('leave_category', isPaid ? 'paid' : 'unpaid');
       formData.append('Annual_limit', annualLimit.toString());
 
-      this.leaveTypeService.createLeaveType(formData).subscribe({
+      this.leaveTypeService.createLeaveType(formData).pipe(takeUntil(this.destroy$)).subscribe({
         next: (response: any) => {
           if (response.status === 200 || response.status === 201) {
             this.closeModal();
@@ -251,7 +260,7 @@ export class LeaveTypeComponent implements OnInit {
       formData.append('Annual_limit', annualLimit.toString());
       formData.append('_method', 'PUT');
 
-      this.leaveTypeService.updateLeaveType(this.currentLeaveTypeId, formData).subscribe({
+      this.leaveTypeService.updateLeaveType(this.currentLeaveTypeId, formData).pipe(takeUntil(this.destroy$)).subscribe({
         next: (response: any) => {
           if (response.status === 200 || response.status === 201) {
             this.closeModal();
@@ -286,6 +295,7 @@ export class LeaveTypeComponent implements OnInit {
 
     this.leaveTypeService
       .getLeaveTypes(this.tableSize, this.page, searchText)
+      .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (response: any) => {
           if (response.status === 200) {
@@ -306,7 +316,7 @@ export class LeaveTypeComponent implements OnInit {
     formData.append('_method', 'PATCH');
     formData.append('status', status.toString());
 
-    this.leaveTypeService.updateLeaveTypeStatus(id, formData).subscribe({
+    this.leaveTypeService.updateLeaveTypeStatus(id, formData).pipe(takeUntil(this.destroy$)).subscribe({
       next: (response: any) => {
         if (response.status === 200 || response.status === 201) {
           this.notificationService.show(

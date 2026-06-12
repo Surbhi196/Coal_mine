@@ -1,6 +1,11 @@
 <div class="container mb-4">
   <div class="d-flex justify-content-between align-items-center flex-wrap">
     <h1 class="text-primary table-heading-detail">Employee Payroll Management</h1>
+    <div>
+      <button class="btn btn-custom-primary px-4 py-2 me-2" (click)="openAddPayrollModal()">
+        Add Payroll
+      </button>
+    </div>
   </div>
 
   <div class="card border-0 my-4 px-4 py-4">
@@ -66,8 +71,8 @@
                 </span>
               </td>
               <td>
-                <button class="btn-action edit-btn me-2" (click)="openPayrollModal(emp)" data-tooltip="Add/Edit Payroll">
-                  <i class="fa-solid fa-file-invoice-dollar"></i>
+                <button class="btn-action edit-btn me-2" (click)="openPayrollModal(emp)" title="Edit Payroll">
+                  <i class="fa-solid fa-pen-to-square"></i>
                 </button>
                 <button class="btn-action view-btn" (click)="openViewModal(emp)" data-tooltip="View Details">
                   <i class="fa-solid fa-eye"></i>
@@ -95,7 +100,7 @@
 
     <!-- Header -->
     <div class="modal-header-custom px-4 py-3 d-flex justify-content-between align-items-center border-bottom">
-      <h4 class="mb-0 text-primary fw-bold">{{ isEditMode ? 'Edit' : 'Add' }} Payroll for {{ selectedEmployeeData?.name }}</h4>
+      <h4 class="mb-0 text-primary fw-bold">{{ isEditMode ? 'Edit' : 'Add' }} Payroll</h4>
       <button class="btn bg-transparent border-0 p-0" (click)="closeModal()"><i
           class="fa-solid fa-xmark fs-4 text-muted"></i></button>
     </div>
@@ -103,6 +108,20 @@
     <form [formGroup]="payrollForm" class="d-flex flex-column flex-grow-1 overflow-hidden">
 
       <div class="modal-body-custom px-4 py-4 overflow-auto flex-grow-1">
+
+        <div class="row g-3 mb-3">
+          <div class="col-md-12" *ngIf="isTopLevelAdd">
+            <label class="form-label form-lable-custom">Select Employee *</label>
+            <select class="form-control form-select form-input-custom" (change)="onEmployeeSelect($event)">
+              <option value="">-- Select Employee --</option>
+              <option *ngFor="let emp of allEmployeeList" [value]="emp.id">{{ emp.name }} ({{ emp.employee_code || emp.empId }})</option>
+            </select>
+          </div>
+          <div class="col-md-12" *ngIf="!isTopLevelAdd">
+            <label class="form-label form-lable-custom">Employee Name</label>
+            <input type="text" class="form-control form-input-custom bg-light text-muted" [value]="selectedEmployeeData?.employee_name || selectedEmployeeData?.name || ''" readonly disabled />
+          </div>
+        </div>
 
         <div class="row g-3">
           <div class="col-md-6">
@@ -240,7 +259,7 @@
         <div class="emp-summary-banner">
           <div class="banner-content">
             <div class="banner-label">Employee Name</div>
-            <div class="banner-value">{{ selectedEmployeeData?.name }}</div>
+            <div class="banner-value">{{ selectedEmployeeData?.employee_name || selectedEmployeeData?.name }}</div>
             <div class="banner-subtitle">
               <span class="pulse-indicator" [ngClass]="{'deactive': selectedEmployeeData?.is_active !== 1}"></span>
               Status:
@@ -278,11 +297,11 @@
             <div class="card-icon-wrapper code"><i class="fa-solid fa-piggy-bank"></i></div>
             <div class="card-info-content">
               <span class="info-label">PF Applicable</span>
-              <span class="info-value text-dark fs-7">{{ selectedEmployeeData?.pf_applicable == 1 ? 'Yes' : 'No' }}</span>
+              <span class="info-value text-dark fs-7">{{ (selectedEmployeeData?.pf_applicable == 1 || selectedEmployeeData?.pf_applicable === true) ? 'Yes' : 'No' }}</span>
             </div>
           </div>
         </div>
-        <div class="col-md-6 col-lg-4" *ngIf="selectedEmployeeData?.pf_applicable == 1">
+        <div class="col-md-6 col-lg-4" *ngIf="(selectedEmployeeData?.pf_applicable == 1 || selectedEmployeeData?.pf_applicable === true)">
           <div class="glass-info-card">
             <div class="card-icon-wrapper code"><i class="fa-solid fa-indian-rupee-sign"></i></div>
             <div class="card-info-content">
@@ -291,7 +310,7 @@
             </div>
           </div>
         </div>
-        <div class="col-md-6 col-lg-4" *ngIf="selectedEmployeeData?.pf_applicable == 1">
+        <div class="col-md-6 col-lg-4" *ngIf="(selectedEmployeeData?.pf_applicable == 1 || selectedEmployeeData?.pf_applicable === true)">
           <div class="glass-info-card">
             <div class="card-icon-wrapper code"><i class="fa-solid fa-hashtag"></i></div>
             <div class="card-info-content">
@@ -332,11 +351,11 @@
             <div class="card-icon-wrapper code"><i class="fa-solid fa-utensils"></i></div>
             <div class="card-info-content">
               <span class="info-label">Mess Deduction</span>
-              <span class="info-value text-dark fs-7">{{ selectedEmployeeData?.mess_deduction_applicable == 1 ? 'Yes' : 'No' }}</span>
+              <span class="info-value text-dark fs-7">{{ (selectedEmployeeData?.mess_deduction_applicable == 1 || selectedEmployeeData?.mess_deduction_applicable === true) ? 'Yes' : 'No' }}</span>
             </div>
           </div>
         </div>
-        <div class="col-md-6 col-lg-4" *ngIf="selectedEmployeeData?.mess_deduction_applicable == 1">
+        <div class="col-md-6 col-lg-4" *ngIf="(selectedEmployeeData?.mess_deduction_applicable == 1 || selectedEmployeeData?.mess_deduction_applicable === true)">
           <div class="glass-info-card">
             <div class="card-icon-wrapper code"><i class="fa-solid fa-indian-rupee-sign"></i></div>
             <div class="card-info-content">
@@ -350,11 +369,11 @@
             <div class="card-icon-wrapper code"><i class="fa-solid fa-calculator"></i></div>
             <div class="card-info-content">
               <span class="info-label">Others Deduction</span>
-              <span class="info-value text-dark fs-7">{{ selectedEmployeeData?.other_deduction_appliacble == 1 ? 'Yes' : 'No' }}</span>
+              <span class="info-value text-dark fs-7">{{ (selectedEmployeeData?.other_deduction_appliacble == 1 || selectedEmployeeData?.other_deduction_appliacble === true) ? 'Yes' : 'No' }}</span>
             </div>
           </div>
         </div>
-        <div class="col-md-6 col-lg-4" *ngIf="selectedEmployeeData?.other_deduction_appliacble == 1">
+        <div class="col-md-6 col-lg-4" *ngIf="(selectedEmployeeData?.other_deduction_appliacble == 1 || selectedEmployeeData?.other_deduction_appliacble === true)">
           <div class="glass-info-card">
             <div class="card-icon-wrapper code"><i class="fa-solid fa-indian-rupee-sign"></i></div>
             <div class="card-info-content">

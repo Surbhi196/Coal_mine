@@ -218,7 +218,7 @@ export class EmployeeManagementComponent implements OnInit, OnDestroy {
 
       // Employment
       joiningDate: ['', [Validators.required]],
-      empType: ['', [Validators.required]],
+      empType: [''],
       department: ['', [Validators.required]],
       designation: ['', [Validators.required]],
       relay: ['', [Validators.required]],
@@ -227,11 +227,11 @@ export class EmployeeManagementComponent implements OnInit, OnDestroy {
   }
 
   loadDropdownData() {
-    // forkJoin: saari 3 APIs ek saath call hoti hain, ek baar mein handle karo
+    // forkJoin: saari APIs ek saath call hoti hain, ek baar mein handle karo
     forkJoin({
-      departments: this.departmentService.getDepartments('all', 1, ''),
+      departments: this.departmentService.getAllDepartments(),
       designations: this.designationService.getDesignations('all', 1, ''),
-      sites: this.siteService.getSites('all', 1, '')
+      sites: this.siteService.getAllSites()
     }).pipe(takeUntil(this.destroy$)).subscribe({
       next: (results: any) => {
         if (results.departments?.status === 200) {
@@ -682,7 +682,10 @@ export class EmployeeManagementComponent implements OnInit, OnDestroy {
           },
           error: (error: any) => {
             console.error('Update Employee failed:', error);
-            const errorMsg = error.error?.message || error.message || 'Something went wrong';
+            let errorMsg = error.error?.message || error.message || 'Something went wrong';
+            if (error.error?.errors) {
+              errorMsg = Object.values(error.error.errors).flat().join(' | ');
+            }
             this.notificationService.show(errorMsg, 'error', 3000);
           }
         });
@@ -699,7 +702,10 @@ export class EmployeeManagementComponent implements OnInit, OnDestroy {
           },
           error: (error: any) => {
             console.error('Create Employee failed:', error);
-            const errorMsg = error.error?.message || error.message || 'Something went wrong';
+            let errorMsg = error.error?.message || error.message || 'Something went wrong';
+            if (error.error?.errors) {
+              errorMsg = Object.values(error.error.errors).flat().join(' | ');
+            }
             this.notificationService.show(errorMsg, 'error', 3000);
           }
         });
@@ -883,12 +889,12 @@ export class EmployeeManagementComponent implements OnInit, OnDestroy {
   }
 
   loadShifts(employeeCurrentShiftName?: string) {
-    this.shiftService.getShifts('all', 1, '').pipe(takeUntil(this.destroy$)).subscribe({
+    this.shiftService.getAllShifts().pipe(takeUntil(this.destroy$)).subscribe({
       next: (res: any) => {
         if (res.status === 200 && res.data && res.data.length > 0) {
           this.allShiftsList = res.data.map((s: any) => ({
             id: s.id,
-            name: s.name
+            name: s.shift_name || s.name
           }));
           if (employeeCurrentShiftName) {
             const matched = this.allShiftsList.find(s => s.name === employeeCurrentShiftName || s.name.includes(employeeCurrentShiftName));
@@ -898,13 +904,6 @@ export class EmployeeManagementComponent implements OnInit, OnDestroy {
               this.assignShiftType = employeeCurrentShiftName;
             }
           }
-        } else {
-          this.allShiftsList = [
-            { id: 'Shift A', name: 'Shift A (Morning)' },
-            { id: 'Shift B', name: 'Shift B (Afternoon)' },
-            { id: 'Shift C', name: 'Shift C (Night)' },
-            { id: 'Off', name: 'Weekly Off' }
-          ];
           if (employeeCurrentShiftName) {
             this.assignShiftType = employeeCurrentShiftName;
           }

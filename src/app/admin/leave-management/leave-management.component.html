@@ -185,7 +185,7 @@
         <div class="d-md-flex justify-content-between align-items-center my-3">
           <div class="d-flex align-items-center mb-md-0 mb-2">
             <span class="me-1 show-entery-text">Show</span>
-            <select class="form-control form-select show-entries-select" [(ngModel)]="showEntries" style="width: auto;">
+            <select class="form-control form-select show-entries-select" [ngModel]="showEntries" (ngModelChange)="onShowEntriesChange($event)" style="width: auto;">
               <option [ngValue]="5">5</option>
               <option [ngValue]="10">10</option>
               <option [ngValue]="15">15</option>
@@ -261,7 +261,7 @@
             </div>
           </div>
           <div class="d-flex justify-content-end mt-2" *ngIf="filterMonth || filterYear || filterStage || filterEmployee || searchText">
-             <button class="btn btn-sm btn-link text-danger text-decoration-none fs-8 fw-bold p-0" (click)="filterMonth=''; filterYear=''; filterStage=''; filterEmployee=''; searchText=''; dateValue=''">
+             <button class="btn btn-sm btn-link text-danger text-decoration-none fs-8 fw-bold p-0" (click)="filterMonth=''; filterYear=''; filterStage=''; filterEmployee=''; searchText=''; dateValue=''; pInbox=1; loadLeaveRequests()">
                <i class="fa-solid fa-times me-1"></i> Clear All
              </button>
           </div>
@@ -300,8 +300,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr
-                  *ngFor="let req of getInboxRequests() | paginate: { id: 'inbox-pagination', itemsPerPage: showEntries, currentPage: pInbox }; index as i">
+                <tr *ngFor="let req of getInboxRequests() | paginate: { id: 'inbox-pagination', itemsPerPage: showEntries, currentPage: pInbox, totalItems: totalItems }; index as i">
                   <td>
                     {{ req.id }}
                   </td>
@@ -355,7 +354,7 @@
           <!-- Mobile Card View -->
           <div class="lg:hidden space-y-4">
             <div
-              *ngFor="let req of getInboxRequests() | paginate: { id: 'inbox-pagination', itemsPerPage: showEntries, currentPage: pInbox }; index as i"
+              *ngFor="let req of getInboxRequests() | paginate: { id: 'inbox-pagination', itemsPerPage: showEntries, currentPage: pInbox, totalItems: totalItems }; index as i"
               class="bg-gray-50 border border-gray-200 rounded-lg p-4">
               <div class="flex justify-between items-center mb-2">
                 <div>
@@ -395,10 +394,10 @@
             *ngIf="getInboxRequests().length > 0">
             <span class="showalltext">Showing
               {{ showEntries * (pInbox - 1) > 0 ? showEntries * (pInbox - 1) + 1 : 1 }} to
-              {{ showEntries * pInbox <= getInboxRequests().length ? showEntries * pInbox : getInboxRequests().length }}
-                of {{ getInboxRequests().length }} entries</span>
+              {{ showEntries * pInbox <= totalItems ? showEntries * pInbox : totalItems }}
+                of {{ totalItems }} entries</span>
                 <pagination-controls id="inbox-pagination" previousLabel="Prev" nextLabel="Next" [responsive]="true"
-                  (pageChange)="pInbox = $event" target="_top"></pagination-controls>
+                  (pageChange)="onPageChange($event)" target="_top"></pagination-controls>
           </div>
         </div>
       </div>

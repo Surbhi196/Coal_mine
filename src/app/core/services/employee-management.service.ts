@@ -52,8 +52,36 @@ export class EmployeeManagementService {
     return this.apiservice.get(`v1/admin/employees`, this.getHeaders(), params);
   }
 
+  getEmployeePayrolls(tableSize: any, page: any, search?: string, departmentId?: any, employeeId?: any): Observable<any> {
+    let params = new HttpParams();
+
+    if (tableSize !== 'all') {
+      params = params.set('limit', String(tableSize)).set('page', String(page));
+    }
+
+    if (search && search.trim().length > 0) {
+      params = params.set('search', search.trim());
+    }
+    if (departmentId) {
+      params = params.set('department_id', String(departmentId));
+    }
+    if (employeeId) {
+      params = params.set('employee_id', String(employeeId));
+    }
+
+    return this.apiservice.get(`v1/admin/employee-payrolls`, this.getHeaders(), params);
+  }
+
+  getAllEmployees(): Observable<any> {
+    return this.apiservice.get(`v1/employees`, this.getHeaders());
+  }
+
   getEmployeeById(id: any): Observable<any> {
     return this.apiservice.get(`v1/admin/employees/${id}`, this.getHeaders());
+  }
+
+  getEmployeePayrollById(id: any): Observable<any> {
+    return this.apiservice.get(`v1/admin/employee-payrolls/${id}`, this.getHeaders());
   }
 
   updateEmployeeStatus(id: any, body: any): Observable<any> {
@@ -62,5 +90,13 @@ export class EmployeeManagementService {
 
   bulkUploadEmployees(requestbody: any): Observable<any> {
     return this.apiservice.post(`v1/admin/employees/bulk-upload`, requestbody, this.getHeaders());
+  }
+
+  createEmployeePayroll(requestbody: any): Observable<any> {
+    return this.apiservice.post(`v1/admin/employee-payrolls`, requestbody, this.getHeaders());
+  }
+
+  updateEmployeePayroll(id: any, requestbody: any): Observable<any> {
+    return this.apiservice.post(`v1/admin/employee-payrolls/${id}`, requestbody, this.getHeaders());
   }
 }

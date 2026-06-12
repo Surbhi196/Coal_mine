@@ -5,14 +5,108 @@
       <h1 class="text-primary table-heading-detail mb-1">Attendance Management</h1>
       <p class="text-muted mb-0 fs-6">Upload and manage daily biometric attendance logs.</p>
     </div>
-    <div class="d-flex gap-2">
-      <button class="btn btn-custom-primary px-3 py-2" (click)="openBulkUploadModal()">
-        <i class="fa-solid fa-cloud-arrow-up me-2"></i>Bulk Upload
-      </button>
+    <div class="d-flex align-items-center gap-3">
+      <!-- Toggle Group -->
+      <div class="btn-group shadow-sm" role="group">
+        <button type="button" class="btn fw-semibold px-4" 
+                [ngClass]="viewMode === 'daily' ? 'btn-primary' : 'btn-outline-primary'" 
+                (click)="setViewMode('daily')">
+          Daily
+        </button>
+        <button type="button" class="btn fw-semibold px-4" 
+                [ngClass]="viewMode === 'monthly' ? 'btn-primary' : 'btn-outline-primary'" 
+                (click)="setViewMode('monthly')">
+          Monthly
+        </button>
+      </div>
+
+      <div class="d-flex gap-2">
+        <button class="btn btn-custom-primary px-3 py-2" (click)="openBulkUploadModal()">
+          <i class="fa-solid fa-cloud-arrow-up me-2"></i>Bulk Upload
+        </button>
+      </div>
     </div>
   </div>
 
   <div class="card border-0 my-4 px-4 py-4">
+    <!-- Summary Cards -->
+    <div class="row g-3 mb-4" *ngIf="viewMode === 'daily'">
+      <!-- Total Staff -->
+      <div class="col-md-2 col-sm-6 flex-grow-1">
+        <div class="card border-0 shadow-sm rounded-3 h-100 p-3 bg-white hover-up transition">
+          <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
+            <span class="text-dark fw-bold fs-7">Total Employee</span>
+            <div class="bg-light rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+              <i class="fa-solid fa-users text-muted fs-8"></i>
+            </div>
+          </div>
+          <div class="mt-2 text-center">
+            <h3 class="mb-0 fw-bold text-dark">{{ summaryMetrics.total }}</h3>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Present -->
+      <div class="col-md-2 col-sm-6 flex-grow-1">
+        <div class="card border-0 shadow-sm rounded-3 h-100 p-3 bg-white hover-up transition">
+          <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
+            <span class="text-dark fw-bold fs-7">Present</span>
+            <div class="bg-success-subtle rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+              <i class="fa-solid fa-check text-success fs-8"></i>
+            </div>
+          </div>
+          <div class="mt-2 text-center">
+            <h3 class="mb-0 fw-bold text-success">{{ summaryMetrics.present }}</h3>
+          </div>
+        </div>
+      </div>
+
+      <!-- Absent -->
+      <div class="col-md-2 col-sm-6 flex-grow-1">
+        <div class="card border-0 shadow-sm rounded-3 h-100 p-3 bg-white hover-up transition">
+          <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
+            <span class="text-dark fw-bold fs-7">Absent</span>
+            <div class="bg-danger-subtle rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+              <i class="fa-solid fa-xmark text-danger fs-8"></i>
+            </div>
+          </div>
+          <div class="mt-2 text-center">
+            <h3 class="mb-0 fw-bold text-danger">{{ summaryMetrics.absent }}</h3>
+          </div>
+        </div>
+      </div>
+
+      <!-- Half Day -->
+      <div class="col-md-2 col-sm-6 flex-grow-1">
+        <div class="card border-0 shadow-sm rounded-3 h-100 p-3 bg-white hover-up transition">
+          <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
+            <span class="text-dark fw-bold fs-7">Half Day</span>
+            <div class="bg-warning-subtle rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+              <i class="fa-solid fa-star-half-stroke text-warning fs-8"></i>
+            </div>
+          </div>
+          <div class="mt-2 text-center">
+            <h3 class="mb-0 fw-bold text-warning">{{ summaryMetrics.halfDay }}</h3>
+          </div>
+        </div>
+      </div>
+
+      <!-- Leaves -->
+      <div class="col-md-2 col-sm-6 flex-grow-1">
+        <div class="card border-0 shadow-sm rounded-3 h-100 p-3 bg-white hover-up transition">
+          <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
+            <span class="text-dark fw-bold fs-7">Leaves</span>
+            <div class="bg-info-subtle rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+              <i class="fa-solid fa-plane-departure text-info fs-8"></i>
+            </div>
+          </div>
+          <div class="mt-2 text-center">
+            <h3 class="mb-0 fw-bold text-info">{{ summaryMetrics.leaves }}</h3>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Filters Bar -->
     <div class="row g-3 mb-4 align-items-end">
       <!-- Search Filter -->
@@ -20,43 +114,44 @@
         <label class="form-label form-lable-custom mb-1 text-muted fs-8 fw-bold text-uppercase">Search Employee</label>
         <form [formGroup]="searchbarform" class="d-flex align-items-center">
           <div class="position-relative flex-grow-1">
-            <input type="text" class="form-control form-input-custom py-2" placeholder="Search Name/ID..." autocomplete="off"
-              formControlName="searchbar" (keyup.enter)="searchfun()" />
+            <input type="text" class="form-control form-input-custom py-2" placeholder="Search Name/ID..."
+              autocomplete="off" formControlName="searchbar" (keyup.enter)="searchfun()" />
           </div>
           <button class="btn btn-primary search-btn ms-2" (click)="searchfun()" type="button" style="height: 42px;">
             <span><i class="fa-solid fa-magnifying-glass text-white"></i></span>
           </button>
-          <button class="btn btn-secondary ms-2" (click)="resetsearchbar()" type="button" *ngIf="showreset" style="height: 42px;">
+          <button class="btn btn-secondary ms-2" (click)="resetsearchbar()" type="button" *ngIf="showreset"
+            style="height: 42px;">
             <span><i class="fa-solid fa-rotate-right text-white"></i></span>
           </button>
         </form>
       </div>
 
-      <!-- From Date Filter -->
-      <div class="col-md-2 col-sm-6">
-        <label class="form-label form-lable-custom mb-1 text-muted fs-8 fw-bold text-uppercase">From Date</label>
+      <!-- Date Filter (Daily) -->
+      <div class="col-md-3 col-sm-12" *ngIf="viewMode === 'daily'">
+        <label class="form-label form-lable-custom mb-1 text-muted fs-8 fw-bold text-uppercase">Select Date</label>
+        <div class="input-group">
+          <span class="input-group-text bg-white text-muted border-end-0 py-2">
+            <i class="fa-solid fa-calendar-day"></i>
+          </span>
+          <input type="date" class="form-control form-input-custom border-start-0 ps-0 py-2"
+            [(ngModel)]="filterDate" (change)="applyFilters()">
+        </div>
+      </div>
+
+      <!-- Month Filter (Monthly) -->
+      <div class="col-md-3 col-sm-12" *ngIf="viewMode === 'monthly'">
+        <label class="form-label form-lable-custom mb-1 text-muted fs-8 fw-bold text-uppercase">Select Month</label>
         <div class="input-group">
           <span class="input-group-text bg-white text-muted border-end-0 py-2">
             <i class="fa-solid fa-calendar-days"></i>
           </span>
-          <input type="date" class="form-control form-input-custom border-start-0 ps-0 py-2"
-            [(ngModel)]="filterFromDate" (change)="applyFilters()">
+          <input type="month" class="form-control form-input-custom border-start-0 ps-0 py-2"
+            [(ngModel)]="filterMonth" (change)="applyFilters()">
         </div>
       </div>
 
-      <!-- To Date Filter -->
-      <div class="col-md-2 col-sm-6">
-        <label class="form-label form-lable-custom mb-1 text-muted fs-8 fw-bold text-uppercase">To Date</label>
-        <div class="input-group">
-          <span class="input-group-text bg-white text-muted border-end-0 py-2">
-            <i class="fa-solid fa-calendar-days"></i>
-          </span>
-          <input type="date" class="form-control form-input-custom border-start-0 ps-0 py-2"
-            [(ngModel)]="filterToDate" (change)="applyFilters()">
-        </div>
-      </div>
-
-      <!-- Site Filter -->
+      <!-- Site Filter 
       <div class="col-md-2 col-sm-6">
         <label class="form-label form-lable-custom mb-1 text-muted fs-8 fw-bold text-uppercase">Site Filter</label>
         <select class="form-select form-input-custom py-2" [(ngModel)]="filterSite" (change)="applyFilters()">
@@ -64,6 +159,7 @@
           <option *ngFor="let s of mockSites" [value]="s">{{ s }}</option>
         </select>
       </div>
+      -->
 
       <!-- Status Filter -->
       <div class="col-md-2 col-sm-6">
@@ -88,7 +184,8 @@
     </div>
 
     <!-- Floating Bulk Action Bar -->
-    <div class="bulk-action-bar animate-fade p-3 mb-3 d-flex justify-content-between align-items-center rounded-3 shadow" 
+    <div
+      class="bulk-action-bar animate-fade p-3 mb-3 d-flex justify-content-between align-items-center rounded-3 shadow"
       *ngIf="selectedRecordIds.size > 0">
       <div class="d-flex align-items-center gap-3">
         <div class="bulk-info d-flex align-items-center gap-2">
@@ -96,30 +193,36 @@
           <span class="fw-bold text-dark fs-7">Employees Selected</span>
         </div>
         <div class="vertical-divider"></div>
-        <a href="javascript:void(0)" class="text-decoration-none text-muted fs-8 hover-primary fw-semibold" (click)="clearSelection()">
+        <a href="javascript:void(0)" class="text-decoration-none text-muted fs-8 hover-primary fw-semibold"
+          (click)="clearSelection()">
           <i class="fa-solid fa-rotate-left me-1"></i> Clear Selection
         </a>
       </div>
-      
+
       <div class="d-flex align-items-center gap-2">
         <span class="fs-8 fw-bold text-muted text-uppercase me-2 letter-spacing-1">Mark Selected:</span>
-        <button class="btn btn-sm btn-success bulk-btn px-3 py-2 fs-8 fw-bold d-flex align-items-center gap-1.5 rounded-pill hover-up" 
+        <button
+          class="btn btn-sm btn-success bulk-btn px-3 py-2 fs-8 fw-bold d-flex align-items-center gap-1.5 rounded-pill hover-up"
           (click)="markBulkAttendance('Present')">
           <i class="fa-solid fa-circle-check"></i> Present
         </button>
-        <button class="btn btn-sm btn-secondary bulk-btn px-3 py-2 fs-8 fw-bold d-flex align-items-center gap-1.5 rounded-pill hover-up" 
+        <button
+          class="btn btn-sm btn-secondary bulk-btn px-3 py-2 fs-8 fw-bold d-flex align-items-center gap-1.5 rounded-pill hover-up"
           (click)="markBulkAttendance('Absent')">
           <i class="fa-solid fa-circle-xmark"></i> Absent
         </button>
-        <button class="btn btn-sm btn-info text-white bulk-btn px-3 py-2 fs-8 fw-bold d-flex align-items-center gap-1.5 rounded-pill hover-up" 
+        <button
+          class="btn btn-sm btn-info text-white bulk-btn px-3 py-2 fs-8 fw-bold d-flex align-items-center gap-1.5 rounded-pill hover-up"
           (click)="markBulkAttendance('Leave')">
           <i class="fa-solid fa-circle-info"></i> Leave
         </button>
-        <button class="btn btn-sm btn-warning bulk-btn px-3 py-2 fs-8 fw-bold d-flex align-items-center gap-1.5 rounded-pill hover-up" 
+        <button
+          class="btn btn-sm btn-warning bulk-btn px-3 py-2 fs-8 fw-bold d-flex align-items-center gap-1.5 rounded-pill hover-up"
           (click)="markBulkAttendance('Half Day')">
           <i class="fa-solid fa-circle-half-stroke"></i> Half Day
         </button>
-        <button class="btn btn-sm btn-primary text-white bulk-btn px-3 py-2 fs-8 fw-bold d-flex align-items-center gap-1.5 rounded-pill hover-up" 
+        <button
+          class="btn btn-sm btn-primary text-white bulk-btn px-3 py-2 fs-8 fw-bold d-flex align-items-center gap-1.5 rounded-pill hover-up"
           (click)="markBulkAttendance('Rest Day')">
           <i class="fa-solid fa-bed"></i> Rest Day
         </button>
@@ -129,15 +232,18 @@
     <!-- Entries Select Row -->
     <div class="d-flex align-items-center mb-4">
       <span class="me-1 show-entery-text">Show</span>
-      <select class="form-control form-select show-entries-select" [(ngModel)]="showEntries" (change)="onShowEntriesChange()" style="width: auto;">
+      <select class="form-control form-select show-entries-select" [(ngModel)]="showEntries"
+        (change)="onShowEntriesChange()" style="width: auto;">
         <option *ngFor="let size of tableSizes" [ngValue]="size">{{ size === 'all' ? 'All' : size }}</option>
       </select>
       <span class="ms-1 show-entery-text">entries</span>
     </div>
 
     <div class="table-responsive-sm mt-2">
-      <!-- Desktop Table View -->
-      <div class="hidden lg:block">
+      <!-- Daily View -->
+      <ng-container *ngIf="viewMode === 'daily'">
+        <!-- Desktop Table View -->
+        <div class="hidden lg:block">
         <table class="table table-bordered table-hover table-striped mb-0">
           <thead class="table-header">
             <tr>
@@ -147,18 +253,35 @@
                     (change)="toggleAllSelection($event)" [checked]="isAllSelected()">
                 </div>
               </th>
-              <th><p class="table-heading">Date</p></th>
-              <th><p class="table-heading">Employee</p></th>
-              <th><p class="table-heading">Site</p></th>
-              <th><p class="table-heading">Check In</p></th>
-              <th><p class="table-heading">Check Out</p></th>
-              <th><p class="table-heading">Shift</p></th>
-              <th><p class="table-heading">Status</p></th>
-              <th><p class="table-heading">Actions</p></th>
+              <th>
+                <p class="table-heading">Date</p>
+              </th>
+              <th>
+                <p class="table-heading">Employee</p>
+              </th>
+              <th>
+                <p class="table-heading">Site</p>
+              </th>
+              <th>
+                <p class="table-heading">Check In</p>
+              </th>
+              <th>
+                <p class="table-heading">Check Out</p>
+              </th>
+              <th>
+                <p class="table-heading">Shift</p>
+              </th>
+              <th>
+                <p class="table-heading">Status</p>
+              </th>
+              <th>
+                <p class="table-heading">Actions</p>
+              </th>
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let record of attendanceRecords | paginate: { itemsPerPage: showEntries != 'all' ? showEntries : totalRecords, currentPage: p, totalItems: totalRecords }"
+            <tr
+              *ngFor="let record of attendanceRecords | paginate: { itemsPerPage: showEntries != 'all' ? showEntries : totalRecords, currentPage: p, totalItems: totalRecords }"
               class="hover-bg-light transition">
               <td class="text-center">
                 <div class="custom-control custom-checkbox d-flex align-items-center justify-content-center">
@@ -203,7 +326,8 @@
                   <button class="btn-action edit-btn" title="Manual Correction" (click)="openCorrectionModal(record)">
                     <i class="fa-solid fa-pen-to-square"></i>
                   </button>
-                  <button class="btn-action view-btn" [matMenuTriggerFor]="individualMenu" title="Quick Attendance Status">
+                  <button class="btn-action view-btn" [matMenuTriggerFor]="individualMenu"
+                    title="Quick Attendance Status">
                     <i class="fa-solid fa-calendar-check"></i>
                   </button>
                 </div>
@@ -229,6 +353,11 @@
                     <mat-icon class="text-primary">hotel</mat-icon>
                     <span>Mark Rest Day</span>
                   </button>
+                  <button mat-menu-item (click)="viewRecord(record)" title="View Details">
+                    <mat-icon class="text-primary">hotel</mat-icon>
+                    <span>Details</span>
+                  </button>
+
                 </mat-menu>
               </td>
             </tr>
@@ -243,8 +372,9 @@
 
       <!-- Card View for below lg -->
       <div class="lg:hidden space-y-4">
-        <div *ngFor="let record of attendanceRecords | paginate: { itemsPerPage: showEntries != 'all' ? showEntries : totalRecords, currentPage: p, totalItems: totalRecords }; index as i"
-             class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+        <div
+          *ngFor="let record of attendanceRecords | paginate: { itemsPerPage: showEntries != 'all' ? showEntries : totalRecords, currentPage: p, totalItems: totalRecords }; index as i"
+          class="bg-gray-50 border border-gray-200 rounded-lg p-4">
           <div class="flex justify-between items-center mb-2">
             <div class="d-flex align-items-center gap-2">
               <input type="checkbox" class="form-check-input record-checkbox cursor-pointer"
@@ -256,7 +386,8 @@
                 <button class="btn-action edit-btn" (click)="openCorrectionModal(record)" title="Manual Correction">
                   <i class="fa-solid fa-pen-to-square"></i>
                 </button>
-                <button class="btn-action view-btn" [matMenuTriggerFor]="individualMenuMobile" title="Quick Attendance Status">
+                <button class="btn-action view-btn" [matMenuTriggerFor]="individualMenuMobile"
+                  title="Quick Attendance Status">
                   <i class="fa-solid fa-calendar-check"></i>
                 </button>
               </div>
@@ -307,12 +438,64 @@
           No attendance records found.
         </div>
       </div>
+      </ng-container>
 
-      <div class="d-md-flex justify-content-between bottom-0 end-0 py-2 align-items-center" *ngIf="attendanceRecords.length > 0">
+      <!-- Monthly View -->
+      <ng-container *ngIf="viewMode === 'monthly'">
+        <div class="hidden lg:block">
+          <table class="table table-bordered table-hover table-striped mb-0">
+            <thead class="table-header">
+              <tr>
+                <th><p class="table-heading">Employee</p></th>
+                <th><p class="table-heading">Total Days</p></th>
+                <th><p class="table-heading">Present</p></th>
+                <th><p class="table-heading">Absent</p></th>
+                <th><p class="table-heading">Half Day</p></th>
+                <th><p class="table-heading">Rest Day</p></th>
+                <th><p class="table-heading">Leave</p></th>
+                <th><p class="table-heading">Payable Days</p></th>
+                <th><p class="table-heading text-center">Actions</p></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let summary of monthlyAttendanceRecords" class="hover-bg-light transition">
+                <td>
+                  <div class="d-flex flex-column">
+                    <span class="fw-bold text-dark fs-7">{{ summary.empName }}</span>
+                    <span class="text-muted fs-8">{{ summary.empId }}</span>
+                  </div>
+                </td>
+                <td><p class="fw-medium text-dark">{{ summary.totalDays }}</p></td>
+                <td><span class="badge bg-success-subtle text-success fs-8 px-2 py-1">{{ summary.present }}</span></td>
+                <td><span class="badge bg-danger-subtle text-danger fs-8 px-2 py-1">{{ summary.absent }}</span></td>
+                <td><span class="badge bg-warning-subtle text-warning fs-8 px-2 py-1">{{ summary.halfDay }}</span></td>
+                <td><span class="badge bg-primary-subtle text-primary fs-8 px-2 py-1">{{ summary.restDay }}</span></td>
+                <td><span class="badge bg-info-subtle text-info fs-8 px-2 py-1">{{ summary.leave }}</span></td>
+                <td><p class="fw-medium text-dark">{{ summary.payableDays }}</p></td>
+                <td class="text-center">
+                  <button class="btn btn-sm btn-outline-primary py-1 px-3 fs-8 fw-semibold rounded-pill" (click)="viewRecord({id: summary.empId})" title="View Details">
+                    <i class="fa-solid fa-calendar-days me-1"></i> View Details
+                  </button>
+                </td>
+              </tr>
+              <tr *ngIf="monthlyAttendanceRecords.length === 0">
+                <td colspan="9" class="text-center py-4 text-muted">
+                  No attendance records found for this month.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </ng-container>
+
+      <div class="d-md-flex justify-content-between bottom-0 end-0 py-2 align-items-center"
+        *ngIf="(viewMode === 'daily' && attendanceRecords.length > 0) || (viewMode === 'monthly' && monthlyAttendanceRecords.length > 0)">
         <span class="showalltext">Showing
-          {{ showEntries === 'all' ? (totalRecords > 0 ? 1 : 0) : (showEntries * (p - 1) > 0 ? showEntries * (p - 1) + 1 : (totalRecords > 0 ? 1 : 0)) }} to
-          {{ showEntries === 'all' ? totalRecords : (showEntries * p <= totalRecords ? showEntries * p : totalRecords) }} of {{ totalRecords }} entries</span>
-        <pagination-controls (pageChange)="onPageChange($event)" class="my-pagination"></pagination-controls>
+          {{ showEntries === 'all' ? (totalRecords > 0 ? 1 : 0) : (showEntries * (p - 1) > 0 ? showEntries * (p - 1) + 1
+          : (totalRecords > 0 ? 1 : 0)) }} to
+          {{ showEntries === 'all' ? totalRecords : (showEntries * p <= totalRecords ? showEntries * p : totalRecords)
+            }} of {{ totalRecords }} entries</span>
+            <pagination-controls (pageChange)="onPageChange($event)" class="my-pagination"></pagination-controls>
       </div>
     </div>
   </div>

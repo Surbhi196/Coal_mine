@@ -52,6 +52,10 @@ export class ShiftService {
     );
   }
 
+  getAllShifts(): Observable<any> {
+    return this.apiservice.get(`v1/shifts`, this.getHeaders());
+  }
+
   getShiftRotation(fromDate: string, toDate: string, shiftId?: string | number): Observable<any> {
     let params = new HttpParams()
       .set('from_date', fromDate)
@@ -125,16 +129,17 @@ export class ShiftService {
   }
 
   getShiftGroups(): Observable<any> {
-    return this.apiservice.get('v1/admin/employees', this.getHeaders()).pipe(
+    return this.apiservice.get('v1/employees', this.getHeaders()).pipe(
       map((res: any) => {
-        if (res.status === 200 && res.data) {
+        const empData = res.data?.data || res.data || [];
+        if (res.status === 200 && empData) {
           const groups: { [shiftCode: string]: string[] } = {
             "Shift A": [],
             "Shift B": [],
             "Shift C": []
           };
 
-          res.data.forEach((emp: any) => {
+          empData.forEach((emp: any) => {
             const shiftName = emp.shift || '';
             if (shiftName) {
               if (!groups[shiftName]) {

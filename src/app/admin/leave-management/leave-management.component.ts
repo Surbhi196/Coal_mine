@@ -20,7 +20,7 @@ interface LeaveRequest {
   endDate: string;
   leaveType: string;
   reason: string;
-  status: 'Pending Supervisor' | 'Pending PM' | 'Pending HR' | 'Approved' | 'Rejected';
+  status: string;
   appliedDate: string;
   comments?: string;
 }
@@ -58,6 +58,7 @@ export class LeaveManagementComponent implements OnInit, OnDestroy {
   pBalances: number = 1;
 
   showEntries: number = 10;
+  totalItems: number = 0;
   searchText: string = '';
   filterMonth: string = '';
   filterYear: string = '';
@@ -106,6 +107,17 @@ export class LeaveManagementComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.loadEmployees();
     this.loadLeaveTypes();
+    this.loadLeaveRequests();
+  }
+
+  onPageChange(page: number) {
+    this.pInbox = page;
+    this.loadLeaveRequests();
+  }
+
+  onShowEntriesChange(entries: number) {
+    this.showEntries = entries;
+    this.pInbox = 1;
     this.loadLeaveRequests();
   }
 
@@ -168,11 +180,11 @@ export class LeaveManagementComponent implements OnInit, OnDestroy {
 
     const filters = {
       employee_id: this.filterEmployee || '',
-      status: this.filterStage === 'Pending' ? 'pending' : (this.filterStage.toLowerCase() || ''),
+      status: this.filterStage ? (this.filterStage === 'Pending' ? 'pending' : this.filterStage.toLowerCase()) : '',
       month_year: month_year
     };
 
-    this.leaveManagementService.getLeaves('all', 1, this.searchText, filters).pipe(takeUntil(this.destroy$)).subscribe({
+    this.leaveManagementService.getLeaves(this.showEntries, this.pInbox, this.searchText, filters).pipe(takeUntil(this.destroy$)).subscribe({
       next: (res: any) => {
         let rawData: any[] = [];
         if (res && (res.status === 'success' || res.status === 200 || res.data)) {
@@ -197,18 +209,25 @@ export class LeaveManagementComponent implements OnInit, OnDestroy {
         } else {
           this.leaveRequests = [];
         }
+
+        // Set pagination from backend response
+        if (res && res.pagination) {
+          this.totalItems = res.pagination.total || 0;
+        } else {
+          this.totalItems = this.leaveRequests.length;
+        }
       },
       error: (err) => console.error('Failed to load leave requests', err)
     });
   }
 
-  mapApiStatus(status: any): 'Pending Supervisor' | 'Pending PM' | 'Pending HR' | 'Approved' | 'Rejected' {
-    if (!status && status !== 0) return 'Pending Supervisor';
+  mapApiStatus(status: any): string {
+    if (!status && status !== 0) return 'Pending';
     const s = String(status).toLowerCase();
-    if (s === '0' || s === 'pending') return 'Pending Supervisor';
+    if (s === '0' || s === 'pending') return 'Pending';
     if (s === '1' || s === 'approved') return 'Approved';
     if (s === '2' || s === 'rejected') return 'Rejected';
-    return 'Pending Supervisor';
+    return 'Pending';
   }
 
   initializeLeaveBalances() {
@@ -291,58 +310,9 @@ export class LeaveManagementComponent implements OnInit, OnDestroy {
   }
 
   getInboxRequests(): LeaveRequest[] {
-    let list = this.leaveRequests.filter(req => {
-      if (this.simulatedRole === 'Supervisor') {
-        return req.status === 'Pending Supervisor';
-      } else if (this.simulatedRole === 'Project Manager') {
-        return req.status === 'Pending PM';
-      } else if (this.simulatedRole === 'HR') {
-        return req.status === 'Pending HR';
-      }
-      return false;
-    });
+    let list = this.leaveRequests;
 
-    if (this.filterMonth) {
-      list = list.filter(req => {
-        if (!req.startDate) return false;
-        const date = new Date(req.startDate);
-        const mm = (date.getMonth() + 1).toString().padStart(2, '0');
-        return mm === this.filterMonth;
-      });
-    }
-
-    if (this.filterYear) {
-      list = list.filter(req => {
-        if (!req.startDate) return false;
-        const date = new Date(req.startDate);
-        const yyyy = date.getFullYear().toString();
-        return yyyy === this.filterYear;
-      });
-    }
-
-    if (this.filterStage) {
-      if (this.filterStage === 'Pending') {
-        list = list.filter(req => req.status && req.status.startsWith('Pending'));
-      } else {
-        list = list.filter(req => req.status === this.filterStage);
-      }
-    }
-
-    if (this.filterEmployee) {
-      list = list.filter(req => req.empId === this.filterEmployee);
-    }
-
-    if (this.searchText) {
-      const txt = this.searchText.toLowerCase();
-      list = list.filter(req =>
-        (req.empName || '').toLowerCase().includes(txt) ||
-        (req.empId || '').toLowerCase().includes(txt) ||
-        (req.leaveType || '').toLowerCase().includes(txt) ||
-        (req.reason || '').toLowerCase().includes(txt) ||
-        (req.status || '').toLowerCase().includes(txt)
-      );
-    }
-    
+    // Remove client-side filtering since we are doing server-side filtering
     return list;
   }
 
@@ -400,11 +370,12 @@ export class LeaveManagementComponent implements OnInit, OnDestroy {
           this.notificationService.show(res.message || 'Leave approved successfully!', 'success');
           this.loadLeaveRequests(); // Refresh the list from backend
         } else {
-          this.notificationService.show('Failed to approve leave', 'error');
+          this.notificationService.show(res?.message || 'Failed to approve leave', 'error');
         }
       },
       error: (err: any) => {
-        this.notificationService.show('Failed to approve leave', 'error');
+        const errorMessage = err?.error?.message || err?.message || 'Failed to approve leave';
+        this.notificationService.show(errorMessage, 'error');
         console.error(err);
       }
     });
@@ -417,11 +388,12 @@ export class LeaveManagementComponent implements OnInit, OnDestroy {
           this.notificationService.show(res.message || 'Leave rejected successfully!', 'info');
           this.loadLeaveRequests(); // Refresh the list from backend
         } else {
-          this.notificationService.show('Failed to reject leave', 'error');
+          this.notificationService.show(res?.message || 'Failed to reject leave', 'error');
         }
       },
       error: (err: any) => {
-        this.notificationService.show('Failed to reject leave', 'error');
+        const errorMessage = err?.error?.message || err?.message || 'Failed to reject leave';
+        this.notificationService.show(errorMessage, 'error');
         console.error(err);
       }
     });

@@ -1,9 +1,12 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { trigger, state, style, transition, animate } from '@angular/animations';
 import { NotificationService } from 'src/app/core/services/notificationnew.service';
 import { CommonModule } from '@angular/common';
 import { NgxPaginationModule } from 'ngx-pagination';
+import { CategoryService } from 'src/app/core/services/category.service';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 interface Category {
   id: number;
@@ -36,7 +39,8 @@ interface SubCategory {
     ])
   ]
 })
-export class CategoriesComponent implements OnInit {
+export class CategoriesComponent implements OnInit, OnDestroy {
+  private destroy$ = new Subject<void>();
   activeTab: 'Categories' | 'Sub Categories' = 'Categories';
   
   // Search parameters
@@ -50,32 +54,12 @@ export class CategoriesComponent implements OnInit {
   totalRecords = 0;
 
   // Categories Datasets
-  categories: Category[] = [
-    { id: 1, categoryName: 'PUMP HOUSE', is_active: 1 },
-    { id: 2, categoryName: 'IRP', is_active: 1 },
-    { id: 3, categoryName: 'PUMP HOUSE+IRP', is_active: 1 },
-    { id: 4, categoryName: 'JCB', is_active: 1 },
-    { id: 5, categoryName: 'MISC', is_active: 1 },
-    { id: 6, categoryName: 'RMC/ROAD WORK', is_active: 1 },
-    { id: 7, categoryName: 'CIVIL WORK', is_active: 1 },
-    { id: 8, categoryName: 'COMBINE', is_active: 1 },
-    { id: 9, categoryName: 'ROAD WORK', is_active: 1 }
-  ];
+  categories: Category[] = [];
   filteredCategories: Category[] = [];
+  allCategories: Category[] = []; // For dropdowns and lookups
 
   // Sub Categories Datasets
-  subCategories: SubCategory[] = [
-    { id: 1, name: 'DI PIPE AND FITTINGS', categoryId: 1, is_active: 1 },
-    { id: 2, name: 'PVC PIPE AND FITTINGS', categoryId: 1, is_active: 1 },
-    { id: 3, name: 'GI PIPE AND FITTINGS', categoryId: 1, is_active: 1 },
-    { id: 4, name: 'SUBMERSIBLE MOTOR PUMP', categoryId: 1, is_active: 1 },
-    { id: 5, name: 'ELECTRICAL FITTINGS-PH', categoryId: 1, is_active: 1 },
-    { id: 6, name: 'TRANCHER MATERIALS', categoryId: 1, is_active: 1 },
-    { id: 7, name: 'FAN BELT', categoryId: 1, is_active: 1 },
-    { id: 8, name: 'MEASUREMENT', categoryId: 1, is_active: 1 },
-    { id: 9, name: 'HDPE PIPE AND FITTINGS', categoryId: 1, is_active: 1 },
-    { id: 10, name: 'AIR BLOWER', categoryId: 2, is_active: 1 }
-  ];
+  subCategories: SubCategory[] = [];
   filteredSubCategories: SubCategory[] = [];
 
   // Modals state management
@@ -98,24 +82,33 @@ export class CategoriesComponent implements OnInit {
 
   // Trackers
   selectedCategory: Category | null = null;
+  selectedCategoryDetails: any = null;
   selectedSubCategory: SubCategory | null = null;
+  selectedSubCategoryDetails: any = null;
 
   constructor(
     private formBuilder: FormBuilder,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+    private categoryService: CategoryService
   ) {}
 
   ngOnInit(): void {
     this.initSearchForm();
     this.initForms();
+    this.fetchAllCategoriesForDropdown();
     this.refreshFilteredData();
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   // Active Tab Toggling
   setActiveTab(tab: 'Categories' | 'Sub Categories') {
     this.activeTab = tab;
     this.page = 1;
-    this.searchbarform.reset({ searchbar: '' });
+    this.searchbarform.reset({ searchbar: '' }, { emitEvent: false });
     this.showreset = false;
     this.refreshFilteredData();
   }
@@ -127,9 +120,9 @@ export class CategoriesComponent implements OnInit {
     });
 
     // Realtime search query value changes subscription
-    this.searchbarform.get('searchbar')?.valueChanges.subscribe(val => {
+    this.searchbarform.get('searchbar')?.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(val => {
       this.showreset = !!val;
-      this.searchfun();
+      // Search is now triggered exclusively via the search button
     });
   }
 
@@ -164,39 +157,92 @@ export class CategoriesComponent implements OnInit {
 
   refreshFilteredData() {
     if (this.activeTab === 'Categories') {
-      this.filteredCategories = [...this.categories];
-      this.totalRecords = this.filteredCategories.length;
+      this.fetchCategories();
     } else {
-      this.filteredSubCategories = [...this.subCategories];
-      this.totalRecords = this.filteredSubCategories.length;
+      this.fetchSubCategories();
     }
+  }
+
+  fetchCategories() {
+    const query = this.searchbarform?.get('searchbar')?.value?.trim();
+    this.categoryService.getCategories(this.page, this.tableSize, query).pipe(takeUntil(this.destroy$)).subscribe({
+      next: (res: any) => {
+        if (res && res.status === 200) {
+          this.categories = res.data.map((c: any) => ({
+            id: c.id,
+            categoryName: c.name,
+            is_active: c.status
+          }));
+          this.filteredCategories = [...this.categories];
+          
+          if (res.pagination) {
+            this.totalRecords = res.pagination.total;
+          } else {
+            this.totalRecords = this.categories.length;
+          }
+        }
+      },
+      error: (err: any) => {
+        console.error('Error fetching categories', err);
+      }
+    });
+  }
+
+  fetchSubCategories() {
+    const query = this.searchbarform?.get('searchbar')?.value?.trim();
+    this.categoryService.getSubCategories(this.page, this.tableSize, query).pipe(takeUntil(this.destroy$)).subscribe({
+      next: (res: any) => {
+        if (res && res.status === 200) {
+          this.subCategories = res.data.map((sc: any) => ({
+            id: sc.id,
+            name: sc.name,
+            categoryId: sc.category_id,
+            is_active: sc.status
+          }));
+          this.filteredSubCategories = [...this.subCategories];
+          
+          if (res.pagination) {
+            this.totalRecords = res.pagination.total;
+          } else {
+            this.totalRecords = this.subCategories.length;
+          }
+        }
+      },
+      error: (err: any) => {
+        console.error('Error fetching sub categories', err);
+      }
+    });
+  }
+
+  fetchAllCategoriesForDropdown() {
+    this.categoryService.getAllCategories().pipe(takeUntil(this.destroy$)).subscribe({
+      next: (res: any) => {
+        if (res && res.status === 200) {
+          this.allCategories = res.data.map((c: any) => ({
+            id: c.id,
+            categoryName: c.name,
+            is_active: c.status
+          }));
+        }
+      },
+      error: (err: any) => console.error('Error fetching all categories', err)
+    });
   }
 
   // Filtering lists dynamically
   searchfun() {
     const query = this.searchbarform.get('searchbar')?.value?.trim().toLowerCase();
-    if (!query) {
-      this.refreshFilteredData();
-      return;
-    }
-
-    if (this.activeTab === 'Categories') {
-      this.filteredCategories = this.categories.filter(c => 
-        c.categoryName.toLowerCase().includes(query)
-      );
-      this.totalRecords = this.filteredCategories.length;
-    } else {
-      this.filteredSubCategories = this.subCategories.filter(sc => 
-        sc.name.toLowerCase().includes(query) ||
-        this.getCategoryName(sc.categoryId).toLowerCase().includes(query)
-      );
-      this.totalRecords = this.filteredSubCategories.length;
-    }
+    
     this.page = 1;
+    if (this.activeTab === 'Categories') {
+      this.fetchCategories();
+    } else {
+      this.fetchSubCategories();
+    }
   }
 
   resetsearchbar() {
-    this.searchbarform.patchValue({ searchbar: '' });
+    this.searchbarform.patchValue({ searchbar: '' }, { emitEvent: false });
     this.showreset = false;
     this.refreshFilteredData();
   }
@@ -216,35 +262,73 @@ export class CategoriesComponent implements OnInit {
   onTableSizeChange(event: any) {
     this.tableSize = event.target.value;
     this.page = 1;
+    if (this.activeTab === 'Categories') {
+      this.fetchCategories();
+    } else {
+      this.fetchSubCategories();
+    }
   }
 
   onTableDataChange(pageNumber: number) {
     this.page = pageNumber;
+    if (this.activeTab === 'Categories') {
+      this.fetchCategories();
+    } else {
+      this.fetchSubCategories();
+    }
   }
 
   getCategoryName(categoryId?: number | null): string {
     if (categoryId === undefined || categoryId === null) return '—';
-    const cat = this.categories.find(c => c.id === Number(categoryId));
+    const cat = this.allCategories.find(c => c.id === Number(categoryId));
     return cat ? cat.categoryName : '—';
   }
 
   // Status triggers
   toggleCategoryStatus(cat: Category) {
-    cat.is_active = cat.is_active === 1 ? 0 : 1;
-    this.notificationService.show(
-      `Category status changed to ${cat.is_active === 1 ? 'Active' : 'Inactive'} successfully.`,
-      'success',
-      3000
-    );
+    const newStatus = cat.is_active === 1 ? 0 : 1;
+    this.categoryService.updateCategoryStatus(cat.id, newStatus).pipe(takeUntil(this.destroy$)).subscribe({
+      next: (res: any) => {
+        if (res && (res.status === 200 || res.status === 'success')) {
+          cat.is_active = newStatus;
+          this.notificationService.show(
+            res.message || `Category status changed to ${newStatus === 1 ? 'Active' : 'Inactive'} successfully.`,
+            'success',
+            3000
+          );
+        } else {
+          this.notificationService.show(res?.message || 'Failed to update category status', 'error', 3000);
+        }
+      },
+      error: (err: any) => {
+        const errorMessage = err?.message || 'Failed to update category status';
+        this.notificationService.show(errorMessage, 'error', 3000);
+        console.error(err);
+      }
+    });
   }
 
   toggleSubCategoryStatus(sub: SubCategory) {
-    sub.is_active = sub.is_active === 1 ? 0 : 1;
-    this.notificationService.show(
-      `Sub Category status changed to ${sub.is_active === 1 ? 'Active' : 'Inactive'} successfully.`,
-      'success',
-      3000
-    );
+    const newStatus = sub.is_active === 1 ? 0 : 1;
+    this.categoryService.updateSubCategoryStatus(sub.id, newStatus).pipe(takeUntil(this.destroy$)).subscribe({
+      next: (res: any) => {
+        if (res && (res.status === 200 || res.status === 'success')) {
+          sub.is_active = newStatus;
+          this.notificationService.show(
+            res.message || `Sub Category status changed to ${newStatus === 1 ? 'Active' : 'Inactive'} successfully.`,
+            'success',
+            3000
+          );
+        } else {
+          this.notificationService.show(res?.message || 'Failed to update sub category status', 'error', 3000);
+        }
+      },
+      error: (err: any) => {
+        const errorMessage = err?.message || 'Failed to update sub category status';
+        this.notificationService.show(errorMessage, 'error', 3000);
+        console.error(err);
+      }
+    });
   }
 
   // Categories Modals triggers
@@ -263,11 +347,17 @@ export class CategoriesComponent implements OnInit {
 
   openViewCategoryModal(cat: Category) {
     this.selectedCategory = cat;
-    this.viewCategoryForm.patchValue({
-      categoryName: cat.categoryName,
-      status: cat.is_active === 1 ? 'Active' : 'Inactive'
-    });
+    this.selectedCategoryDetails = null; // reset old details
     this.viewCategoryOpen = true;
+
+    this.categoryService.getCategoryById(cat.id).pipe(takeUntil(this.destroy$)).subscribe({
+      next: (res: any) => {
+        if (res && res.status === 200 && res.data) {
+          this.selectedCategoryDetails = res.data;
+        }
+      },
+      error: (err: any) => console.error('Error fetching category details', err)
+    });
   }
 
   closeModal() {
@@ -280,7 +370,9 @@ export class CategoriesComponent implements OnInit {
     this.viewSubCategoryOpen = false;
 
     this.selectedCategory = null;
+    this.selectedCategoryDetails = null;
     this.selectedSubCategory = null;
+    this.selectedSubCategoryDetails = null;
   }
 
   // Categories Transactions
@@ -291,23 +383,33 @@ export class CategoriesComponent implements OnInit {
     }
     const name = this.createCategoryForm.get('categoryName')?.value.trim();
     
-    // Duplicate check
-    if (this.categories.some(c => c.categoryName.toUpperCase() === name.toUpperCase())) {
-      this.notificationService.show('Category Name already exists.', 'error', 3000);
-      return;
-    }
+    const formData = new FormData();
+    formData.append('name', name);
 
-    const nextId = this.categories.length > 0 ? Math.max(...this.categories.map(c => c.id)) + 1 : 1;
-    const newCat: Category = {
-      id: nextId,
-      categoryName: name,
-      is_active: 1
-    };
-
-    this.categories.push(newCat);
-    this.refreshFilteredData();
-    this.notificationService.show('Category created successfully.', 'success', 3000);
-    this.closeModal();
+    this.categoryService.createCategory(formData).pipe(takeUntil(this.destroy$)).subscribe({
+      next: (res: any) => {
+        if (res && (res.status === 200 || res.status === 'success')) {
+          this.notificationService.show(res.message || 'Category created successfully.', 'success', 3000);
+          
+          if (res.data) {
+            this.categories.unshift({
+              id: res.data.id,
+              categoryName: res.data.name,
+              is_active: res.data.status
+            });
+            this.refreshFilteredData();
+          }
+          this.closeModal();
+        } else {
+          this.notificationService.show(res?.message || 'Failed to create category', 'error', 3000);
+        }
+      },
+      error: (err: any) => {
+        const errorMessage = err?.message || 'Failed to create category';
+        this.notificationService.show(errorMessage, 'error', 3000);
+        console.error(err);
+      }
+    });
   }
 
   updateCategory() {
@@ -327,10 +429,29 @@ export class CategoriesComponent implements OnInit {
         return;
       }
 
-      this.selectedCategory.categoryName = name;
-      this.refreshFilteredData();
-      this.notificationService.show('Category updated successfully.', 'success', 3000);
-      this.closeModal();
+      const formData = new FormData();
+      formData.append('name', name);
+
+      this.categoryService.updateCategory(this.selectedCategory.id, formData).pipe(takeUntil(this.destroy$)).subscribe({
+        next: (res: any) => {
+          if (res && (res.status === 200 || res.status === 'success')) {
+            this.notificationService.show(res.message || 'Category updated successfully.', 'success', 3000);
+            
+            if (this.selectedCategory) {
+              this.selectedCategory.categoryName = name;
+              this.refreshFilteredData();
+            }
+            this.closeModal();
+          } else {
+            this.notificationService.show(res?.message || 'Failed to update category', 'error', 3000);
+          }
+        },
+        error: (err: any) => {
+          const errorMessage = err?.message || 'Failed to update category';
+          this.notificationService.show(errorMessage, 'error', 3000);
+          console.error(err);
+        }
+      });
     }
   }
 
@@ -354,12 +475,17 @@ export class CategoriesComponent implements OnInit {
 
   openViewSubCategoryModal(sub: SubCategory) {
     this.selectedSubCategory = sub;
-    this.viewSubCategoryForm.patchValue({
-      name: sub.name,
-      categoryId: this.getCategoryName(sub.categoryId),
-      status: sub.is_active === 1 ? 'Active' : 'Inactive'
-    });
+    this.selectedSubCategoryDetails = null; // reset old details
     this.viewSubCategoryOpen = true;
+
+    this.categoryService.getSubCategoryById(sub.id).pipe(takeUntil(this.destroy$)).subscribe({
+      next: (res: any) => {
+        if (res && res.status === 200 && res.data) {
+          this.selectedSubCategoryDetails = res.data;
+        }
+      },
+      error: (err: any) => console.error('Error fetching sub category details', err)
+    });
   }
 
   // Sub Categories Transactions
@@ -369,26 +495,38 @@ export class CategoriesComponent implements OnInit {
       return;
     }
     const name = this.createSubCategoryForm.get('name')?.value.trim();
-    const categoryId = Number(this.createSubCategoryForm.get('categoryId')?.value);
+    const categoryId = this.createSubCategoryForm.get('categoryId')?.value;
 
-    // Duplicate check
-    if (this.subCategories.some(sc => sc.name.toUpperCase() === name.toUpperCase())) {
-      this.notificationService.show('Sub Category Name already exists.', 'error', 3000);
-      return;
-    }
+    const formData = new FormData();
+    formData.append('name', name);
+    formData.append('category_id', categoryId.toString());
 
-    const nextId = this.subCategories.length > 0 ? Math.max(...this.subCategories.map(sc => sc.id)) + 1 : 1;
-    const newSub: SubCategory = {
-      id: nextId,
-      name: name,
-      categoryId: categoryId,
-      is_active: 1
-    };
-
-    this.subCategories.push(newSub);
-    this.refreshFilteredData();
-    this.notificationService.show('Sub Category created successfully.', 'success', 3000);
-    this.closeModal();
+    this.categoryService.createSubCategory(formData).pipe(takeUntil(this.destroy$)).subscribe({
+      next: (res: any) => {
+        if (res && (res.status === 200 || res.status === 'success' || res.status === 201)) {
+          this.notificationService.show(res.message || 'Sub Category created successfully.', 'success', 3000);
+          
+          if (res.data) {
+            const newSub: SubCategory = {
+              id: res.data.id,
+              name: res.data.name,
+              categoryId: res.data.category_id || categoryId,
+              is_active: res.data.status !== undefined ? res.data.status : 1
+            };
+            this.subCategories.unshift(newSub);
+            this.refreshFilteredData();
+          }
+          this.closeModal();
+        } else {
+          this.notificationService.show(res?.message || 'Failed to create sub category', 'error', 3000);
+        }
+      },
+      error: (err: any) => {
+        const errorMessage = err?.message || 'Failed to create sub category';
+        this.notificationService.show(errorMessage, 'error', 3000);
+        console.error(err);
+      }
+    });
   }
 
   updateSubCategory() {
@@ -397,23 +535,34 @@ export class CategoriesComponent implements OnInit {
       return;
     }
     const name = this.updateSubCategoryForm.get('name')?.value.trim();
-    const categoryId = Number(this.updateSubCategoryForm.get('categoryId')?.value);
+    const categoryId = this.updateSubCategoryForm.get('categoryId')?.value;
 
     if (this.selectedSubCategory) {
-      // Duplicate check (excluding self)
-      const duplicate = this.subCategories.some(sc => 
-        sc.name.toUpperCase() === name.toUpperCase() && sc.id !== this.selectedSubCategory?.id
-      );
-      if (duplicate) {
-        this.notificationService.show('Sub Category Name already exists.', 'error', 3000);
-        return;
-      }
+      const formData = new FormData();
+      formData.append('name', name);
+      formData.append('category_id', categoryId.toString());
 
-      this.selectedSubCategory.name = name;
-      this.selectedSubCategory.categoryId = categoryId;
-      this.refreshFilteredData();
-      this.notificationService.show('Sub Category updated successfully.', 'success', 3000);
-      this.closeModal();
+      this.categoryService.updateSubCategory(this.selectedSubCategory.id, formData).pipe(takeUntil(this.destroy$)).subscribe({
+        next: (res: any) => {
+          if (res && (res.status === 200 || res.status === 'success')) {
+            this.notificationService.show(res.message || 'Sub Category updated successfully.', 'success', 3000);
+            
+            if (this.selectedSubCategory) {
+              this.selectedSubCategory.name = name;
+              this.selectedSubCategory.categoryId = Number(categoryId);
+              this.refreshFilteredData();
+            }
+            this.closeModal();
+          } else {
+            this.notificationService.show(res?.message || 'Failed to update sub category', 'error', 3000);
+          }
+        },
+        error: (err: any) => {
+          const errorMessage = err?.message || 'Failed to update sub category';
+          this.notificationService.show(errorMessage, 'error', 3000);
+          console.error(err);
+        }
+      });
     }
   }
 }

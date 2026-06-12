@@ -5,8 +5,10 @@ import {
   transition,
   animate,
 } from '@angular/animations';
-import { Component } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { EmployeeService } from 'src/app/core/services/Employee.service';
 import { JwtService } from 'src/app/core/services/jwt.service';
 import { LoginService } from 'src/app/core/services/login.service';
@@ -84,7 +86,9 @@ import { NgxPaginationModule } from 'ngx-pagination';
     ]),
   ],
 })
-export class DepartmentComponent {
+export class DepartmentComponent implements OnInit, OnDestroy {
+  private destroy$ = new Subject<void>();
+
   showreset: boolean = false; // Reintroduced for reset button visibility
   searchbarform!: FormGroup;
   createDepartmentForm!: FormGroup;
@@ -138,13 +142,18 @@ export class DepartmentComponent {
     });
 
     this.updateDepartmentForm = this.formBuilder.group({
-      Name: ['', [Validators.required]],
+      Name: ['', [Validators.required, Validators.minLength(2)]],
     });
 
     this.viewDepartmentForm = this.formBuilder.group({
       Name: [''],
     });
     this.GetDepartmentFun();
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   departmentList: any;
@@ -171,7 +180,7 @@ export class DepartmentComponent {
     this.currentDepartmentId = user.id;
     this.selectedDepartment = null;
 
-    this.departmentService.getDepartmentById(user.id).subscribe({
+    this.departmentService.getDepartmentById(user.id).pipe(takeUntil(this.destroy$)).subscribe({
       next: (response: any) => {
         if (response.status === 200) {
           this.selectedDepartment = response.data;
@@ -186,7 +195,7 @@ export class DepartmentComponent {
 
 
   GetupdateDepartmentbyid(userId: any) {
-    this.departmentService.getDepartmentById(userId).subscribe({
+    this.departmentService.getDepartmentById(userId).pipe(takeUntil(this.destroy$)).subscribe({
       next: (response: any) => {
         if (response.status === 200) {
           this.fillformdate(response.data);
@@ -198,10 +207,12 @@ export class DepartmentComponent {
     });
   }
 
-  async fillformdate(response: any) {
-    this.updateDepartmentForm = this.formBuilder.group({
-      Name: [response.name, [Validators.required, Validators.minLength(2)]],
-    });
+  fillformdate(response: any) {
+    if (this.updateDepartmentForm) {
+      this.updateDepartmentForm.patchValue({
+        Name: response.name
+      });
+    }
   }
   updateDepartment() {
     if (this.updateDepartmentForm.valid) {
@@ -211,7 +222,7 @@ export class DepartmentComponent {
       formData.append('name', name);
       formData.append('_method', 'PUT');
 
-      this.departmentService.updateDepartment(this.currentDepartmentId, formData).subscribe({
+      this.departmentService.updateDepartment(this.currentDepartmentId, formData).pipe(takeUntil(this.destroy$)).subscribe({
         next: (response: any) => {
           if (response.status === 200 || response.status === 201) {
             this.closeModal();
@@ -265,7 +276,7 @@ export class DepartmentComponent {
       const formData = new FormData();
       formData.append('name', name);
 
-      this.departmentService.createDepartment(formData).subscribe({
+      this.departmentService.createDepartment(formData).pipe(takeUntil(this.destroy$)).subscribe({
         next: (response: any) => {
           if (response.status === 200 || response.status === 201) {
             this.closeModal();
@@ -301,6 +312,7 @@ export class DepartmentComponent {
 
     this.departmentService
       .getDepartments(this.tableSize, this.page, searchText)
+      .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (response: any) => {
           if (response.status === 200) {
@@ -324,7 +336,7 @@ export class DepartmentComponent {
     formData.append('_method', 'PATCH');
     formData.append('status', status.toString());
 
-    this.departmentService.updateDepartmentStatus(id, formData).subscribe({
+    this.departmentService.updateDepartmentStatus(id, formData).pipe(takeUntil(this.destroy$)).subscribe({
       next: (response: any) => {
         if (response.status === 200 || response.status === 201) {
           this.notificationService.show(

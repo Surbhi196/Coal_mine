@@ -48,6 +48,12 @@ export class SiteService {
     );
   }
 
+  getAllSites(): Observable<any> {
+    const token = this.jwtService.getToken();
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    return this.apiservice.get(`v1/sites`, headers);
+  }
+
   getSiteById(id: any): Observable<any> {
     const token = this.jwtService.getToken();
     const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });

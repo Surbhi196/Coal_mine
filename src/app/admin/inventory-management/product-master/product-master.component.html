@@ -304,12 +304,12 @@
         <div class="dept-summary-banner mb-3">
           <div class="banner-content">
             <div class="banner-label">Product Name</div>
-            <div class="banner-value">{{ selectedProduct?.name }}</div>
+            <div class="banner-value">{{ selectedProductDetails?.name || selectedProduct?.name }}</div>
             <div class="banner-subtitle">
-              <span class="pulse-indicator" [ngClass]="{'deactive': selectedProduct?.is_active !== 1}"></span>
+              <span class="pulse-indicator" [ngClass]="{'deactive': (selectedProductDetails?.status ?? selectedProduct?.is_active) !== 1}"></span>
               Status: 
-              <span class="status-badge-pill" [ngClass]="selectedProduct?.is_active === 1 ? 'active' : 'deactive'">
-                {{ selectedProduct?.is_active === 1 ? 'Active' : 'Inactive' }}
+              <span class="status-badge-pill" [ngClass]="(selectedProductDetails?.status ?? selectedProduct?.is_active) === 1 ? 'active' : 'deactive'">
+                {{ (selectedProductDetails?.status ?? selectedProduct?.is_active) === 1 ? 'Active' : 'Inactive' }}
               </span>
             </div>
           </div>
@@ -326,7 +326,7 @@
               </div>
               <div class="card-info-content">
                 <span class="info-label">Category</span>
-                <span class="info-value text-dark fs-7" style="font-weight: 700;">{{ selectedProduct?.category }}</span>
+                <span class="info-value text-dark fs-7" style="font-weight: 700;">{{ selectedProductDetails?.category_name || selectedProduct?.category }}</span>
               </div>
             </div>
           </div>
@@ -338,19 +338,19 @@
               </div>
               <div class="card-info-content">
                 <span class="info-label">Min Stock Reserve</span>
-                <span class="info-value text-dark fs-7" style="font-weight: 700;">{{ selectedProduct?.minStock }} units</span>
+                <span class="info-value text-dark fs-7" style="font-weight: 700;">{{ selectedProductDetails?.min_stock || selectedProduct?.minStock }} units</span>
               </div>
             </div>
           </div>
           <!-- Card 3: Active Status -->
           <div class="col-md-4">
             <div class="glass-info-card">
-              <div class="card-icon-wrapper status" [ngClass]="{'deactive': selectedProduct?.is_active !== 1}">
-                <i class="fa-solid" [ngClass]="selectedProduct?.is_active === 1 ? 'fa-circle-check' : 'fa-circle-xmark'"></i>
+              <div class="card-icon-wrapper status" [ngClass]="{'deactive': (selectedProductDetails?.status ?? selectedProduct?.is_active) !== 1}">
+                <i class="fa-solid" [ngClass]="(selectedProductDetails?.status ?? selectedProduct?.is_active) === 1 ? 'fa-circle-check' : 'fa-circle-xmark'"></i>
               </div>
               <div class="card-info-content">
                 <span class="info-label">Active Status</span>
-                <span class="info-value text-dark fs-7" style="font-weight: 700;">{{ selectedProduct?.is_active === 1 ? 'Active' : 'Inactive' }}</span>
+                <span class="info-value text-dark fs-7" style="font-weight: 700;">{{ (selectedProductDetails?.status ?? selectedProduct?.is_active) === 1 ? 'Active' : 'Inactive' }}</span>
               </div>
             </div>
           </div>

@@ -110,10 +110,13 @@
                 <p class="table-heading">Employee Details</p>
               </th>
               <th>
-                <p class="table-heading text-center">Created At</p>
+                <p class="table-heading text-center">Total Days</p>
               </th>
               <th>
                 <p class="table-heading text-center">Present</p>
+              </th>
+              <th>
+                <p class="table-heading text-center">Rest Day</p>
               </th>
               <th>
                 <p class="table-heading text-center">Absent</p>
@@ -123,6 +126,9 @@
               </th>
               <th>
                 <p class="table-heading text-center">Unpaid Leave</p>
+              </th>
+              <th>
+                <p class="table-heading text-center">Payable Days</p>
               </th>
               <th>
                 <p class="table-heading text-center">Penalty (₹)</p>
@@ -145,13 +151,19 @@
               </td>
               <td class="text-center">
                 <span class="text-dark fs-8 fw-semibold">
-                  {{ rec.createdAt | date:'dd MMM yyyy' }}
+                  {{ rec.totalDays }}
                 </span>
               </td>
               <td class="text-center">
                 <span
                   class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1.5 fs-8 fw-semibold">
                   {{ rec.presentCount }} Days
+                </span>
+              </td>
+              <td class="text-center">
+                <span
+                  class="badge bg-primary-subtle text-primary border border-primary-subtle px-2.5 py-1.5 fs-8 fw-semibold">
+                  {{ rec.restDayCount }} Days
                 </span>
               </td>
               <td class="text-center">
@@ -168,6 +180,11 @@
               <td class="text-center">
                 <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2.5 py-1.5 fs-8 fw-semibold">
                   {{ rec.unpaidLeaveCount }} Days
+                </span>
+              </td>
+              <td class="text-center">
+                <span class="text-dark fs-8 fw-bold">
+                  {{ rec.payableDays }}
                 </span>
               </td>
               <td class="text-center">
@@ -210,7 +227,7 @@
               </td>
             </tr>
             <tr *ngIf="filteredPayrollRecords.length === 0">
-              <td colspan="6" class="text-center py-5 text-muted">
+              <td colspan="9" class="text-center py-5 text-muted">
                 No employee records found matching the filters.
               </td>
             </tr>
@@ -250,13 +267,20 @@
           <div class="mb-2"><strong>Dept / Site:</strong> {{ rec.department }} | {{ rec.site }}</div>
           <div class="mb-2 text-muted fs-8">
             <i class="fa-solid fa-calendar-days me-1 text-secondary"></i>
-            <strong>Created At:</strong> {{ rec.createdAt | date:'dd MMM yyyy' }}
+            <strong>Total Days:</strong> {{ rec.totalDays }}
           </div>
           <div class="mb-2">
             <strong>Present Days:</strong>
             <span
               class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1 fs-9 fw-semibold">
               {{ rec.presentCount }} Days
+            </span>
+          </div>
+          <div class="mb-2">
+            <strong>Rest Days:</strong>
+            <span
+              class="badge bg-primary-subtle text-primary border border-primary-subtle px-2.5 py-1 fs-9 fw-semibold">
+              {{ rec.restDayCount }} Days
             </span>
           </div>
           <div class="mb-2">
@@ -275,6 +299,12 @@
             <strong>Unpaid Leave:</strong>
             <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2.5 py-1 fs-9 fw-semibold">
               {{ rec.unpaidLeaveCount }} Days
+            </span>
+          </div>
+          <div class="mb-2">
+            <strong>Payable Days:</strong>
+            <span class="fw-bold fs-7 text-dark ms-2">
+              {{ rec.payableDays }}
             </span>
           </div>
           <div class="mb-2 d-flex justify-content-between align-items-center">

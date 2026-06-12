@@ -15,12 +15,15 @@ interface PayrollRecord {
   site: string;
   basicSalary: number;
   shiftAllowance: number;
+  totalDays: number;
   presentCount: number;
   halfDayCount: number;
   exceptionCount: number;
   absentCount: number;
   leaveCount: number;
   unpaidLeaveCount: number;
+  restDayCount: number;
+  payableDays: number;
   pfDeduction: number;
   messDeduction: number;
   leaveDeduction: number;
@@ -278,6 +281,9 @@ export class PayrollManagementComponent implements OnInit {
       const absentCount = empRecords.filter(r => r.status === 'Absent').length;
       const leaveCount = empRecords.filter(r => r.status === 'Leave').length; // Paid Leave
       const unpaidLeaveCount = empRecords.filter(r => r.status === 'Unpaid Leave').length;
+      const restDayCount = empRecords.filter(r => r.status === 'Rest Day').length;
+
+      const payableDays = presentCount + restDayCount + leaveCount + (halfDayCount * 0.5);
 
       // Adjustments (PF, Mess, Incentives)
       const empAdj = adjustments[empId] || {};
@@ -318,12 +324,15 @@ export class PayrollManagementComponent implements OnInit {
         site: emp.site,
         basicSalary: emp.basicSalary,
         shiftAllowance,
+        totalDays: daysInMonth,
         presentCount,
         halfDayCount,
         exceptionCount,
         absentCount,
         leaveCount,
         unpaidLeaveCount,
+        restDayCount,
+        payableDays,
         pfDeduction,
         messDeduction,
         leaveDeduction: Math.round(leaveDeduction * 100) / 100,
@@ -372,12 +381,15 @@ export class PayrollManagementComponent implements OnInit {
         site: m.site || 'East Mine',
         basicSalary: m.basicSalary,
         shiftAllowance: m.shiftAllowance,
+        totalDays: daysInMonth,
         presentCount: m.presentCount || 0,
         halfDayCount: m.halfDayCount || 0,
         exceptionCount: 0,
         absentCount: m.absentCount || 0,
         leaveCount: 0,
         unpaidLeaveCount: 0,
+        restDayCount: 0,
+        payableDays: (m.presentCount || 0) + ((m.halfDayCount || 0) * 0.5),
         pfDeduction,
         messDeduction,
         leaveDeduction: Math.round(leaveDeduction * 100) / 100,

@@ -5,8 +5,10 @@ import {
   transition,
   animate,
 } from '@angular/animations';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { CommonModule } from '@angular/common';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatIconModule } from '@angular/material/icon';
@@ -51,7 +53,9 @@ import { SalaryStructureService } from 'src/app/core/services/salary-structure.s
     ]),
   ],
 })
-export class SalaryStructureComponent implements OnInit {
+export class SalaryStructureComponent implements OnInit, OnDestroy {
+  private destroy$ = new Subject<void>();
+
   showreset: boolean = false; 
   searchbarform!: FormGroup;
   createSalaryForm!: FormGroup;
@@ -135,8 +139,13 @@ export class SalaryStructureComponent implements OnInit {
     this.GetSalaryFun();
   }
 
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
   loadDesignations() {
-    this.designationService.getDesignations('all', 1, '').subscribe({
+    this.designationService.getDesignations('all', 1, '').pipe(takeUntil(this.destroy$)).subscribe({
       next: (response: any) => {
         if (response.status === 200) {
           this.designations = response.data;
@@ -202,7 +211,7 @@ export class SalaryStructureComponent implements OnInit {
     this.currentSalaryId = salary.id;
     this.selectedSalary = null;
 
-    this.salaryStructureService.getSalaryStructureById(salary.id).subscribe({
+    this.salaryStructureService.getSalaryStructureById(salary.id).pipe(takeUntil(this.destroy$)).subscribe({
       next: (response: any) => {
         if (response.status === 200 && response.data) {
           const resSalary = response.data;
@@ -239,7 +248,7 @@ export class SalaryStructureComponent implements OnInit {
   }
 
   GetupdateSalarybyid(salaryId: any) {
-    this.salaryStructureService.getSalaryStructureById(salaryId).subscribe({
+    this.salaryStructureService.getSalaryStructureById(salaryId).pipe(takeUntil(this.destroy$)).subscribe({
       next: (response: any) => {
         if (response.status === 200 && response.data) {
           const salary = response.data;
@@ -285,7 +294,7 @@ export class SalaryStructureComponent implements OnInit {
       formData.append('mess_deduction_applicable', messVal);
       formData.append('other_deduction', (salaryData.otherDeductions || 0).toString());
 
-      this.salaryStructureService.createSalaryStructure(formData).subscribe({
+      this.salaryStructureService.createSalaryStructure(formData).pipe(takeUntil(this.destroy$)).subscribe({
         next: (response: any) => {
           if (response.status === 200 || response.status === 201) {
             this.closeModal();
@@ -353,7 +362,7 @@ export class SalaryStructureComponent implements OnInit {
       formData.append('mess_deduction_applicable', messVal);
       formData.append('other_deduction', (salaryData.otherDeductions || 0).toString());
 
-      this.salaryStructureService.updateSalaryStructure(this.currentSalaryId, formData).subscribe({
+      this.salaryStructureService.updateSalaryStructure(this.currentSalaryId, formData).pipe(takeUntil(this.destroy$)).subscribe({
         next: (response: any) => {
           if (response.status === 200 || response.status === 201) {
             this.closeModal();
@@ -406,7 +415,7 @@ export class SalaryStructureComponent implements OnInit {
   GetSalaryFun() {
     const searchText = this.searchbarform.get('searchbar')?.value || '';
 
-    this.salaryStructureService.getSalaryStructures(this.tableSize, this.page, searchText).subscribe({
+    this.salaryStructureService.getSalaryStructures(this.tableSize, this.page, searchText).pipe(takeUntil(this.destroy$)).subscribe({
       next: (response: any) => {
         if (response.status === 200) {
           this.salaryList = response.data.map((item: any) => {
@@ -436,7 +445,7 @@ export class SalaryStructureComponent implements OnInit {
     formData.append('_method', 'PATCH');
     formData.append('status', status.toString());
 
-    this.salaryStructureService.updateSalaryStructureStatus(id, formData).subscribe({
+    this.salaryStructureService.updateSalaryStructureStatus(id, formData).pipe(takeUntil(this.destroy$)).subscribe({
       next: (response: any) => {
         if (response.status === 200 || response.status === 201) {
           this.notificationService.show(

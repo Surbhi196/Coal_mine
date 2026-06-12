@@ -1,0 +1,540 @@
+// Attendance Detail Component Styles - Project Light Theme
+
+.attendance-detail-container {
+    padding: 0 8px;
+}
+
+// Breadcrumb
+.breadcrumb-nav {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    margin-bottom: 24px;
+}
+
+.breadcrumb-link {
+    color: var(--primary-color);
+    cursor: pointer;
+    font-weight: 500;
+
+    &:hover {
+        text-decoration: underline;
+    }
+}
+
+.breadcrumb-separator {
+    color: #94A3B8;
+    font-size: 10px;
+}
+
+.breadcrumb-current {
+    color: #64748B;
+    font-weight: 500;
+}
+
+// Page Header & Profile
+.page-header {
+    background: white;
+    padding: 24px;
+    border-radius: 16px;
+    border: 1px solid #E2E8F0;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.employee-avatar-large {
+    width: 64px;
+    height: 64px;
+    background: linear-gradient(135deg, var(--primary-color), #46abe5);
+    color: white;
+    font-size: 28px;
+    font-weight: 700;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3);
+}
+
+.employee-name-title {
+    font-size: 22px;
+    font-weight: 800;
+    color: #1e293b;
+    letter-spacing: -0.5px;
+}
+
+.employee-meta-info {
+    display: flex;
+    gap: 12px;
+    margin-top: 4px;
+
+    .info-tag {
+        font-size: 12px;
+        font-weight: 600;
+        padding: 4px 10px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+
+        i {
+            font-size: 10px;
+            opacity: 0.7;
+        }
+
+        &.id-tag {
+            background: #f1f5f9;
+            color: #64748b;
+        }
+
+        &.dept-tag {
+            background: #e0f2fe;
+            color: #0369a1;
+        }
+    }
+}
+
+.btn-back-custom {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    color: #475569;
+    padding: 10px 20px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 14px;
+    transition: all 0.2s;
+
+    &:hover {
+        background: #f1f5f9;
+        color: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+}
+
+// Today's Status Banner
+.attendance-status-banner {
+    background: linear-gradient(to right, #ffffff, #f8faff);
+    padding: 24px;
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+    position: relative;
+    overflow: hidden;
+
+    &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 150px;
+        height: 100%;
+        background: radial-gradient(circle at top right, rgba(51, 102, 255, 0.05), transparent);
+    }
+}
+
+.status-indicator-icon {
+    width: 52px;
+    height: 52px;
+    background: #eef2ff;
+    color: var(--primary-color);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+}
+
+.status-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.status-date {
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.time-stat-badge {
+    display: flex;
+    flex-direction: column;
+    padding: 10px 18px;
+    border-radius: 12px;
+    border: 1px solid transparent;
+    min-width: 120px;
+
+    .label {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 2px;
+    }
+
+    .time {
+        font-size: 16px;
+        font-weight: 800;
+    }
+
+    &.in {
+        background: #f0fdf4;
+        border-color: #dcfce7;
+        color: #166534;
+    }
+
+    &.out {
+        background: #fef2f2;
+        border-color: #fee2e2;
+        color: #991b1b;
+    }
+
+    &.duration {
+        background: #fffbeb;
+        border-color: #fef3c7;
+        color: #92400e;
+    }
+}
+
+.btn-checkout-premium {
+    background: #ef4444;
+    color: white;
+    border: none;
+    padding: 14px 28px;
+    border-radius: 14px;
+    font-weight: 700;
+    font-size: 15px;
+    box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4);
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+    &:hover {
+        background: #dc2626;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(239, 68, 68, 0.5);
+    }
+}
+
+// Calendar Card
+.calendar-card {
+    background: white;
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+    // position: sticky;
+    top: 24px;
+    z-index: 10;
+
+    ::ng-deep .mat-calendar {
+        font-family: inherit;
+    }
+    
+    ::ng-deep .mat-calendar-body-selected {
+        background-color: var(--primary-color);
+    }
+}
+
+// Attendance Table Section
+.list-card {
+    background: white;
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 40px;
+
+    h4 {
+        font-size: 18px;
+        font-weight: 700;
+        color: #1E293B;
+        margin-bottom: 4px;
+    }
+
+    .subtitle {
+        font-size: 13px;
+        color: #94A3B8;
+        margin-bottom: 24px;
+    }
+
+    .table-responsive {
+        max-height: 500px;
+        overflow-y: auto;
+
+        &::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        &::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        &::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+
+            th {
+                text-align: left;
+                padding: 12px 16px;
+                background: #F8FAFC;
+                color: #64748B;
+                font-size: 12px;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                border-bottom: 1px solid #E2E8F0;
+                position: sticky;
+                top: 0;
+                z-index: 5;
+            }
+
+            td {
+                padding: 14px 16px;
+                color: #475569;
+                font-size: 14px;
+                border-bottom: 1px solid #F1F5F9;
+                vertical-align: middle;
+            }
+
+            .status-tag {
+                padding: 4px 12px;
+                border-radius: 20px;
+                font-size: 12px;
+                font-weight: 500;
+
+                &.Present {
+                    background: #E6F9F0;
+                    color: #059669;
+                }
+
+                &.Weekend {
+                    background: #F1F5F9;
+                    color: #64748B;
+                }
+
+                &.Leave {
+                    background: #FFF1F1;
+                    color: #EF4444;
+                }
+            }
+
+            .edit-action {
+                color: var(--primary-color);
+                cursor: pointer;
+                padding: 6px;
+                border-radius: 6px;
+                transition: all 0.2s;
+
+                &:hover {
+                    background: #F0F7FF;
+                }
+            }
+        }
+    }
+}
+
+.btn-apply-leave {
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 10px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+
+    &:hover {
+        background: #2c59e0;
+    }
+}
+
+// Re-using modal styles from project
+.modal-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    z-index: 1300;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.modal-content-card {
+    width: 100%;
+    max-width: 450px;
+    background: white;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+
+    .modal-header {
+        padding: 20px 24px;
+        border-bottom: 1px solid #F1F5F9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+
+        h5 {
+            margin: 0;
+            font-weight: 700;
+            color: #1E293B;
+        }
+
+        .close-icon {
+            cursor: pointer;
+            color: #94A3B8;
+
+            &:hover {
+                color: #1E293B;
+            }
+        }
+    }
+
+    .modal-body {
+        padding: 24px;
+
+        .form-group {
+            margin-bottom: 16px;
+
+            label {
+                display: block;
+                font-size: 13px;
+                font-weight: 600;
+                color: #475569;
+                margin-bottom: 6px;
+            }
+
+            .form-input {
+                width: 100%;
+                border: 1px solid #E2E8F0;
+                border-radius: 8px;
+                padding: 10px 12px;
+                font-size: 14px;
+                outline: none;
+
+                &:focus {
+                    border-color: var(--primary-color);
+                    box-shadow: 0 0 0 3px rgba(51, 102, 255, 0.1);
+                }
+            }
+        }
+    }
+
+    .modal-footer {
+        padding: 16px 24px;
+        background: #F8FAFC;
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+
+        button {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .btn-cancel {
+            background: white;
+            border: 1px solid #E2E8F0;
+            color: #64748B;
+
+            &:hover {
+                background: #F1F5F9;
+            }
+        }
+
+        .btn-update {
+            background: var(--primary-color);
+            border: none;
+            color: white;
+
+            &:hover {
+                background: #2c59e0;
+            }
+        }
+
+        .btn-delete {
+            background: #FFF1F1;
+            border: none;
+            color: #EF4444;
+
+            &:hover {
+                background: #FEE2E2;
+            }
+        }
+    }
+}
+
+// Mobile Responsive
+@media screen and (max-width: 768px) {
+    .attendance-detail-container {
+        padding: 0 4px;
+    }
+
+    .page-title {
+        font-size: 20px;
+    }
+
+    .status-card {
+        padding: 16px;
+
+        .d-flex {
+            flex-direction: column;
+            align-items: flex-start !important;
+        }
+
+        .btn-checkout {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+
+    .calendar-card {
+        padding: 16px;
+
+        .calendar-header {
+            flex-direction: column;
+            gap: 16px;
+            align-items: stretch;
+
+            .controls {
+                justify-content: space-between;
+
+                select {
+                    flex: 1;
+                    min-width: 0;
+                }
+            }
+
+            .btn-today {
+                width: 100%;
+            }
+        }
+
+        .calendar-grid {
+            .days-nums {
+                gap: 4px;
+
+                .day {
+                    aspect-ratio: 1 / 1;
+                    font-size: 13px;
+                }
+            }
+        }
+    }
+
+    .list-card {
+        padding: 16px;
+    }
+
+    .modal-content-card {
+        margin: 10px;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+}

@@ -69,7 +69,7 @@
         <!-- Inline Capsule Shift Tabs -->
         <div class="d-flex gap-2 p-1 bg-light rounded-pill roster-tabs-wrapper"
           style="width: fit-content; border: 1px solid #e2e8f0;">
-          <button *ngFor="let shift of allShiftsList" 
+          <button *ngFor="let shift of tabShiftsList" 
                   class="btn rounded-pill px-3 py-1.5 tab-btn text-nowrap transition-all fw-semibold fs-8" 
                   [ngClass]="{
                     'btn-primary shadow-sm text-white': activeTabId === shift.id,
@@ -77,10 +77,10 @@
                   }" 
                   (click)="onTabChange(shift)">
             <i class="fa-solid me-1.5" [ngClass]="{
-              'fa-sun text-warning animate-spin-hover': shift.name === 'Shift A',
-              'fa-cloud-sun text-info': shift.name === 'Shift B',
-              'fa-moon text-purple': shift.name === 'Shift C',
-              'fa-clock text-secondary': shift.name !== 'Shift A' && shift.name !== 'Shift B' && shift.name !== 'Shift C'
+              'fa-sun text-warning animate-spin-hover': shift.name.includes('A') || shift.name.includes('a'),
+              'fa-cloud-sun text-info': shift.name.includes('B') || shift.name.includes('b'),
+              'fa-moon text-purple': shift.name.includes('C') || shift.name.includes('c'),
+              'fa-clock text-secondary': !shift.name.includes('A') && !shift.name.includes('a') && !shift.name.includes('B') && !shift.name.includes('b') && !shift.name.includes('C') && !shift.name.includes('c')
             }"></i>{{ shift.name }}
           </button>
         </div>

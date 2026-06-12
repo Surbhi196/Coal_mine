@@ -47,6 +47,12 @@ export class DepartmentService {
     );
   }
 
+  getAllDepartments(): Observable<any> {
+    const token = this.jwtService.getToken();
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    return this.apiservice.get(`v1/departments`, headers);
+  }
+
   getDepartmentById(id: any): Observable<any> {
     const token = this.jwtService.getToken();
     const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });

@@ -43,11 +43,13 @@ export class EmployeePayrollComponent implements OnInit {
   viewModalOpen: boolean = false;
   penaltyModalOpen: boolean = false;
   isEditMode: boolean = false;
+  isTopLevelAdd: boolean = false;
   currentEmployeeId: any;
   selectedEmployeeData: any = null;
   selectedEmployeeForPenalty: any = null;
   
   employeeList: any[] = [];
+  allEmployeeList: any[] = [];
   departmentsList: any[] = [];
   
   table_heading = ['S.No.', 'Emp ID', 'Name', 'Department', 'Payroll Status', 'Action'];
@@ -137,13 +139,14 @@ export class EmployeePayrollComponent implements OnInit {
   }
 
   loadDropdownData() {
-    this.departmentService.getDepartments('all', 1, '').subscribe({
-      next: (res: any) => {
-        if (res.status === 200) {
-          this.departmentsList = (res.data || []).filter(
-            (dept: any) => dept.status == 1 || dept.is_active == 1
-          );
+    this.departmentService.getAllDepartments().subscribe({
+      next: (response: any) => {
+        if (response.status === 200) {
+          this.departmentsList = response.data || [];
         }
+      },
+      error: (error: any) => {
+        console.error('Error fetching departments:', error);
       }
     });
   }
@@ -152,7 +155,7 @@ export class EmployeePayrollComponent implements OnInit {
     const searchText = this.searchbarform.get('searchbar')?.value || '';
     const deptId = this.filterForm.get('deptFilter')?.value || '';
 
-    this.employeeManagementService.getEmployees(this.tableSize, this.page, searchText, deptId, '', '').subscribe({
+    this.employeeManagementService.getEmployeePayrolls(this.tableSize, this.page, searchText, deptId, '').subscribe({
       next: (response: any) => {
         if (response.status === 200) {
           this.employeeList = response.data?.data || response.data || [];
@@ -200,10 +203,11 @@ export class EmployeePayrollComponent implements OnInit {
   }
 
   openPayrollModal(employee: any) {
+    this.isTopLevelAdd = false;
     this.currentEmployeeId = employee.id;
     this.payrollForm.reset();
     
-    this.employeeManagementService.getEmployeeById(employee.id).subscribe({
+    this.employeeManagementService.getEmployeePayrollById(employee.id).subscribe({
       next: (response: any) => {
         if (response.status === 200 && response.data) {
           const emp = Array.isArray(response.data) ? response.data[0] : response.data;
@@ -247,10 +251,48 @@ export class EmployeePayrollComponent implements OnInit {
   closeModal() {
     this.payrollModalOpen = false;
     this.selectedEmployeeData = null;
+    this.currentEmployeeId = null;
+  }
+
+  openAddPayrollModal() {
+    this.isEditMode = false;
+    this.isTopLevelAdd = true;
+    this.currentEmployeeId = null;
+    this.selectedEmployeeData = null;
+    this.payrollForm.reset();
+    
+    this.employeeManagementService.getAllEmployees().subscribe({
+      next: (response: any) => {
+        if (response.status === 200) {
+          this.allEmployeeList = response.data || [];
+        }
+      }
+    });
+
+    this.payrollModalOpen = true;
+  }
+
+  onEmployeeSelect(event: any) {
+    const empId = event.target.value;
+    if (empId) {
+      this.currentEmployeeId = empId;
+      this.employeeManagementService.getEmployeeById(empId).subscribe({
+        next: (response: any) => {
+          if (response.status === 200 && response.data) {
+            const emp = Array.isArray(response.data) ? response.data[0] : response.data;
+            this.selectedEmployeeData = emp;
+            // The form remains blank intentionally for add mode
+          }
+        }
+      });
+    } else {
+      this.selectedEmployeeData = null;
+      this.currentEmployeeId = null;
+    }
   }
 
   openViewModal(employee: any) {
-    this.employeeManagementService.getEmployeeById(employee.id).subscribe({
+    this.employeeManagementService.getEmployeePayrollById(employee.id).subscribe({
       next: (response: any) => {
         if (response.status === 200 && response.data) {
           const emp = Array.isArray(response.data) ? response.data[0] : response.data;
@@ -270,77 +312,136 @@ export class EmployeePayrollComponent implements OnInit {
   }
 
   savePayrollDetails() {
+    if (this.isTopLevelAdd && !this.currentEmployeeId) {
+      this.notificationService.show('Please select an employee first.', 'error', 3000);
+      return;
+    } else if (!this.isTopLevelAdd && !this.selectedEmployeeData) {
+      this.notificationService.show('Please select an employee first.', 'error', 3000);
+      return;
+    }
+
     if (this.payrollForm.invalid) {
       this.payrollForm.markAllAsTouched();
       return;
     }
 
     const payrollData = this.payrollForm.getRawValue();
-    const emp = this.selectedEmployeeData;
     
-    const formatDate = (dateStr: string) => {
-      if (!dateStr) return '';
-      if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-        const parts = dateStr.split('-');
-        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    if (this.isTopLevelAdd) {
+      const formData = new FormData();
+      formData.append('employee_id', this.currentEmployeeId);
+      
+      const emp = this.selectedEmployeeData || {};
+      formData.append('salary_type', emp.salary_type || 'monthly');
+      
+      if (emp.salary_type === 'daily_wage') {
+        formData.append('basic_salary', '0');
+        formData.append('daily_wage', payrollData.basicSalary ? payrollData.basicSalary.toString() : '0');
+      } else {
+        formData.append('basic_salary', payrollData.basicSalary ? payrollData.basicSalary.toString() : '0');
+        formData.append('daily_wage', '0');
       }
-      return dateStr;
-    };
+      
+      formData.append('pf_applicable', payrollData.isPfApplicable === 'Yes' ? '1' : '0');
+      formData.append('pf_number', payrollData.isPfApplicable === 'Yes' ? (payrollData.pfNumber || '') : '');
+      formData.append('bank_name', payrollData.bankName || '');
+      formData.append('bank_account_number', payrollData.accountNumber || '');
+      formData.append('ifsc_code', payrollData.ifscCode || '');
+      formData.append('mess_deduction_applicable', payrollData.isMessApplicable === 'Yes' ? '1' : '0');
+      formData.append('other_deduction_appliacble', payrollData.isOthersDeductionApplicable === 'Yes' ? '1' : '0');
+      formData.append('other_deduction', payrollData.isOthersDeductionApplicable === 'Yes' ? (payrollData.othersDeductionAmount || '0') : '0');
+      
+      if(payrollData.restDays) {
+        formData.append('rest_day', payrollData.restDays.toString());
+      }
 
-    const formData = new FormData();
-    formData.append('name', emp.name || '');
-    formData.append('mobile', emp.mobile || '');
-    formData.append('employee_code', emp.employee_code || '');
-    formData.append('dob', formatDate(emp.dob));
-    formData.append('joining_date', formatDate(emp.joining_date));
-    formData.append('gender', emp.gender || '');
-    formData.append('department_id', emp.department_id || '');
-    formData.append('designation_id', emp.designation_id || '');
-    formData.append('emergency_contact', emp.emergency_contact || '');
-    formData.append('address', emp.address || '');
-    formData.append('father_name', emp.father_name || '');
-    formData.append('employee_type', emp.employee_type || 'permanent');
-    
-    formData.append('salary_type', emp.salary_type || 'monthly');
-    
-    if (emp.salary_type === 'monthly' || !emp.salary_type) {
-      formData.append('basic_salary', payrollData.basicSalary ? payrollData.basicSalary.toString() : '0.00');
-      formData.append('daily_wage', '0.00');
-    } else {
-      formData.append('basic_salary', '0.00');
-      formData.append('daily_wage', payrollData.basicSalary ? payrollData.basicSalary.toString() : '0.00');
-    }
-
-    formData.append('relay', emp.relay || 'General');
-    formData.append('rest_day', payrollData.restDays ? payrollData.restDays.toString() : '');
-    formData.append('pf_applicable', payrollData.isPfApplicable === 'Yes' ? '1' : '0');
-    formData.append('pf_amount', payrollData.isPfApplicable === 'Yes' ? (payrollData.pfAmount || '0.00') : '0.00');
-    formData.append('pf_number', payrollData.isPfApplicable === 'Yes' ? (payrollData.pfNumber || '') : '');
-    formData.append('bank_name', payrollData.bankName || '');
-    formData.append('bank_account_number', payrollData.accountNumber || '');
-    formData.append('ifsc_code', payrollData.ifscCode || '');
-    formData.append('mess_deduction_applicable', payrollData.isMessApplicable === 'Yes' ? '1' : '0');
-    formData.append('mess_deduction', payrollData.isMessApplicable === 'Yes' ? (payrollData.messDeductionAmount || '0.00') : '0.00');
-    formData.append('other_deduction_appliacble', payrollData.isOthersDeductionApplicable === 'Yes' ? '1' : '0');
-    formData.append('other_deduction', payrollData.isOthersDeductionApplicable === 'Yes' ? (payrollData.othersDeductionAmount || '0.00') : '0.00');
-
-    formData.append('_method', 'PUT');
-
-    this.employeeManagementService.updateEmployee(this.currentEmployeeId, formData).subscribe({
-      next: (response: any) => {
-        if (response.status === 200 || response.status === 201) {
-          this.notificationService.show('Payroll details updated successfully!', 'success', 3000);
-          this.closeModal();
-          this.GetEmployeeFun();
-        } else {
-          this.notificationService.show(response.message || 'Failed to update payroll', 'error', 3000);
+      this.employeeManagementService.createEmployeePayroll(formData).subscribe({
+        next: (response: any) => {
+          if (response.status === 200 || response.status === 201) {
+            this.notificationService.show(response.message || 'Payroll details added successfully!', 'success', 3000);
+            this.closeModal();
+            this.GetEmployeeFun();
+          } else {
+            this.notificationService.show(response.message || 'Failed to add payroll', 'error', 3000);
+          }
+        },
+        error: (error: any) => {
+          const errorMsg = error.error?.message || error.message || 'Something went wrong';
+          this.notificationService.show(errorMsg, 'error', 3000);
         }
-      },
-      error: (error: any) => {
-        const errorMsg = error.error?.message || error.message || 'Something went wrong';
-        this.notificationService.show(errorMsg, 'error', 3000);
+      });
+
+    } else {
+      const emp = this.selectedEmployeeData;
+      
+      const formatDate = (dateStr: string) => {
+        if (!dateStr) return '';
+        if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+          const parts = dateStr.split('-');
+          return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
+        return dateStr;
+      };
+
+      const formData = new FormData();
+      formData.append('id', this.currentEmployeeId);
+      
+      // All employee data that needs to be retained
+      formData.append('name', emp.name || '');
+      formData.append('mobile', emp.mobile || '');
+      formData.append('employee_code', emp.employee_code || '');
+      formData.append('dob', formatDate(emp.dob));
+      formData.append('joining_date', formatDate(emp.joining_date));
+      formData.append('gender', emp.gender || '');
+      formData.append('department_id', emp.department_id || '');
+      formData.append('designation_id', emp.designation_id || '');
+      formData.append('emergency_contact', emp.emergency_contact || '');
+      formData.append('address', emp.address || '');
+      formData.append('father_name', emp.father_name || '');
+      formData.append('employee_type', emp.employee_type || 'permanent');
+      formData.append('relay', emp.relay || 'General');
+      
+      formData.append('salary_type', emp.salary_type || 'monthly');
+      
+      if (emp.salary_type === 'daily_wage') {
+        formData.append('basic_salary', '0');
+        formData.append('daily_wage', payrollData.basicSalary ? payrollData.basicSalary.toString() : '0');
+      } else {
+        formData.append('basic_salary', payrollData.basicSalary ? payrollData.basicSalary.toString() : '0');
+        formData.append('daily_wage', '0');
       }
-    });
+
+      formData.append('pf_applicable', payrollData.isPfApplicable === 'Yes' ? '1' : '0');
+      formData.append('pf_number', payrollData.isPfApplicable === 'Yes' ? (payrollData.pfNumber || '') : '');
+      formData.append('bank_name', payrollData.bankName || '');
+      formData.append('bank_account_number', payrollData.accountNumber || '');
+      formData.append('ifsc_code', payrollData.ifscCode || '');
+      formData.append('mess_deduction_applicable', payrollData.isMessApplicable === 'Yes' ? '1' : '0');
+      formData.append('other_deduction_appliacble', payrollData.isOthersDeductionApplicable === 'Yes' ? '1' : '0');
+      formData.append('other_deduction', payrollData.isOthersDeductionApplicable === 'Yes' ? (payrollData.othersDeductionAmount || '0') : '0');
+      
+      if(payrollData.restDays) {
+        formData.append('rest_day', payrollData.restDays.toString());
+      }
+
+      formData.append('_method', 'PUT');
+
+      this.employeeManagementService.updateEmployeePayroll(this.currentEmployeeId, formData).subscribe({
+        next: (response: any) => {
+          if (response.status === 200 || response.status === 201) {
+            this.notificationService.show('Payroll details updated successfully!', 'success', 3000);
+            this.closeModal();
+            this.GetEmployeeFun();
+          } else {
+            this.notificationService.show(response.message || 'Failed to update payroll', 'error', 3000);
+          }
+        },
+        error: (error: any) => {
+          const errorMsg = error.error?.message || error.message || 'Something went wrong';
+          this.notificationService.show(errorMsg, 'error', 3000);
+        }
+      });
+    }
   }
 
   openPenaltyModal(employee: any) {

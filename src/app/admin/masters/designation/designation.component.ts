@@ -5,8 +5,10 @@ import {
   transition,
   animate,
 } from '@angular/animations';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { NotificationService } from 'src/app/core/services/notificationnew.service';
 import { DesignationService } from 'src/app/core/services/designation.service';
 import { CommonModule } from '@angular/common';
@@ -59,7 +61,9 @@ import { NgxPaginationModule } from 'ngx-pagination';
     ]),
   ],
 })
-export class DesignationComponent implements OnInit {
+export class DesignationComponent implements OnInit, OnDestroy {
+  private destroy$ = new Subject<void>();
+
   showreset: boolean = false;
   searchbarform!: FormGroup;
   tableSize: any = 10;
@@ -83,6 +87,11 @@ export class DesignationComponent implements OnInit {
       searchbar: ['']
     });
     this.GetDesignationFun();
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   onTableSizeChange(event: any): void {
@@ -113,7 +122,7 @@ export class DesignationComponent implements OnInit {
     this.viewDesignationOpen = true;
     this.selectedDesignation = null;
 
-    this.designationService.getDesignationById(designation.id).subscribe({
+    this.designationService.getDesignationById(designation.id).pipe(takeUntil(this.destroy$)).subscribe({
       next: (response: any) => {
         if (response.status === 200) {
           this.selectedDesignation = response.data;
@@ -135,6 +144,7 @@ export class DesignationComponent implements OnInit {
 
     this.designationService
       .getDesignations(this.tableSize, this.page, searchText)
+      .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (response: any) => {
           if (response.status === 200) {
@@ -155,7 +165,7 @@ export class DesignationComponent implements OnInit {
     formData.append('_method', 'PATCH');
     formData.append('status', status.toString());
 
-    this.designationService.updateDesignationStatus(id, formData).subscribe({
+    this.designationService.updateDesignationStatus(id, formData).pipe(takeUntil(this.destroy$)).subscribe({
       next: (response: any) => {
         if (response.status === 200 || response.status === 201) {
           this.notificationService.show(

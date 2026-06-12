@@ -39,6 +39,7 @@ import { VehiclesComponent } from './admin/vehicle-management/vehicles/vehicles.
 import { FuelComponent } from './admin/fuel/fuel.component';
 import { FuelStationsComponent } from './admin/fuel/fuel-stations/fuel-stations.component';
 import { FuelManagementComponent } from './admin/fuel/fuel-management/fuel-management.component';
+import { AttendanceDetailComponent } from './admin/attendance-management/attendance-detail/attendance-detail.component';
 
 const routes: Routes = [
   {
@@ -102,8 +103,14 @@ const routes: Routes = [
       },
       {
         path: 'attendance-management',
-        component: AttendanceManagementComponent,
         canActivate: [AuthGuard],
+        children: [
+          { path: '', component: AttendanceManagementComponent },
+          {
+            path: 'attendance-detail/:id',
+            component: AttendanceDetailComponent,
+          },
+        ],
       },
       {
         path: 'leave-management',

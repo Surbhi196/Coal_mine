@@ -79,6 +79,7 @@ export class ShiftManagementComponent implements OnInit, OnDestroy {
   filteredEmployeesForRotation: any[] = [];
   selectedEmployeeIdsForRotation: any[] = [];
   allShiftsList: any[] = [];
+  tabShiftsList: any[] = [];
 
   // Tab and Week/Month filtering state
   activeTab: string = 'Shift A';
@@ -135,16 +136,38 @@ export class ShiftManagementComponent implements OnInit, OnDestroy {
     this.initBulkRotateForm();
     this.loadLiveEmployees();
 
-    this.shiftService.getShifts('all', 1, '').pipe(takeUntil(this.destroy$)).subscribe({
+    this.shiftService.getAllShifts().pipe(takeUntil(this.destroy$)).subscribe({
       next: (res: any) => {
         if (res.status === 200 && res.data) {
-          this.allShiftsList = res.data;
-          const defaultShift = this.allShiftsList.find((s: any) => s.name === this.activeTab);
+          this.allShiftsList = res.data.map((s: any) => ({
+            ...s,
+            name: s.shift_name || s.name
+          }));
+          
+          this.tabShiftsList = [
+            { id: 'shift-a', name: 'Shift A' },
+            { id: 'shift-b', name: 'Shift B' },
+            { id: 'shift-c', name: 'Shift C' }
+          ];
+
+          // Map actual IDs from backend if they exist
+          this.tabShiftsList.forEach(tab => {
+            const match = this.allShiftsList.find((s: any) => {
+              const lowerName = (s.name || '').toLowerCase().trim();
+              return lowerName.includes(tab.name.toLowerCase());
+            });
+            if (match) {
+              tab.id = match.id;
+              tab.name = match.name;
+            }
+          });
+
+          const defaultShift = this.tabShiftsList.find((s: any) => s.name === this.activeTab);
           if (defaultShift) {
              this.activeTabId = defaultShift.id;
-          } else if (this.allShiftsList.length > 0) {
-             this.activeTabId = this.allShiftsList[0].id;
-             this.activeTab = this.allShiftsList[0].name;
+          } else if (this.tabShiftsList.length > 0) {
+             this.activeTabId = this.tabShiftsList[0].id;
+             this.activeTab = this.tabShiftsList[0].name;
           }
           this.loadWeeklyShiftRotations();
         }
@@ -186,10 +209,11 @@ export class ShiftManagementComponent implements OnInit, OnDestroy {
   }
 
   loadLiveEmployees() {
-    this.employeeManagementService.getEmployees('all', 1).pipe(takeUntil(this.destroy$)).subscribe({
+    this.employeeManagementService.getAllEmployees().pipe(takeUntil(this.destroy$)).subscribe({
       next: (res: any) => {
-        if (res.status === 200 && res.data && res.data.length > 0) {
-          this.employees = res.data.map((emp: any) => ({
+        const empData = res.data?.data || res.data || [];
+        if (res.status === 200 && empData && empData.length > 0) {
+          this.employees = empData.map((emp: any) => ({
             ...emp,
             empId: emp.employee_code || `EMP-${String(emp.id).padStart(3, '0')}`,
             rotationGroup: emp.rotationGroup || 'Group Alpha',
@@ -1114,19 +1138,31 @@ export class ShiftManagementComponent implements OnInit, OnDestroy {
   }
 
   loadShiftGroups() {
-    this.shiftService.getShiftGroups().pipe(takeUntil(this.destroy$)).subscribe({
-      next: (res: any) => {
-        if (res.status === 200 && res.data) {
-          this.shiftGroups = res.data;
-          // Refresh filtered lists based on the active selection
-          const currentShiftVal = this.bulkRotateForm?.get('currentShift')?.value;
-          if (currentShiftVal) {
-            this.updateFilteredEmployees(currentShiftVal);
+    const groups: { [shiftCode: string]: string[] } = {
+      "Shift A": [],
+      "Shift B": [],
+      "Shift C": []
+    };
+
+    if (this.employees && this.employees.length > 0) {
+      this.employees.forEach((emp: any) => {
+        const shiftName = emp.shift || '';
+        if (shiftName) {
+          if (!groups[shiftName]) {
+            groups[shiftName] = [];
           }
+          groups[shiftName].push(String(emp.id));
         }
-      },
-      error: (err) => console.error('Error loading shift groups in Roster', err)
-    });
+      });
+    }
+
+    this.shiftGroups = groups;
+    
+    // Refresh filtered lists based on the active selection
+    const currentShiftVal = this.bulkRotateForm?.get('currentShift')?.value;
+    if (currentShiftVal) {
+      this.updateFilteredEmployees(currentShiftVal);
+    }
   }
 
   openBulkRotationModal() {
